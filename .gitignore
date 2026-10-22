@@ -1,0 +1,5 @@
+# Salesforce CLI local state (org auth, config) — never commit
+.sf/
+.sfdx/
+node_modules/
+__pycache__/
