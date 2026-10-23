@@ -8,11 +8,13 @@ spec-driven development.
 
 | Your tool | Copy this folder into your project root | What it loads |
 |---|---|---|
-| Claude Code | `.claude/` | `CLAUDE.md`, `rules/`, `agents/`, `commands/`, `skills/` |
-| GitHub Copilot (VS Code) | `.github/` | `copilot-instructions.md`, `instructions/`, `agents/`, `prompts/`, `skills/` |
-| Cursor | `.cursor/` | `rules/`, `agents/`, `commands/`, `skills/` |
+| Claude Code | `.claude/` | `CLAUDE.md`, `rules/`, `agents/`, `commands/`, `skills/`, `SDLC_Skill_library/` |
+| GitHub Copilot (VS Code) | `.github/` | `copilot-instructions.md`, `instructions/`, `agents/`, `prompts/`, `skills/`, `SDLC_Skill_library/` |
+| Cursor | `.cursor/` | `rules/`, `agents/`, `commands/`, `skills/`, `SDLC_Skill_library/` |
 
-All three folders contain the same content in each tool's native format.
+All three folders contain the same content in each tool's native format. `skills/` holds the
+Salesforce skills; `SDLC_Skill_library/` holds the custom Nagarro SDLC skills (a copy of each is
+also placed in `skills/`, because the tools only load skills from there).
 
 ---
 
@@ -99,7 +101,7 @@ An always-on rule reminds the agent to propose `/sdd-specify` before any non-tri
 |---|---|---|
 | Official Salesforce skills | 147 | [forcedotcom/sf-skills](https://github.com/forcedotcom/sf-skills) (Apache-2.0), pinned in `scripts/official-skills.lock` |
 | Community `sf-*` skills | 18 | Apex, LWC, Flow, SOQL, security, deploy, debug and more |
-| SDLC skills | 6 | `sdlc-workflow`, `sdlc-brd-generate`, `sdlc-jira-story-generate`, `sdlc-solution-architecture-generate`, `sdlc-qa-test-case-generate`, `sdlc-spec-driven-development` |
+| SDLC skill library (Nagarro, custom) | 6 | In `SDLC_Skill_library/`: `sdlc-workflow`, `sdlc-brd-generate`, `sdlc-jira-story-generate`, `sdlc-solution-architecture-generate`, `sdlc-qa-test-case-generate`, `sdlc-spec-driven-development` |
 | SDLC agents | 4 | BRD, Jira story, solution architect, QA test |
 | Commands | 12 | `/sdlc-*` and `/sdd-*` |
 | Rules | 6 + project instructions | Apex, Apex tests, LWC, metadata (scoped by file type); spec-driven gate; SDLC document conventions |
@@ -140,7 +142,9 @@ your-project/
 
 ## Maintaining this repository
 
-`.claude/` is the **only source**. `.github/` and `.cursor/` are generated from it.
+`.claude/` is the **only source**. `.github/` and `.cursor/` are generated from it. Custom SDLC
+skills are edited in `.claude/SDLC_Skill_library/`; their copies in `.claude/skills/sdlc-*` are
+generated too (each has a `GENERATED.md`).
 
 ```bash
 # after editing anything in .claude/
@@ -162,9 +166,11 @@ How each source maps:
 | `agents/*.md` | `agents/*.agent.md` (with hand-off buttons between SDLC agents) | `agents/*.md` |
 | `commands/*.md` | `prompts/*.prompt.md` (routed to the matching agent) | `commands/*.md` |
 | `skills/<name>/` | `skills/<name>/` | `skills/<name>/` |
+| `SDLC_Skill_library/<name>/` | `SDLC_Skill_library/<name>/` + copy in `skills/<name>/` | `SDLC_Skill_library/<name>/` + copy in `skills/<name>/` |
 
 Adding things:
-- **Skill**: `.claude/skills/<name>/SKILL.md` with `name` equal to the folder name and a
+- **Skill**: custom skills go in `.claude/SDLC_Skill_library/<name>/SKILL.md`; official/community
+  Salesforce skills in `.claude/skills/<name>/SKILL.md`. Either way, `name` must equal the folder name, with a
   `description` of at most 1,024 characters. Copilot and Cursor silently skip skills that break
   either rule; the sync script warns about both.
 - **Agent**: `.claude/agents/<name>.md` with `name`, `description`, optional `tools`, `model`,
