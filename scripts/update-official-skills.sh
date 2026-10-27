@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Refresh the official Salesforce skills (github.com/forcedotcom/sf-skills, Apache-2.0)
-# listed in scripts/official-skills.txt into .claude/skills/, then regenerate .github/ and .cursor/.
+# listed in scripts/official-skills.txt into .claude/skills/ (or .claude/skill-library/ for skills already moved there), then regenerate .github/ and .cursor/.
 #
 #   scripts/update-official-skills.sh            # latest main
 #   scripts/update-official-skills.sh <git-ref>   # a tag or commit
@@ -13,6 +13,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LIST="$ROOT/scripts/official-skills.txt"
 LOCK="$ROOT/scripts/official-skills.lock"
 DEST="$ROOT/.claude/skills"
+LIB="$ROOT/.claude/skill-library"   # on-demand skills; a listed skill is refreshed where it already lives
 REF="${1:-main}"
 
 TMP="$(mktemp -d)"
@@ -29,8 +30,10 @@ while IFS= read -r skill; do
     missing=$((missing + 1))
     continue
   fi
-  rm -rf "${DEST:?}/$skill"
-  cp -R "$TMP/sf-skills/skills/$skill" "$DEST/$skill"
+  target="$DEST"
+  [[ -d "$LIB/$skill" ]] && target="$LIB"
+  rm -rf "${target:?}/$skill"
+  cp -R "$TMP/sf-skills/skills/$skill" "$target/$skill"
 done < "$LIST"
 
 cp "$TMP/sf-skills/LICENSE.txt" "$DEST/LICENSE-forcedotcom-sf-skills.txt"

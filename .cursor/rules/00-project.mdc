@@ -21,6 +21,9 @@ development commands and coding rules. Follow them over generic habits.
 3. **Specialist skills** (`platform-*`, `automation-flow-generate`, `experience-lwc-*`,
    `dx-*`, `omnistudio-*`, `agentforce-*`, `integration-*`) do the actual metadata and code work.
    Load the matching skill before generating Salesforce metadata or code.
+   Only a core set is loaded in `skills/`. Others (OmniStudio, Agentforce, Experience Cloud,
+   integration, DevOps and so on) wait in `skill-library/`; when a task needs one, tell the user and
+   offer to copy it into `skills/` (see `skill-library/README.md`).
 
 ## Salesforce engineering rules (always)
 - Security: `with sharing` by default; `WITH USER_MODE` / `AccessLevel.USER_MODE`; bind variables,

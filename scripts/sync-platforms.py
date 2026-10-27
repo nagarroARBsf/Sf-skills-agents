@@ -13,9 +13,7 @@ What is generated:
     .claude/agents/*.md      -> .github/agents/*.agent.md         | .cursor/agents/*.md
     .claude/commands/*.md    -> .github/prompts/*.prompt.md       | .cursor/commands/*.md
     .claude/skills/**        -> .github/skills/**                 | .cursor/skills/**   (verbatim)
-    .claude/SDLC_Skill_library/<skill>/  (Nagarro SDLC skills, the source)
-                             -> {.claude,.github,.cursor}/skills/<skill>/  (loadable copies)
-                             -> .github/SDLC_Skill_library/, .cursor/SDLC_Skill_library/
+    .claude/skill-library/** -> .github/skill-library/**          | .cursor/skill-library/**  (verbatim)
 
 Only the generated sub-paths are replaced; anything else under .github/ or .cursor/ is left alone.
 Standard library only.
@@ -234,53 +232,21 @@ def gen_commands(out: Path) -> None:
               f"{note}\n\n# /{name}\n\n{desc}\n\n" + rewrite(body.lstrip("\n"), "cursor"))
 
 
-LIBRARY = "SDLC_Skill_library"
-LIBRARY_NOTE = (
-    "# Generated copy\n\n"
-    "This skill is maintained in `{platform}/" + LIBRARY + "/{name}/` (Nagarro SDLC skill library, "
-    "not an official Salesforce skill).\nIt is copied here only because coding agents load skills "
-    "from `skills/<name>/`. Edit the library version in `.claude/" + LIBRARY + "/` and run "
-    "`python3 scripts/sync-platforms.py`.\n"
-)
-
-
-def library_skills() -> list[Path]:
-    lib = SRC / LIBRARY
-    if not lib.is_dir():
-        return []
-    return sorted(p for p in lib.iterdir() if (p / "SKILL.md").is_file())
+# On-demand Salesforce skills. Tools do not load this folder, so its skills cost no context until a
+# project copies or moves the ones it needs into skills/.
+ON_DEMAND = "skill-library"
 
 
 def gen_skills(out: Path) -> list[str]:
     warnings = []
-    lib_skills = library_skills()
-    lib_names = {p.name for p in lib_skills}
 
-    # 1. The SDLC skill library folder itself, visible in every platform folder.
     for platform in (".github", ".cursor"):
-        shutil.copytree(SRC / LIBRARY, out / platform / LIBRARY)
+        shutil.copytree(SRC / "skills", out / platform / "skills")
+        shutil.copytree(SRC / ON_DEMAND, out / platform / ON_DEMAND)
 
-    # 2. Loadable copies under skills/: official + community skills from .claude/skills,
-    #    plus the library skills (tools only discover skills/<name>/SKILL.md).
-    for platform in (".claude", ".github", ".cursor"):
-        dest = out / platform / "skills"
-        dest.mkdir(parents=True, exist_ok=True)
-        if platform != ".claude":
-            for item in sorted((SRC / "skills").iterdir()):
-                if item.name in lib_names:
-                    continue
-                if item.is_dir():
-                    shutil.copytree(item, dest / item.name, symlinks=False)
-                else:
-                    shutil.copy2(item, dest / item.name)
-        for skill in lib_skills:
-            shutil.copytree(skill, dest / skill.name)
-            write(dest / skill.name / "GENERATED.md",
-                  LIBRARY_NOTE.format(platform=platform, name=skill.name))
-
-    official = [p for p in (SRC / "skills").iterdir()
-                if (p / "SKILL.md").is_file() and p.name not in lib_names]
-    for skill in sorted(official + lib_skills):
+    skills = [p for d in ("skills", ON_DEMAND) for p in (SRC / d).iterdir()
+              if (p / "SKILL.md").is_file()]
+    for skill in sorted(skills):
         meta, _ = split_frontmatter((skill / "SKILL.md").read_text(encoding="utf-8"))
         if meta.get("name") != skill.name:
             warnings.append(f"{skill.name}: frontmatter name '{meta.get('name')}' != folder name "
@@ -304,14 +270,13 @@ GENERATED_PATHS = [
     ".cursor/agents",
     ".cursor/commands",
     ".cursor/skills",
-    ".github/SDLC_Skill_library",
-    ".cursor/SDLC_Skill_library",
+    ".github/skill-library",
+    ".cursor/skill-library",
 ]
 
 
 def generated_paths() -> list[str]:
-    """Fixed generated paths plus the library copies inside .claude/skills/."""
-    return GENERATED_PATHS + [f".claude/skills/{p.name}" for p in library_skills()]
+    return GENERATED_PATHS
 
 
 def write(path: Path, text: str) -> None:
@@ -375,11 +340,11 @@ def main() -> int:
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dest)
 
+    def n(d): return sum(1 for p in (SRC / d).iterdir() if (p / "SKILL.md").is_file())
+
     counts = {
-        "Salesforce skills": sum(1 for p in (SRC / "skills").iterdir()
-                                 if (p / "SKILL.md").is_file()
-                                 and p.name not in {q.name for q in library_skills()}),
-        "SDLC library skills": len(library_skills()),
+        "loaded skills (skills/)": n("skills"),
+        "on-demand skills (skill-library/)": n(ON_DEMAND),
         "agents": len(list((SRC / "agents").glob("*.md"))),
         "commands": len(list((SRC / "commands").glob("*.md"))),
         "rules": len(list((SRC / "rules").glob("*.md"))),
