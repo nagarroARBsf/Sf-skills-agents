@@ -7,6 +7,11 @@ Template rules (delete this comment in the output):
 - Section numbers are fixed so downstream agents can reference them.
 - Unknown values: [TBD] plus an open question Q-nn in section 17.
 - Items derived rather than stated: suffix [Inferred].
+- Sections 1-19 are solution-neutral business language. Salesforce terms appear only in
+  Appendices C and D.
+- No customer personal data, record-level data or credentials anywhere in this document.
+- Client, project name and code come from the project config (project.client, project.name,
+  project.code) when set.
 -->
 
 ## Document Control
@@ -70,9 +75,12 @@ Items deliberately deferred.
 
 ### 5.1 Stakeholders
 
-| Name | Role | Organisation | Responsibility in project | Decision rights |
-|---|---|---|---|---|
-| {Name} | {Title} | {Client / Partner} | {What they own} | Approver / Reviewer / Informed |
+| Name | Role | Organisation | Responsibility in project | Decision rights | Speaker label in sources |
+|---|---|---|---|---|---|
+| {Name} | {Title} | {Client / Partner} | {What they own} | Approver / Reviewer / Informed (topic) | SRC-02 "Speaker 1" |
+
+Only project stakeholders are named here. Customers, patients or employees who are subjects of
+the process are never named in this document.
 
 ### 5.2 User personas
 
@@ -220,11 +228,16 @@ Data sensitivity classification, audit needs, regulatory constraints.
 |---|---|
 
 ## 19. Approval and Sign-off
+This section is the document's approval record. It is filled in by people only; the generating
+agent leaves every row empty.
+
 | Name | Role | Decision | Date | Signature / comment |
 |---|---|---|---|---|
 | | Business sponsor | | | |
 | | Process owner | | | |
 | | Implementation lead | | | |
+
+Decision values: Approved · Approved with conditions · Rejected.
 
 ---
 
@@ -234,9 +247,12 @@ Data sensitivity classification, audit needs, regulatory constraints.
 | BR-01 | OBJ-01, OBJ-05 | FR-01.1–FR-01.4 | RULE-01.1 | SRC-01, SRC-03 |
 
 ## Appendix B. Source register
-| ID | Document | Type | Date | Author / participants |
-|---|---|---|---|---|
-| SRC-01 | Meeting Notes.md | Workshop notes | {date} | {author} |
+| ID | Document | Type | Raw / edited | Date | Author / participants | Sensitive content (kind and locator only) |
+|---|---|---|---|---|---|---|
+| SRC-01 | Meeting Notes.md | Workshop notes | Edited | {date} | {author} | None found |
+| SRC-02 | Sales leadership call.vtt | Meeting transcript | Raw | {date} | {participants by role} | Customer contact names ~14:10; credential read aloud ~41:02 |
+
+Never copy the sensitive value itself into this table.
 
 ## Appendix C. Salesforce capability fit (indicative, not a design)
 | BR / FR | Likely Salesforce capability | Fit | Notes / feasibility flags |
@@ -245,3 +261,109 @@ Data sensitivity classification, audit needs, regulatory constraints.
 
 Fit values: Standard · Configuration · Declarative automation · Custom code · AppExchange ·
 Out of platform. The Solution Architecture agent confirms or changes these.
+
+## Appendix D. Salesforce solution outline (indicative, not a design)
+
+Purpose: hand the architect every Salesforce-relevant fact and signal the sources contain, in one
+place. Rules for every row:
+- **Basis** is one of `[Stated]` (a source says it), `[Inferred]` (derived; give the reason) or
+  `[TBD]` (unknown; link the `Q-nn`).
+- **Source** is a citation (`SRC-02 ~14:05`) for `[Stated]`, the requirement it derives from for
+  `[Inferred]`, and the `Q-nn` for `[TBD]`.
+- Signals and candidates only. No names for components that do not exist yet; existing org
+  components may be named when a source names them.
+- A subsection with nothing to record keeps its heading and says "No information in the sources"
+  plus the `Q-nn` raised.
+
+### D.1 Data model
+| Business entity | Standard or custom (candidate) | Related to (relationship) | Volume today / growth per year | Data owner | Basis | Source |
+|---|---|---|---|---|---|---|
+| Deal | Standard: Opportunity | Customer account (parent) | [TBD] / [TBD] | Sales Operations | [Inferred] — "deals" managed through stages | BR-03; Q-02 |
+| Deal review | Custom object (candidate) | Deal (child; delete with parent) | ~2,000 / year | Sales managers | [Stated] | SRC-02 ~18:30 |
+
+Flag: any entity above ~1 million records or growing by more than ~100,000 a month (large data
+volume); many-to-many relationships; entities whose owner decides who may see them.
+
+### D.2 Automation
+| Business process or rule | Trigger (event / schedule / user action) | Signal | Why | Basis | Source |
+|---|---|---|---|---|---|
+| Discount approval | Record saved above threshold | Declarative | Single threshold, named approver | [Stated] | SRC-01 §4 |
+| Health score recalculation | Daily, plus on change | Code | Combined rules, time-based, large volume | [Inferred] | FR-04.2, FR-04.7 |
+
+Signal values: Standard feature · Declarative · Code · Undetermined. A signal is a pointer for the
+architect, who decides.
+
+### D.3 User interface
+| Persona | Where they work (app / page) | Need | Candidate | Device | Basis | Source |
+|---|---|---|---|---|---|---|
+| Sales Manager | Deal page | Score and risk factors at a glance | Custom component candidate (LWC) | Desktop, mobile app | [Stated] | SRC-01 §3 |
+
+Candidate values: Standard Lightning page · Dynamic Forms · Screen flow · Custom component
+candidate (LWC) · Experience Cloud site · Undetermined. Record mobile and offline needs explicitly.
+
+### D.4 Integrations
+| ID | System | Direction | Pattern (candidate) | Frequency | Volume | Authentication | Error-handling expectation | Basis | Source |
+|---|---|---|---|---|---|---|---|---|---|
+| INT-01 | ERP | Inbound | Batch data synchronisation | Nightly | [TBD] | [TBD] | Failed records visible to Sales Operations next morning | [Stated] | SRC-02 ~22:10; Q-09 |
+
+Pattern values: Request and reply · Fire and forget · Batch data synchronisation · Remote call-in ·
+UI update from data changes · Data virtualisation. IDs match section 10.3.
+
+### D.5 Security and access
+| Persona | Access needed | Permission set (candidate, one per persona or feature) | Record visibility expectation | Sensitive fields | Basis | Source |
+|---|---|---|---|---|---|---|
+| Sales Representative | Own deals; no coaching notes | Sales representative access | Sees own and team records only | Discount rationale: hidden | [Stated] | SRC-03 |
+
+Also record: organisation-wide default expectation per entity (Private / Public Read Only / Public
+Read/Write), external users, single sign-on and multi-factor expectations, field-level
+sensitivity, encryption or audit needs, regulations that apply (GDPR, HIPAA, PCI DSS, local law).
+
+### D.6 Data migration
+| Source system | Entities | Volume | History in scope | Cleansing / de-duplication | Cut-over constraint | Basis | Source |
+|---|---|---|---|---|---|---|---|
+
+### D.7 Reporting and analytics
+| Report / dashboard | Audience | Decision it supports | Refresh | Candidate | Basis | Source |
+|---|---|---|---|---|---|---|
+
+Candidate values: Standard reports and dashboards · Forecasting · CRM Analytics · Data Cloud ·
+External BI.
+
+### D.8 Licences, editions and limits to watch
+| Item | Detail | Why it matters | Basis | Source |
+|---|---|---|---|---|
+| Edition and clouds | [TBD] | Feature availability | [TBD] | Q-01 |
+| Licence per persona | Sales Rep: Sales Cloud | Feature and object access | [Inferred] | section 5.2 |
+| Limit to watch | Daily API requests versus the nightly load | Integration design | [Inferred] | INT-01 |
+
+Typical limits to check against the stated volumes: data and file storage, daily API requests,
+daily asynchronous Apex executions, platform event delivery allocation, email sends per day,
+field history tracking (20 fields per object), custom objects and fields per edition, sandbox
+types available.
+
+### D.9 Environments and release constraints
+| Item | Detail | Basis | Source |
+|---|---|---|---|
+| Existing org or new org | | | |
+| Sandboxes available (type) | | | |
+| Release windows, freezes, fiscal or seasonal constraints | | | |
+| Existing release process and tooling | | | |
+
+### D.10 AppExchange and managed packages
+| Package | Already installed or candidate | Purpose | Constraint (licence, namespace, limits it consumes) | Basis | Source |
+|---|---|---|---|---|---|
+
+## Appendix E. Decisions and action items
+
+### E.1 Decisions
+| ID | Decision | Decided by (role) | Date | Settles | Source |
+|---|---|---|---|---|---|
+| DEC-01 | {What was decided, one sentence} | VP Sales | {date} | FR-04.3, Q-04 | SRC-02 ~31:05 |
+
+Only explicit decisions. An inferred decision carries `[Inferred]` and a `Q-nn` asking for
+confirmation.
+
+### E.2 Action items
+| ID | Action | Owner | Due | Blocks | Source | Status |
+|---|---|---|---|---|---|---|
+| ACT-01 | {Action as stated} | {name or role} | {date or [TBD]} | Q-02 | SRC-02 ~44:00 | Open |

@@ -1,0 +1,13 @@
+---
+description: Run Apex (and Jest) tests through the Salesforce CLI, report results and coverage, and log defects
+argument-hint: "[org role or alias, default qa] [story IDs | test class names | all]"
+---
+Use the **sdlc-qa-test-agent** subagent to execute the tests.
+
+Target and scope from the user: $ARGUMENTS
+
+The agent follows the `sdlc-test-execution` skill in Execute mode: confirms the target org is not
+production, runs the tests with `node .claude/bin/sf-sdlc test run`, reads failures and per-class
+coverage against the project targets, triages each failure (product defect, test defect, environment
+or data), writes the test-run report under `docs/sdlc/04-qa/test-runs/` and a `DEF-nnn` record per
+product defect. Creating Jira bugs needs a preview and an explicit yes. Stop after the report.

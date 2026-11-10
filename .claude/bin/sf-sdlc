@@ -1,0 +1,566 @@
+#!/usr/bin/env node
+'use strict';
+// sf-sdlc — one command-line tool behind the SDLC agents, the hooks, people and CI.
+// Node.js standard library only. Every command accepts --json.
+
+const fs = require('fs');
+const path = require('path');
+const lib = require('../hooks/lib');
+const ops = require('../hooks/ops');
+const checks = require('../hooks/checks');
+
+const argv = process.argv.slice(2);
+const JSON_OUT = argv.includes('--json');
+const flags = {};
+const pos = [];
+const VALUE_FLAGS = new Set(['--org', '--from', '--severity', '--job-id', '--run-id', '--tests', '--level', '--manifest', '--source-dir', '--wait', '--profile', '--tail', '--output', '--rule-selector', '--report', '--type']);
+for (let i = 0; i < argv.length; i++) {
+  const a = argv[i];
+  if (a.startsWith('--')) {
+    const [k, v] = a.split('=');
+    if (v !== undefined) flags[k] = v;
+    else if (VALUE_FLAGS.has(k) && argv[i + 1] !== undefined && !argv[i + 1].startsWith('--')) flags[k] = argv[++i];
+    else flags[k] = true;
+  } else pos.push(a);
+}
+
+const root = lib.projectDir();
+const cfg = lib.loadConfig(root);
+
+function out(data, text) {
+  if (JSON_OUT) process.stdout.write(JSON.stringify(data, null, 2) + '\n');
+  else process.stdout.write((typeof text === 'function' ? text() : text || JSON.stringify(data, null, 2)) + '\n');
+}
+function fail(msg, code = 1) {
+  if (JSON_OUT) process.stdout.write(JSON.stringify({ ok: false, error: msg }, null, 2) + '\n');
+  else process.stderr.write(`sf-sdlc: ${msg}\n`);
+  process.exit(code);
+}
+
+// ------------------------------------------------------------------ doctor
+
+function doctor() {
+  const rows = [];
+  const add = (name, ok, detail, fix, required = true) => rows.push({ name, ok, required, detail, fix: ok ? undefined : fix });
+  const major = Number(process.versions.node.split('.')[0]);
+  add('node', major >= 18, `v${process.versions.node}`, 'Install Node.js 18 or later.');
+  add('git', lib.has('git'), '', 'Install git.');
+  const sf = lib.has('sf');
+  add('sf CLI', sf, sf ? (lib.run('sf', ['--version'], { timeout: 60000 }).stdout.split('\n')[0] || '').trim() : '', 'npm install --global @salesforce/cli');
+  let plugins = '';
+  if (sf) plugins = lib.run('sf', ['plugins'], { timeout: 60000 }).stdout;
+  const plug = (re) => { const m = re.exec(plugins); return m ? m[0].trim() : null; };
+  const ca = plug(/^code-analyzer\s+\S+/m);
+  add('Salesforce Code Analyzer (sf code-analyzer)', Boolean(ca), ca || '', 'sf plugins install code-analyzer');
+  const java = lib.run('java', ['-version'], { timeout: 20000 });
+  const jv = /version "(\d+)/.exec(java.stderr + java.stdout);
+  add('Java 11+ (Code Analyzer PMD/CPD engines)', Boolean(jv) && Number(jv[1]) >= 11, jv ? `Java ${jv[1]}` : 'not found', 'Install a JDK 11 or later (17+ recommended) and put it on PATH.');
+  const sgd = plug(/^sfdx-git-delta\s+\S+/m);
+  add('sfdx-git-delta (delta manifests)', Boolean(sgd), sgd || 'not installed — sf-sdlc delta uses its built-in git mapping', 'sf plugins install sfdx-git-delta', false);
+  const lfs = plug(/^lightning-flow-scanner\s+\S+/m);
+  add('Lightning Flow Scanner', Boolean(lfs), lfs || 'not installed', 'sf plugins install lightning-flow-scanner', false);
+  add('gh CLI (pull requests, releases)', lib.has('gh'), '', 'Install GitHub CLI and run `gh auth login`.', false);
+  add('mermaid-cli (SVG diagrams for Jira/Confluence)', lib.has('mmdc'), '', 'npm install --global @mermaid-js/mermaid-cli', false);
+  const proj = lib.sfdxProject(root);
+  add('sfdx-project.json', Boolean(proj), proj ? `packages: ${lib.packageDirs(root, cfg).join(', ')}; API ${lib.apiVersion(root, cfg) || 'unset'}` : 'not a Salesforce DX project', 'Create the project with `sf project generate`, or run from the project root.', false);
+  const v = lib.validateConfig(cfg);
+  add('.claude/sf-sdlc.json', cfg._exists && v.ok, v.errors.concat(v.warnings).join('; ') || 'valid', 'Run `sf-sdlc init`, then edit .claude/sf-sdlc.json.');
+  const target = lib.defaultOrg(root);
+  if (sf) {
+    const org = lib.classifyOrg(target, cfg, root);
+    add('default target org', Boolean(target), target ? `${target} (${org.kind})` : 'none', 'sf config set target-org <alias>', false);
+  }
+  const gi = fs.existsSync(path.join(root, '.gitignore')) ? fs.readFileSync(path.join(root, '.gitignore'), 'utf8') : '';
+  add('.gitignore covers .sf/, .sfdx/, .sf-sdlc/', ['.sf/', '.sfdx/', '.sf-sdlc/'].every((p) => gi.includes(p)), '', 'Run `sf-sdlc init` to add the entries.');
+  const sk = skillsState();
+  add('skill listing budget', sk.listingChars <= 8000, `${sk.installed.length} project skills, about ${sk.listingChars} description characters (Claude Code shares roughly 1% of the context window between all skill descriptions; about 8,000 characters on a 200k-token model)`, 'Remove skills the project does not need: `sf-sdlc skills remove <name>`.', false);
+  const ok = rows.every((r) => r.ok || !r.required);
+  out({ ok, checks: rows }, () => rows.map((r) => `${r.ok ? '✔' : r.required ? '✘' : '•'} ${r.name}${r.detail ? ' — ' + r.detail : ''}${r.fix ? `\n    fix: ${r.fix}` : ''}`).join('\n') + `\n\n${ok ? 'Ready.' : 'Required items are missing.'}`);
+  process.exit(ok ? 0 : 1);
+}
+
+// ------------------------------------------------------------------ init
+
+function init() {
+  const done = [];
+  const skipped = [];
+  const cp = lib.configPaths(root);
+  fs.mkdirSync(path.dirname(cp.shared), { recursive: true });
+  if (!fs.existsSync(cp.shared)) {
+    const c = JSON.parse(JSON.stringify(lib.DEFAULTS));
+    const proj = lib.sfdxProject(root);
+    c.project.name = (proj && proj.name) || path.basename(root);
+    if (proj && proj.namespace) c.salesforce.namespacePrefix = proj.namespace;
+    const head = lib.git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], root);
+    if (head) c.git.mainBranch = head.replace(/^origin\//, '');
+    const branches = (lib.git(['branch', '-a', '--format=%(refname:short)'], root) || '').split('\n');
+    if (!branches.some((b) => /(^|\/)develop$/.test(b))) { c.git.integrationBranch = c.git.mainBranch; c.git.pullRequestBase = c.git.mainBranch; }
+    const target = lib.defaultOrg(root);
+    if (target && lib.classifyOrg(target, c, root).kind !== 'production') c.orgs.dev = target;
+    fs.writeFileSync(cp.shared, JSON.stringify({ $comment: 'sf-sdlc project configuration. Reference: SETUP.md. Personal overrides go in sf-sdlc.local.json (not committed).', ...c }, null, 2) + '\n');
+    done.push('.claude/sf-sdlc.json');
+  } else skipped.push('.claude/sf-sdlc.json (exists)');
+
+  const gi = path.join(root, '.gitignore');
+  const cur = fs.existsSync(gi) ? fs.readFileSync(gi, 'utf8') : '';
+  const want = ['.sf/', '.sfdx/', '.sf-sdlc/', '.claude/sf-sdlc.local.json', '.claude/settings.local.json'].filter((l) => !cur.split('\n').map((s) => s.trim()).includes(l));
+  if (want.length) { fs.writeFileSync(gi, cur + (cur && !cur.endsWith('\n') ? '\n' : '') + '# sf-sdlc: CLI auth, local state and personal overrides\n' + want.join('\n') + '\n'); done.push('.gitignore (+' + want.join(', ') + ')'); }
+
+  const tpl = path.join(lib.KIT_ROOT, 'templates');
+  const copyIfMissing = (from, to) => {
+    const src = path.join(tpl, from);
+    const dest = path.join(root, to);
+    if (!fs.existsSync(src)) return;
+    if (fs.existsSync(dest)) { skipped.push(`${to} (exists)`); return; }
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(src, dest); done.push(to);
+  };
+  if (lib.sfdxProject(root)) copyIfMissing('code-analyzer.yml', 'code-analyzer.yml');
+  copyIfMissing('pull_request_template.md', '.github/pull_request_template.md');
+  if (lib.IS_PLUGIN) copyIfMissing('project-settings.json', '.claude/settings.json');
+  out({ ok: true, created: done, skipped, next: 'Edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run `sf-sdlc doctor` and `sf-sdlc skills recommend`.' },
+    () => `${done.map((d) => 'created  ' + d).concat(skipped.map((s) => 'kept     ' + s)).join('\n')}\n\nNext: edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run \`sf-sdlc doctor\` and \`sf-sdlc skills recommend\`.`);
+}
+
+// ------------------------------------------------------------------ detect / skills
+
+function detect() {
+  const inv = ops.inventory(root, cfg);
+  const proj = lib.sfdxProject(root);
+  const exists = (p) => fs.existsSync(path.join(root, p));
+  return {
+    isSfdxProject: Boolean(proj), greenfield: Boolean(proj) && inv.total === 0, apiVersion: inv.apiVersion,
+    packageDirectories: inv.packageDirectories, namespace: (proj && proj.namespace) || '',
+    packaging: Boolean(proj && proj.packageAliases && Object.keys(proj.packageAliases).length),
+    folders: inv.folders, counts: inv.counts, total: inv.total,
+    rootFiles: ['package.json', 'jest.config.js', 'config/project-scratch-def.json', '.github/workflows', 'bitbucket-pipelines.yml', '.gitlab-ci.yml', 'azure-pipelines.yml', 'Jenkinsfile', 'code-analyzer.yml', '.forceignore'].filter(exists),
+    docs: { brd: exists(path.join(cfg.paths.docs, '01-brd/BRD.md')), backlog: exists(path.join(cfg.paths.docs, '02-backlog/backlog.md')), hld: exists(path.join(cfg.paths.docs, '03-architecture/HLD.md')) },
+  };
+}
+
+function catalog() {
+  const c = lib.readJson(path.join(lib.KIT_ROOT, 'catalog', 'skills.json'));
+  if (!c) fail('catalog/skills.json not found in the kit. Rebuild it with scripts/build-claude-plugin.py.');
+  return c.skills;
+}
+const libraryDir = () => path.join(lib.KIT_ROOT, 'skill-library');
+const projectSkills = () => path.join(root, '.claude', 'skills');
+const lockPath = () => path.join(root, '.claude', 'sf-sdlc.skills.lock.json');
+const readLock = () => lib.readJson(lockPath()) || { skills: {} };
+const writeLock = (l) => fs.writeFileSync(lockPath(), JSON.stringify(l, null, 2) + '\n');
+
+function skillDescription(dir) {
+  try {
+    const m = /^description:\s*(.*)$/m.exec(fs.readFileSync(path.join(dir, 'SKILL.md'), 'utf8').split(/^---\s*$/m)[1] || '');
+    return m ? m[1].replace(/^["']|["']$/g, '') : '';
+  } catch { return ''; }
+}
+
+function skillsState() {
+  const lock = readLock();
+  const installed = [];
+  let listingChars = 0;
+  let entries = [];
+  try { entries = fs.readdirSync(projectSkills(), { withFileTypes: true }).filter((e) => e.isDirectory() && fs.existsSync(path.join(projectSkills(), e.name, 'SKILL.md'))); } catch { /* none */ }
+  for (const e of entries) {
+    const dir = path.join(projectSkills(), e.name);
+    const locked = lock.skills[e.name];
+    const state = !locked ? 'unmanaged' : lib.hashDir(dir) === locked.hash ? 'ok' : 'modified';
+    listingChars += Math.min(skillDescription(dir).length, 1536) + e.name.length;
+    installed.push({ name: e.name, state, source: locked && locked.source });
+  }
+  return { installed, listingChars };
+}
+
+function recommend() {
+  const rules = lib.readJson(path.join(lib.KIT_ROOT, 'catalog', 'detection-rules.json'));
+  if (!rules) fail('catalog/detection-rules.json not found in the kit.');
+  const d = detect();
+  const profile = flags['--profile'];
+  const names = new Set(catalog().map((s) => s.name));
+  const have = new Set(skillsState().installed.map((s) => s.name));
+  const picks = new Map();
+  for (const rule of rules.rules) {
+    const w = rule.when || {};
+    let evidence = null;
+    if (profile) { if ((w.profiles || []).includes(profile)) evidence = `profile "${profile}"`; }
+    else if (w.always && d.isSfdxProject) evidence = 'Salesforce DX project';
+    else if (w.greenfield && d.greenfield) evidence = 'empty project (greenfield starter set)';
+    else if (w.folders && w.folders.some((f) => d.folders.includes(f))) evidence = `metadata folder(s): ${w.folders.filter((f) => d.folders.includes(f)).join(', ')}`;
+    else if (w.rootFiles && w.rootFiles.some((f) => d.rootFiles.includes(f))) evidence = `file(s): ${w.rootFiles.filter((f) => d.rootFiles.includes(f)).join(', ')}`;
+    else if (w.packaging && d.packaging) evidence = 'packageAliases in sfdx-project.json';
+    if (!evidence) continue;
+    for (const s of rule.skills) {
+      if (!names.has(s)) continue;
+      const p = picks.get(s) || { name: s, reasons: [], installed: have.has(s) };
+      p.reasons.push(`${rule.reason} [${evidence}]`);
+      picks.set(s, p);
+    }
+  }
+  const list = [...picks.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const toInstall = list.filter((p) => !p.installed).map((p) => p.name);
+  out({ profile: profile || null, detected: { greenfield: d.greenfield, folders: d.folders, counts: d.counts }, recommended: list, toInstall, installCommand: toInstall.length ? `sf-sdlc skills install ${toInstall.join(' ')}` : null, note: 'Detection reads the source tree only. Add skills for org-only features and planned work by name; see `sf-sdlc skills list --all`.' },
+    () => (list.length ? list.map((p) => `${p.installed ? '✔' : '+'} ${p.name}\n    ${p.reasons.join('\n    ')}`).join('\n') : 'No technical skills recommended (no Salesforce source detected). Use --profile developer|admin|ba to pick a starter set.') +
+      (toInstall.length ? `\n\nInstall: sf-sdlc skills install ${toInstall.join(' ')}` : ''));
+}
+
+function copyDir(src, dest) { fs.cpSync(src, dest, { recursive: true }); }
+
+function skillsCmd() {
+  const sub = pos[1] || 'list';
+  const names = pos.slice(2);
+  if (sub === 'recommend') return recommend();
+  if (sub === 'list') {
+    const st = skillsState();
+    if (flags['--all']) {
+      const inst = new Set(st.installed.map((s) => s.name));
+      const all = catalog().map((s) => ({ ...s, installed: inst.has(s.name) }));
+      return out({ skills: all }, () => all.map((s) => `${s.installed ? '✔' : ' '} ${s.name.padEnd(48)} ${s.source.padEnd(10)} ${s.description.slice(0, 90)}`).join('\n'));
+    }
+    return out(st, () => (st.installed.map((s) => `${s.name.padEnd(48)} ${s.state}`).join('\n') || '(no project skills)') + `\n\n${st.installed.length} skills, about ${st.listingChars} description characters.`);
+  }
+  if (sub === 'install') {
+    if (!names.length) fail('usage: sf-sdlc skills install <name> [<name>...]');
+    const lock = readLock();
+    const res = [];
+    const cat = new Map(catalog().map((s) => [s.name, s]));
+    for (const n of names) {
+      const src = path.join(libraryDir(), n);
+      const dest = path.join(projectSkills(), n);
+      if (!fs.existsSync(path.join(src, 'SKILL.md'))) { res.push({ name: n, result: cat.has(n) && cat.get(n).location === 'skills' ? 'already part of the kit (always loaded)' : 'not found in the skill library' }); continue; }
+      if (fs.existsSync(dest) && !flags['--force']) { res.push({ name: n, result: 'already installed (use --force to replace)' }); continue; }
+      fs.rmSync(dest, { recursive: true, force: true });
+      fs.mkdirSync(projectSkills(), { recursive: true });
+      copyDir(src, dest);
+      lock.skills[n] = { hash: lib.hashDir(dest), source: (cat.get(n) || {}).source || 'unknown', installedAt: new Date().toISOString().slice(0, 10) };
+      res.push({ name: n, result: 'installed' });
+    }
+    writeLock(lock);
+    const st = skillsState();
+    return out({ results: res, listingChars: st.listingChars }, () => res.map((r) => `${r.name}: ${r.result}`).join('\n') + `\n\nRestart the Claude Code session (or run /reload-plugins) so new skills are listed. Listing size: about ${st.listingChars} characters.`);
+  }
+  if (sub === 'remove') {
+    const lock = readLock();
+    const res = [];
+    for (const n of names) {
+      const dest = path.join(projectSkills(), n);
+      if (!fs.existsSync(dest)) { res.push({ name: n, result: 'not installed' }); continue; }
+      if (!lock.skills[n] && !flags['--force']) { res.push({ name: n, result: 'not installed by sf-sdlc; left alone (use --force)' }); continue; }
+      if (lock.skills[n] && lib.hashDir(dest) !== lock.skills[n].hash && !flags['--force']) { res.push({ name: n, result: 'locally modified; left alone (use --force)' }); continue; }
+      fs.rmSync(dest, { recursive: true, force: true }); delete lock.skills[n];
+      res.push({ name: n, result: 'removed' });
+    }
+    writeLock(lock);
+    return out({ results: res }, () => res.map((r) => `${r.name}: ${r.result}`).join('\n'));
+  }
+  if (sub === 'sync') {
+    const lock = readLock();
+    const res = [];
+    for (const [n, entry] of Object.entries(lock.skills)) {
+      const src = path.join(libraryDir(), n);
+      const dest = path.join(projectSkills(), n);
+      if (!fs.existsSync(dest)) { delete lock.skills[n]; res.push({ name: n, result: 'no longer installed; dropped from lock' }); continue; }
+      if (!fs.existsSync(src)) { res.push({ name: n, result: 'no longer in the library; kept as is' }); continue; }
+      const cur = lib.hashDir(dest);
+      const latest = lib.hashDir(src);
+      if (cur === latest) { res.push({ name: n, result: 'up to date' }); continue; }
+      if (cur !== entry.hash && !flags['--force']) { res.push({ name: n, result: 'locally modified AND a newer version exists; not overwritten (review, then --force)' }); continue; }
+      if (flags['--dry-run']) { res.push({ name: n, result: 'update available' }); continue; }
+      fs.rmSync(dest, { recursive: true, force: true }); copyDir(src, dest);
+      lock.skills[n] = { ...entry, hash: latest, installedAt: new Date().toISOString().slice(0, 10) };
+      res.push({ name: n, result: 'updated' });
+    }
+    if (!flags['--dry-run']) writeLock(lock);
+    return out({ results: res }, () => res.map((r) => `${r.name}: ${r.result}`).join('\n') || 'No skills are managed by sf-sdlc yet.');
+  }
+  fail(`unknown skills subcommand "${sub}"`);
+}
+
+// ------------------------------------------------------------------ analyze / check
+
+function analyzeCmd() {
+  let targets = pos.slice(1);
+  if (flags['--staged']) targets = (ops.stagedFiles(root, false) || []).filter(ops.isSalesforceSource);
+  else if (flags['--changed'] !== undefined) {
+    const ch = ops.changedFiles(root, typeof flags['--changed'] === 'string' ? flags['--changed'] : undefined);
+    targets = ch ? ch.rows.filter((r) => r.status !== 'D').map((r) => r.file).filter(ops.isSalesforceSource) : [];
+  } else if (!targets.length) targets = lib.packageDirs(root, cfg);
+  targets = targets.filter((t) => fs.existsSync(path.join(root, t)));
+  if (!targets.length) return out({ ran: false, passed: true, reason: 'no Salesforce source files in scope' }, 'Nothing to scan: no Salesforce source files in scope.');
+  const outputFiles = flags['--report'] ? String(flags['--report']).split(',') : [];
+  const res = ops.analyze(root, cfg, targets, { severity: flags['--severity'], ruleSelector: flags['--rule-selector'], outputFiles });
+  if (!res.ran) fail(`${res.reason}${res.detail ? '\n' + res.detail : ''}`, 2);
+  out({ ...res, targets: targets.length }, () => `Salesforce Code Analyzer — ${targets.length} target(s), rules "${res.ruleSelector}", blocking severity ≤ ${res.threshold}\n` +
+    `violations: ${res.counts.total} (sev1 ${res.counts.sev1}, sev2 ${res.counts.sev2}, sev3 ${res.counts.sev3}, sev4 ${res.counts.sev4}, sev5 ${res.counts.sev5})\n` +
+    (res.violations.length ? ops.formatViolations(res.violations, flags['--all'] ? 1000 : 50) + '\n' : '') +
+    (res.passed ? 'PASS' : `FAIL — ${res.blocking.length} violation(s) at severity ${res.threshold} or worse`));
+  process.exit(res.passed ? 0 : 1);
+}
+
+function checkCmd() {
+  let files = pos.slice(1);
+  if (!files.length) { const ch = ops.changedFiles(root); files = ch ? ch.rows.filter((r) => r.status !== 'D').map((r) => r.file) : []; }
+  const all = [];
+  for (const f of files) {
+    let src;
+    try { src = fs.readFileSync(path.join(root, f), 'utf8'); } catch { continue; }
+    for (const x of checks.checkFile(f, src, { apiVersion: lib.apiVersion(root, cfg) })) all.push({ file: f, ...x });
+    for (const s of checks.findSecrets(src)) all.push({ file: f, rule: 'secret-' + s, severity: 'blocker', line: 1, message: 'Credential in source.' });
+  }
+  const blocking = all.filter((x) => x.severity === 'blocker');
+  out({ files: files.length, findings: all, passed: blocking.length === 0 }, () => (all.map((x) => `${x.severity.toUpperCase().padEnd(7)} ${x.file}:${x.line} [${x.rule}] ${x.message}`).join('\n') || 'No findings.') + `\n${files.length} file(s) checked.`);
+  process.exit(blocking.length ? 1 : 0);
+}
+
+// ------------------------------------------------------------------ deploy / test
+
+function requireOrg() {
+  const target = lib.resolveOrg(flags['--org'], cfg) || lib.defaultOrg(root);
+  if (!target) fail('no target org: pass --org <role or alias>, or set a default org');
+  return { target, org: lib.classifyOrg(target, cfg, root), role: Object.keys(cfg.orgs).find((r) => cfg.orgs[r] === target) || (cfg.orgs.production.includes(target) ? 'production' : undefined) };
+}
+const jobsFile = () => path.join(lib.stateDir(root), 'jobs.json');
+const readJobs = () => lib.readJson(jobsFile()) || [];
+function saveJob(job) { const jobs = readJobs().filter((j) => j.id !== job.id); jobs.push(job); fs.writeFileSync(jobsFile(), JSON.stringify(jobs.slice(-50), null, 2)); }
+
+function sourceArgs() {
+  if (flags['--manifest']) return ['--manifest', flags['--manifest']];
+  if (flags['--source-dir']) return String(flags['--source-dir']).split(',').flatMap((d) => ['--source-dir', d]);
+  if (flags['--delta'] || (cfg.deploy.useDelta && flags['--from'])) {
+    const d = ops.delta(root, cfg, flags['--from']);
+    if (d.error) fail(d.error);
+    const dir = path.join(lib.stateDir(root), 'delta');
+    fs.mkdirSync(dir, { recursive: true });
+    const api = lib.apiVersion(root, cfg);
+    fs.writeFileSync(path.join(dir, 'package.xml'), ops.packageXml([...d.new, ...d.changed], api));
+    const args = ['--manifest', path.relative(root, path.join(dir, 'package.xml'))];
+    if (d.removed.length) {
+      if (!flags['--with-destructive']) fail(`the delta removes ${d.removed.length} component(s): ${d.removed.map((c) => c.type + ':' + c.apiName).join(', ')}. Deleting metadata can delete data. Re-run with --with-destructive after a person has approved the list.`);
+      fs.writeFileSync(path.join(dir, 'destructiveChanges.xml'), ops.packageXml(d.removed, api));
+      args.push('--post-destructive-changes', path.relative(root, path.join(dir, 'destructiveChanges.xml')));
+    }
+    if (!d.new.length && !d.changed.length && !d.removed.length) fail(`no metadata changes against ${d.base}`);
+    return args;
+  }
+  return lib.packageDirs(root, cfg).flatMap((d) => ['--source-dir', d]);
+}
+
+function execSf(args, summary) {
+  if (flags['--print']) return out({ command: 'sf ' + args.join(' ') }, 'sf ' + args.join(' '));
+  const r = lib.sfJson(args, { cwd: root, timeout: (Number(flags['--wait']) || cfg.deploy.waitMinutes) * 60000 + 120000 });
+  if (!r.json) fail(`sf produced no JSON (exit ${r.status}).\n${(r.stderr || r.stdout).split('\n').slice(-20).join('\n')}`, 2);
+  return summary(r.json);
+}
+
+function deploySummary(j, target, kind, action) {
+  const res = j.result || {};
+  const failures = ((res.details && res.details.componentFailures) || []);
+  const list = (Array.isArray(failures) ? failures : [failures]).map((f) => ({ type: f.componentType, name: f.fullName, problem: f.problem, line: f.lineNumber }));
+  const tests = (res.details && res.details.runTestResult) || {};
+  const data = {
+    ok: j.status === 0 && !['Failed', 'Canceled'].includes(res.status), action, targetOrg: target, orgKind: kind,
+    jobId: res.id, status: res.status || (j.status === 0 ? 'Submitted' : 'Failed'),
+    components: { total: res.numberComponentsTotal, deployed: res.numberComponentsDeployed, errors: res.numberComponentErrors },
+    tests: { total: res.numberTestsTotal, completed: res.numberTestsCompleted, errors: res.numberTestErrors, failures: [].concat(tests.failures || []).map((f) => ({ name: f.name, method: f.methodName, message: f.message })) },
+    componentFailures: list, error: j.status !== 0 ? j.message : undefined,
+  };
+  if (data.jobId) saveJob({ id: data.jobId, type: action, org: target, status: data.status, at: new Date().toISOString() });
+  lib.appendJsonl(path.join(lib.stateDir(root), 'deployments.jsonl'), { at: new Date().toISOString(), ...data });
+  out(data, () => `${action} → ${target} (${kind}): ${data.status}${data.jobId ? `  job ${data.jobId}` : ''}\n` +
+    (list.length ? list.map((f) => `  ✘ ${f.type} ${f.name}${f.line ? ':' + f.line : ''} — ${f.problem}`).join('\n') + '\n' : '') +
+    (data.tests.failures.length ? data.tests.failures.map((f) => `  ✘ test ${f.name}.${f.method} — ${f.message}`).join('\n') + '\n' : '') +
+    (data.error ? `  ${data.error}\n` : '') +
+    (action === 'validate' && data.ok ? `Next: sf-sdlc deploy report --job-id ${data.jobId}   then, when Succeeded and approved: sf-sdlc deploy quick --org ${flags['--org'] || target}` : ''));
+  process.exit(data.ok ? 0 : 1);
+}
+
+function deployCmd() {
+  const sub = pos[1];
+  if (sub === 'report') {
+    const id = flags['--job-id'] || (readJobs().filter((j) => j.type !== 'test').slice(-1)[0] || {}).id;
+    if (!id) fail('no job id: pass --job-id');
+    const job = readJobs().find((j) => j.id === id) || {};
+    const args = ['project', 'deploy', 'report', '--job-id', id];
+    if (job.org) args.push('--target-org', job.org);
+    if (flags['--wait']) args.push('--wait', String(flags['--wait']));
+    return execSf(args, (j) => deploySummary(j, job.org || '(org of the job)', job.org ? lib.classifyOrg(job.org, cfg, root).kind : 'unknown', job.type || 'deploy'));
+  }
+  const { target, org, role } = requireOrg();
+  if (org.kind === 'production' && !flags['--confirmed-production']) {
+    fail(`"${target}" is a production org. Run this only after the person has named the org and confirmed, then add --confirmed-production. The guard hook will ask them again.`);
+  }
+  if (sub === 'validate') {
+    let level = flags['--level'] || cfg.deploy.testLevel[role] || 'RunLocalTests';
+    if (level === 'NoTestRun') level = 'RunLocalTests'; // a validation that runs no tests cannot be quick-deployed
+    const args = ['project', 'deploy', 'validate', '--target-org', target, '--test-level', level, ...sourceArgs()];
+    if (level === 'RunSpecifiedTests') for (const t of String(flags['--tests'] || '').split(',').filter(Boolean)) args.push('--tests', t);
+    if (flags['--wait']) args.push('--wait', String(flags['--wait'])); else args.push('--async');
+    return execSf(args, (j) => deploySummary(j, target, org.kind, 'validate'));
+  }
+  if (sub === 'quick') {
+    const id = flags['--job-id'] || (readJobs().filter((j) => j.type === 'validate' && j.org === target).slice(-1)[0] || {}).id;
+    if (!id) fail(`no validated job recorded for "${target}". Run \`sf-sdlc deploy validate --org ${flags['--org'] || target}\` first, or pass --job-id.`);
+    return execSf(['project', 'deploy', 'quick', '--job-id', id, '--target-org', target, '--wait', String(flags['--wait'] || 30)], (j) => deploySummary(j, target, org.kind, 'quick'));
+  }
+  if (sub === 'preview') {
+    return execSf(['project', 'deploy', 'start', '--dry-run', '--target-org', target, '--test-level', flags['--level'] || 'NoTestRun', ...sourceArgs(), '--wait', String(flags['--wait'] || 30)], (j) => deploySummary(j, target, org.kind, 'preview'));
+  }
+  fail('usage: sf-sdlc deploy validate|quick|report|preview --org <role or alias> [--delta --from <ref>] [--manifest <file>] [--level <test level>] [--print]');
+}
+
+function testSummary(j, target) {
+  const res = j.result || {};
+  const s = res.summary || {};
+  const pct = (v) => (v === undefined || v === null ? null : parseFloat(String(v)));
+  const failures = (res.tests || []).filter((t) => /fail|compile/i.test(t.Outcome || '')).map((t) => ({ test: t.FullName || `${(t.ApexClass || {}).Name}.${t.MethodName}`, message: t.Message, stack: t.StackTrace }));
+  const classes = ((res.coverage && res.coverage.coverage) || []).map((c) => ({ name: c.name, percent: c.coveredPercent, uncoveredLines: c.totalLines - c.totalCovered }));
+  const target_ = cfg.quality.coverageTarget;
+  const below = classes.filter((c) => typeof c.percent === 'number' && c.percent < target_).sort((a, b) => a.percent - b.percent);
+  const orgWide = pct(s.orgWideCoverage);
+  const data = {
+    ok: j.status === 0 && failures.length === 0 && /pass/i.test(s.outcome || '') && below.length === 0,
+    targetOrg: target, runId: s.testRunId, outcome: s.outcome || (j.status === 0 ? 'Unknown' : 'Failed'),
+    ran: s.testsRan, passing: s.passing, failing: s.failing, skipped: s.skipped,
+    coverage: { run: pct(s.testRunCoverage), orgWide, target: target_, orgMinimum: cfg.quality.orgCoverageMinimum, orgWideOk: orgWide === null ? null : orgWide >= cfg.quality.orgCoverageMinimum, classesBelowTarget: below },
+    failures, error: j.status !== 0 && !s.outcome ? j.message : undefined,
+  };
+  const dir = path.join(lib.stateDir(root), 'test-runs');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+  fs.writeFileSync(file, JSON.stringify({ summary: data, raw: j }, null, 2));
+  data.savedTo = path.relative(root, file);
+  if (data.runId && !s.outcome) saveJob({ id: data.runId, type: 'test', org: target, status: 'Queued', at: new Date().toISOString() });
+  out(data, () => `Apex tests on ${target}: ${data.outcome} — ran ${data.ran ?? '?'}, passed ${data.passing ?? '?'}, failed ${data.failing ?? '?'}\n` +
+    `coverage: run ${data.coverage.run ?? '?'}%, org-wide ${orgWide ?? '?'}% (class target ${target_}%, org minimum ${cfg.quality.orgCoverageMinimum}%)\n` +
+    (failures.length ? failures.map((f) => `  ✘ ${f.test} — ${f.message}`).join('\n') + '\n' : '') +
+    (below.length ? `classes below ${target_}%:\n` + below.map((c) => `  ${String(c.percent).padStart(3)}%  ${c.name}`).join('\n') + '\n' : '') +
+    (data.error ? data.error + '\n' : '') + `raw result: ${data.savedTo}\n${data.ok ? 'PASS' : 'FAIL'}`);
+  process.exit(data.ok ? 0 : 1);
+}
+
+function testCmd() {
+  const sub = pos[1];
+  if (sub === 'report') {
+    const id = flags['--run-id'] || (readJobs().filter((j) => j.type === 'test').slice(-1)[0] || {}).id;
+    if (!id) fail('no test run id: pass --run-id');
+    const job = readJobs().find((j) => j.id === id) || {};
+    const target = lib.resolveOrg(flags['--org'], cfg) || job.org || lib.defaultOrg(root);
+    return execSf(['apex', 'get', 'test', '--test-run-id', id, '--code-coverage', '--result-format', 'json', ...(target ? ['--target-org', target] : [])], (j) => testSummary(j, target));
+  }
+  if (sub !== 'run') fail('usage: sf-sdlc test run|report --org <role or alias> [--tests ClassA,ClassB.method] [--level RunLocalTests] [--wait <minutes>]');
+  const { target, org } = requireOrg();
+  if (org.kind === 'production') fail(`"${target}" is a production org. Tests are run in sandboxes and scratch orgs; production tests run as part of a validated deployment.`);
+  const args = ['apex', 'run', 'test', '--target-org', target, '--code-coverage', '--result-format', 'json', '--wait', String(flags['--wait'] || 10)];
+  const tests = String(flags['--tests'] || '').split(',').filter(Boolean);
+  if (tests.length) for (const t of tests) args.push('--tests', t);
+  else args.push('--test-level', flags['--level'] || 'RunLocalTests');
+  return execSf(args, (j) => testSummary(j, target));
+}
+
+// ------------------------------------------------------------------ small commands
+
+function watchJobs() {
+  // Monitor process: prints one line whenever a tracked deploy or test job changes state.
+  const seen = new Map();
+  const tick = () => {
+    for (const job of readJobs()) {
+      if (flags['--type'] && (job.type === 'test') !== (flags['--type'] === 'test')) continue;
+      if (['Succeeded', 'Failed', 'Canceled', 'Passed', 'Completed'].includes(seen.get(job.id) || job.status)) { seen.set(job.id, seen.get(job.id) || job.status); continue; }
+      const args = job.type === 'test' ? ['apex', 'get', 'test', '--test-run-id', job.id, '--result-format', 'json'] : ['project', 'deploy', 'report', '--job-id', job.id];
+      if (job.org) args.push('--target-org', job.org);
+      const r = lib.sfJson(args, { cwd: root, timeout: 120000 });
+      const res = (r.json && r.json.result) || {};
+      const status = job.type === 'test' ? ((res.summary && res.summary.outcome) || 'Running') : (res.status || 'Unknown');
+      if (status !== seen.get(job.id)) {
+        seen.set(job.id, status);
+        if (status !== job.status) { saveJob({ ...job, status }); process.stdout.write(`sf-sdlc: ${job.type} job ${job.id} on ${job.org || 'default org'} is now ${status}${res.numberComponentErrors ? ` (${res.numberComponentErrors} component error(s))` : ''}${res.numberTestErrors ? ` (${res.numberTestErrors} test error(s))` : ''}. Details: sf-sdlc ${job.type === 'test' ? 'test report --run-id' : 'deploy report --job-id'} ${job.id}\n`); }
+      }
+    }
+  };
+  tick();
+  setInterval(tick, 30000);
+}
+
+function diagram() {
+  const file = pos[2];
+  if (pos[1] !== 'render' || !file) fail('usage: sf-sdlc diagram render <file.mmd | file.md> [--output <file.svg>]');
+  if (!lib.has('mmdc')) fail('mermaid-cli (mmdc) is not installed. Install with: npm install --global @mermaid-js/mermaid-cli. Mermaid blocks still render natively on GitHub.', 2);
+  const output = flags['--output'] || file.replace(/\.(mmd|md)$/, '') + '.svg';
+  const r = lib.run('mmdc', ['-i', file, '-o', output, '-b', 'transparent'], { cwd: root, timeout: 180000 });
+  if (r.status !== 0) fail(`mmdc failed:\n${(r.stderr || r.stdout).split('\n').slice(-10).join('\n')}`);
+  out({ ok: true, output }, `rendered ${output}`);
+}
+
+function audit() {
+  const file = path.join(lib.stateDir(root), 'audit.jsonl');
+  const rows = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean) : [];
+  const tail = rows.slice(-(Number(flags['--tail']) || 50));
+  out({ file: path.relative(root, file), total: rows.length, entries: tail }, () => tail.map((r) => `${r.at}  ${String(r.outcome).padEnd(6)} ${String(r.orgKind).padEnd(10)} ${String(r.targetOrg).padEnd(20)} ${r.user}  ${r.command}`).join('\n') || 'No org-affecting commands recorded yet.');
+}
+
+const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
+
+  doctor                       check tools, plugins, config and org setup
+  init                         create .claude/sf-sdlc.json, .gitignore entries, code-analyzer.yml
+  config show|validate         show the merged configuration, or validate it
+  detect                       what this project contains (metadata folders, counts, tooling)
+  inventory                    existing-state inventory of the source tree, by metadata type
+  delta [--from <git-ref>]     components new / changed / removed against a git ref (--manifest writes package.xml)
+  skills recommend [--profile developer|admin|ba]
+  skills install|remove <name...>, skills list [--all], skills sync [--dry-run]
+  org classify [alias]         production | sandbox | scratch | developer | unknown
+  analyze [--staged | --changed [ref] | <paths>] [--severity 1-5] [--report out.html,out.sarif]
+                               official Salesforce Code Analyzer (sf code-analyzer run)
+  check [files...]             fast offline source checks (default: files changed on this branch)
+  deploy validate|quick|report|preview --org <role|alias> [--delta --from <ref>] [--manifest f] [--print]
+  test run|report --org <role|alias> [--tests A,B.method] [--level RunLocalTests]
+  diagram render <file>        Mermaid to SVG (needs mermaid-cli)
+  audit [--tail N]             local log of org-affecting commands
+`;
+
+function main() {
+  switch (pos[0]) {
+    case 'doctor': return doctor();
+    case 'init': return init();
+    case 'config': {
+      const v = lib.validateConfig(cfg);
+      if (pos[1] === 'validate') { out(v, () => [...v.errors.map((e) => '✘ ' + e), ...v.warnings.map((w) => '• ' + w), v.ok ? 'Configuration is valid.' : 'Configuration has errors.'].join('\n')); process.exit(v.ok ? 0 : 1); }
+      const { _exists, _invalid, ...shown } = cfg;
+      return out({ ...shown, _source: _exists ? '.claude/sf-sdlc.json' : 'defaults' });
+    }
+    case 'detect': return out(detect());
+    case 'inventory': {
+      const inv = ops.inventory(root, cfg);
+      return out(inv, () => `Package directories: ${inv.packageDirectories.join(', ') || '(none)'}   API ${inv.apiVersion || '?'}\n${inv.total} components\n` + Object.entries(inv.counts).map(([t, n]) => `  ${String(n).padStart(5)}  ${t}`).join('\n'));
+    }
+    case 'delta': {
+      const d = ops.delta(root, cfg, flags['--from']);
+      if (d.error) fail(d.error);
+      if (flags['--manifest']) {
+        const dir = typeof flags['--manifest'] === 'string' ? flags['--manifest'] : path.join('.sf-sdlc', 'delta');
+        fs.mkdirSync(path.join(root, dir), { recursive: true });
+        fs.writeFileSync(path.join(root, dir, 'package.xml'), ops.packageXml([...d.new, ...d.changed], lib.apiVersion(root, cfg)));
+        if (d.removed.length) fs.writeFileSync(path.join(root, dir, 'destructiveChanges.xml'), ops.packageXml(d.removed, lib.apiVersion(root, cfg)));
+        d.manifestDir = dir;
+      }
+      return out(d, () => `Against ${d.base}:\n` + ['new', 'changed', 'removed'].map((k) => `${k.toUpperCase()} (${d[k].length})\n` + d[k].map((c) => `  ${c.type}: ${c.apiName}`).join('\n')).join('\n') + (d.manifestDir ? `\nmanifests written to ${d.manifestDir}/` : ''));
+    }
+    case 'skills': return skillsCmd();
+    case 'org': {
+      if (pos[1] !== 'classify') fail('usage: sf-sdlc org classify [alias]');
+      const target = lib.resolveOrg(pos[2], cfg) || lib.defaultOrg(root);
+      const c = lib.classifyOrg(target, cfg, root);
+      return out(c, `${c.target || '(none)'}: ${c.kind} — ${c.reason}`);
+    }
+    case 'analyze': return analyzeCmd();
+    case 'check': return checkCmd();
+    case 'deploy': return deployCmd();
+    case 'test': return testCmd();
+    case 'jobs': return pos[1] === 'watch' ? watchJobs() : out(readJobs());
+    case 'diagram': return diagram();
+    case 'audit': return audit();
+    default: process.stdout.write(HELP); process.exit(pos[0] && pos[0] !== 'help' ? 1 : 0);
+  }
+}
+
+main();

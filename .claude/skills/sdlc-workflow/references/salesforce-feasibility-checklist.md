@@ -22,7 +22,7 @@ open question or assumption so a human picks.
 | F13 | "Unique / no duplicates" on business fields | Only text-type fields can be marked unique; cross-object or fuzzy duplicates need Duplicate/Matching Rules. | Unique external ID field; Matching + Duplicate Rules (alert or block). |
 | F14 | "Approval when discount > X" | Approval processes lock the record during approval; Flow Approval Orchestration is the newer option. | Approval Process; Flow Orchestration; flag + manager review queue. |
 | F15 | "Forecast by team/region" | Collaborative Forecasts roll up by the role hierarchy (or territory if Enterprise Territory Management). Region needs to exist in that hierarchy. | Align role hierarchy; ETM; custom reports on a Region field. |
-| F16 | "Mobile users use it offline" | LWC on the Salesforce mobile app needs offline-ready design (Briefcase, priming, supported wire adapters). | Confirm offline need explicitly; use `mobile-platform-offline-validate`. |
+| F16 | "Mobile users use it offline" | LWC on the Salesforce mobile app needs offline-ready design (Briefcase, priming, supported wire adapters). | Confirm offline need explicitly; use the installed mobile offline skill if present (otherwise `/sdlc-skills`). |
 | F17 | "Store documents/images on the record" | File storage limits per org; attachments are legacy. | Salesforce Files (ContentVersion); external storage via Files Connect. |
 | F18 | "Delete after N days" / "keep for 7 years" | Recycle bin, data retention and archiving need an explicit design. | Scheduled batch purge; Salesforce Archive; Big Objects for history. |
 

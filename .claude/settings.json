@@ -1,0 +1,75 @@
+{
+  "env": {
+    "SF_AUTOUPDATE_DISABLE": "true",
+    "SF_DISABLE_TELEMETRY": "true"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(node .claude/bin/sf-sdlc doctor*)",
+      "Bash(node .claude/bin/sf-sdlc config*)",
+      "Bash(node .claude/bin/sf-sdlc detect*)",
+      "Bash(node .claude/bin/sf-sdlc inventory*)",
+      "Bash(node .claude/bin/sf-sdlc delta*)",
+      "Bash(node .claude/bin/sf-sdlc skills list*)",
+      "Bash(node .claude/bin/sf-sdlc skills recommend*)",
+      "Bash(node .claude/bin/sf-sdlc org classify*)",
+      "Bash(node .claude/bin/sf-sdlc analyze*)",
+      "Bash(node .claude/bin/sf-sdlc check*)",
+      "Bash(node .claude/bin/sf-sdlc audit*)",
+      "Bash(sf org list*)",
+      "Bash(sf config get*)",
+      "Bash(sf code-analyzer *)",
+      "Bash(sf project deploy report*)",
+      "Bash(sf project deploy preview*)",
+      "Bash(sf project retrieve preview*)",
+      "Bash(sf sobject describe*)",
+      "Bash(sf sobject list*)",
+      "Bash(sf org list metadata*)",
+      "Bash(sf apex get test*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
+    "ask": [
+      "Bash(sf project deploy start*)",
+      "Bash(sf project deploy quick*)",
+      "Bash(sf project delete*)",
+      "Bash(sf org delete*)",
+      "Bash(sf data delete*)",
+      "Bash(sf data import*)",
+      "Bash(sf data upsert*)",
+      "Bash(sf data update*)",
+      "Bash(sf package install*)",
+      "Bash(sf package uninstall*)",
+      "Bash(git push*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh release create*)"
+    ],
+    "deny": [
+      "Read(./.sf/**)",
+      "Read(./.sfdx/**)",
+      "Read(./**/server.key)",
+      "Bash(sf org display*--verbose*)",
+      "Bash(sf org auth*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" session-start", "timeout": 60 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-bash", "timeout": 900, "statusMessage": "sf-sdlc guard" } ] },
+      { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-write", "timeout": 30 } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" post-write", "timeout": 30 } ] },
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" post-bash", "timeout": 60 } ] }
+    ],
+    "PostToolUseFailure": [
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" bash-failure", "timeout": 60 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" stop", "timeout": 30 } ] }
+    ]
+  }
+}

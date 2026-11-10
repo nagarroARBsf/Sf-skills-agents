@@ -1,0 +1,20 @@
+{
+  "name": "nagarro-sf",
+  "owner": {
+    "name": "Nagarro Salesforce CoE"
+  },
+  "metadata": {
+    "description": "Nagarro Claude Code plugins for Salesforce delivery."
+  },
+  "renames": {
+    "nagarro-sf-sdlc": "sf-sdlc"
+  },
+  "plugins": [
+    {
+      "name": "sf-sdlc",
+      "source": "./plugins/sf-sdlc",
+      "description": "Salesforce delivery lifecycle: requirements to release, with agents, guard hooks, the official Code Analyzer, validated deployments and a per-project skill installer.",
+      "category": "development"
+    }
+  ]
+}

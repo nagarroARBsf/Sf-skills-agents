@@ -1,8 +1,36 @@
 # Example: one fully written BR
 
-Fictional client. Shows the expected depth for a single §8 subsection, plus the matching
-entries elsewhere in the BRD. Sources: `SRC-01` workshop notes (BA), `SRC-02` transcript of the
-sales leadership call, `SRC-03` email from the VP Sales.
+Fictional client. Shows a raw transcript passage, how it is read, the expected depth for a single
+§8 subsection, and the matching entries elsewhere in the BRD. Sources: `SRC-01` workshop notes
+(BA), `SRC-02` raw transcript of the sales leadership call, `SRC-03` email from the VP Sales.
+
+## From raw transcript to evidence
+
+Passage from `SRC-02` as supplied (speaker labels from the meeting tool):
+
+```text
+00:10:20 Speaker 2: um so a deal that hasn't moved in, what, sixty days? that's, that's dead to me
+00:10:31 Speaker 4: [crosstalk] ...or put a donut chart on the account, that'd be cool
+00:10:45 Speaker 2: and honestly deals with no value are just noise
+00:11:02 Speaker 1: I need to be able to filter on this in the pipeline dashboard. Non-negotiable.
+00:14:10 Speaker 2: like the Brightwater deal, Dana Reyes there told me on her mobile, it's 07700...
+00:31:05 Speaker 1: Coming back to stagnant deals. Sixty is too long. Thirty days. Let's go with thirty.
+00:31:12 Speaker 2: Yeah, fine, thirty.
+00:44:00 Speaker 1: Sam, can you get me the open pipeline count by Friday?
+```
+
+How it is read:
+
+| Locator | Speaker (from the speaker map) | Class | Outcome |
+|---|---|---|---|
+| ~10:20 | Head of Sales | Business rule (first position) | Superseded at ~31:05; contradiction logged as Q-06 |
+| ~10:31 | Speaker 4, unknown | Cross-talk, solution idea, no close | Not extracted |
+| ~10:45 | Head of Sales | Rule, implied | RULE-04.5 `[Inferred]` |
+| ~11:02 | VP Sales (decision owner) | Requirement | FR-04.6 |
+| ~14:10 | Head of Sales | Customer name, contact name, phone number | Not copied; Appendix B flag "customer and contact names, phone number ~14:10" |
+| ~31:05 | VP Sales | Decision (explicit close) | DEC-03; RULE-04.4 uses 30 days |
+| ~31:12 | Head of Sales | Agreement with the decision | Supports DEC-03 |
+| ~44:00 | VP Sales | Action item | ACT-02, owner Sales Operations lead, due Friday; unblocks Q-02 |
 
 ---
 
@@ -37,7 +65,7 @@ not the coaching explanations (SRC-01 §3, SRC-03).
 | RULE-04.1 | Close date earlier than today on an open opportunity: deduct 20. | SRC-01 §3 |
 | RULE-04.2 | Stage is Proposal and no decision maker identified: deduct 20. | SRC-01 §3 |
 | RULE-04.3 | Discount above 20%: deduct 10. | SRC-01 §3 |
-| RULE-04.4 | No stage change for more than [TBD] days: deduct 15. | SRC-02 ~10:20, Q-06 |
+| RULE-04.4 | No stage change for more than 30 days: deduct 15. | SRC-02 ~31:05 (DEC-03), Q-06 |
 | RULE-04.5 | Amount missing or zero: deduct 15. [Inferred from "deals with no value are noise", SRC-02 ~10:45] | SRC-02 |
 | RULE-04.6 | Score bands: 80-100 Healthy (green), 50-79 At risk (amber), 0-49 Critical (red). | SRC-02 ~09:55 |
 
@@ -81,7 +109,7 @@ if data quality improves), Q-05, Q-06.
 | ID | Question | Why it matters | Raised from | Ask | Status |
 |---|---|---|---|---|---|
 | Q-05 | How quickly must the score reflect changes? Note: an overdue close date happens with time, without anyone editing the record, so a stored score needs a daily recalculation. Is "updated by next morning" acceptable for the overdue factor? | FR-04.7, RULE-04.1, feasibility F2 | SRC-02 ~11:30 | VP Sales | Open |
-| Q-06 | After how many days without a stage change is a deal "stagnant"? Values of 30 and 60 days were both mentioned. | RULE-04.4 | SRC-02 ~10:20 | Head of Sales | Open |
+| Q-06 | Stagnation threshold: the Head of Sales said 60 days (SRC-02 ~10:20); the VP Sales later decided 30 days (SRC-02 ~31:05). The BRD uses 30 days (later statement, decision owner). Please confirm. | RULE-04.4, DEC-03 | SRC-02 ~10:20, ~31:05 | VP Sales | Open — resolved by rule, awaiting confirmation |
 
 Appendix C
 
@@ -91,3 +119,30 @@ Appendix C
 | FR-04.2, FR-04.7 | Stored number field + scheduled recalculation, or formula | Declarative / Custom code | F2: time-based deduction goes stale if only recalculated on edit |
 | FR-04.5 | Custom Permission for managers | Configuration | F5: do not hard-code profile names |
 | FR-04.6 | Standard reports on the stored field | Standard | Formula with TODAY() cannot be used in roll-ups (F2) |
+
+Appendix D (rows that BR-04 contributes)
+
+| Subsection | Row | Basis | Source |
+|---|---|---|---|
+| D.1 Data model | Deal: standard Opportunity; health score held per deal; open pipeline volume [TBD] | [Inferred] — deals progress through stages | BR-04; Q-02 |
+| D.2 Automation | Score recalculation: on change and daily. Signal: Code (combined rules, time-based factor, full open pipeline) | [Inferred] | FR-04.2, FR-04.7, RULE-04.1 |
+| D.3 User interface | Sales Manager, deal page: score, band and risk factors without scrolling; desktop and mobile app. Candidate: custom component (LWC) | [Stated] | SRC-01 §3 |
+| D.5 Security and access | Managers see explanations, representatives do not: feature access per persona through a permission set, not by profile name | [Stated] need; [Inferred] mechanism | SRC-03; FR-04.5 |
+| D.7 Reporting | "At-risk deals by owner" on the manager dashboard; standard reports on a stored score | [Stated] | SRC-02 ~11:02 |
+| D.8 Limits to watch | Daily recalculation over the open pipeline: asynchronous processing volume | [TBD] | Q-02 |
+
+Appendix E
+
+| ID | Decision | Decided by (role) | Date | Settles | Source |
+|---|---|---|---|---|---|
+| DEC-03 | A deal is stagnant after 30 days without a stage change. | VP Sales | {meeting date} | RULE-04.4 | SRC-02 ~31:05 |
+
+| ID | Action | Owner | Due | Blocks | Source | Status |
+|---|---|---|---|---|---|---|
+| ACT-02 | Provide the count of open deals in the current pipeline. | Sales Operations lead | Friday after the meeting | Q-02 | SRC-02 ~44:00 | Open |
+
+Appendix B
+
+| ID | Document | Type | Raw / edited | Date | Author / participants | Sensitive content (kind and locator only) |
+|---|---|---|---|---|---|---|
+| SRC-02 | Sales leadership call transcript | Meeting transcript | Raw | {date} | VP Sales, Head of Sales, Sales Operations lead, one unidentified speaker | Customer name, contact name and phone number ~14:10 |

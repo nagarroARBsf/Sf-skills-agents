@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "stdio",
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-github", "mcp-github"]
+    },
+    "jira": {
+      "type": "stdio",
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-jira", "mcp-atlassian"]
+    },
+    "tavily": {
+      "type": "stdio",
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-tavily", "python", "-m", "mcp_server_tavily"]
+    }
+  }
+}

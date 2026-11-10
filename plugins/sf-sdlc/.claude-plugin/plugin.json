@@ -1,0 +1,26 @@
+{
+  "name": "sf-sdlc",
+  "displayName": "Salesforce SDLC",
+  "version": "2.0.0",
+  "description": "Salesforce delivery lifecycle for Claude Code: BRD, Jira stories, architecture with change-status diagrams, spec-driven plan and build, code review with the official Salesforce Code Analyzer, validated deployment, test execution, re-test and release — with production guard hooks, an audit log, and a per-project skill installer.",
+  "author": {
+    "name": "Nagarro Salesforce CoE"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["salesforce", "sdlc", "apex", "lwc", "flow", "jira", "spec-driven-development", "devops", "code-review"],
+  "userConfig": {
+    "hook_mode": {
+      "type": "string",
+      "title": "Hook mode",
+      "description": "How strict the advisory hooks are for you. 'project' follows hooks.mode in the project's .claude/sf-sdlc.json. The production-org guard and the secret guard always enforce.",
+      "options": ["project", "observe", "enforce", "off"],
+      "default": "project"
+    },
+    "audit_log": {
+      "type": "boolean",
+      "title": "Audit log",
+      "description": "Record org-affecting sf commands (deploys, deletions, data changes, test runs) in the project's .sf-sdlc/audit.jsonl. Local file only; nothing is sent anywhere.",
+      "default": true
+    }
+  }
+}

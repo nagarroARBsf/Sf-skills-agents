@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sf-sdlc Plugin Docs</title>
+<meta name="description" content="How the Salesforce SDLC plugin for Claude Code is put together: every folder in the plugin, what it is for, what you configure, and how to use it.">
+<style>
+:root {
+  --bg: #faf9f5;
+  --surface: #ffffff;
+  --surface-2: #f3f1ea;
+  --border: #e6e3d9;
+  --text: #1d1c19;
+  --muted: #625f57;
+  --accent: #0b74c4;
+  --accent-soft: #e5f1fb;
+  --accent-text: #0a5f9f;
+  --code-bg: #f5f3ee;
+  --code-text: #2b2a27;
+  --ok: #2e844a;
+  --warn: #a15c00;
+  --gen: #6b4fbb;
+  --gen-soft: #efeafc;
+  --hand: #2e844a;
+  --hand-soft: #e7f5ea;
+  --proj: #a15c00;
+  --proj-soft: #fbf0df;
+  --shadow: 0 1px 2px rgba(20, 20, 19, .04), 0 4px 16px rgba(20, 20, 19, .04);
+  --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a18; --surface: #222220; --surface-2: #2a2a27; --border: #3a3935;
+    --text: #efede6; --muted: #a9a69c; --accent: #4bb7f5; --accent-soft: #15324a; --accent-text: #8fd0fa;
+    --code-bg: #262623; --code-text: #e6e3da; --gen: #b6a3f2; --gen-soft: #2d2640;
+    --hand: #6fd38a; --hand-soft: #1d3324; --proj: #f2b35c; --proj-soft: #3a2c17;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1a18; --surface: #222220; --surface-2: #2a2a27; --border: #3a3935;
+  --text: #efede6; --muted: #a9a69c; --accent: #4bb7f5; --accent-soft: #15324a; --accent-text: #8fd0fa;
+  --code-bg: #262623; --code-text: #e6e3da; --gen: #b6a3f2; --gen-soft: #2d2640;
+  --hand: #6fd38a; --hand-soft: #1d3324; --proj: #f2b35c; --proj-soft: #3a2c17;
+  --shadow: none; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: var(--mono); font-size: .86em; background: var(--code-bg); color: var(--code-text); padding: .1em .35em; border-radius: 5px; border: 1px solid var(--border); }
+pre { margin: 0; }
+pre code { display: block; padding: 14px 16px; overflow-x: auto; border-radius: 10px; font-size: 13px; line-height: 1.55; white-space: pre; }
+
+/* ---------- top bar ---------- */
+.topbar { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.topbar-inner { max-width: 1440px; margin: 0 auto; display: flex; align-items: center; gap: 24px; padding: 0 24px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 600 22px/1 var(--serif); color: var(--text); white-space: nowrap; }
+.brand:hover { text-decoration: none; }
+.brand-mark { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; color: #fff; font: 700 13px/1 var(--mono); }
+.brand small { font: 500 13px/1 var(--sans); color: var(--muted); margin-left: 2px; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; flex: 1; }
+.tabs a { color: var(--muted); padding: 19px 10px 17px; font-size: 15px; white-space: nowrap; border-bottom: 2px solid transparent; }
+.tabs a:hover { color: var(--text); text-decoration: none; }
+.tabs a.active { color: var(--text); border-bottom-color: var(--text); font-weight: 600; }
+.top-actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 9px; height: 36px; min-width: 36px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font: 500 14px var(--sans); }
+.icon-btn:hover { background: var(--surface-2); text-decoration: none; }
+.menu-btn { display: none; }
+
+/* ---------- layout ---------- */
+.layout { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 40px; padding: 0 24px; }
+.sidebar { position: sticky; top: 60px; align-self: start; height: calc(100vh - 60px); overflow-y: auto; padding: 28px 8px 40px 0; }
+.sidebar h4 { margin: 22px 0 6px; padding: 0 12px; font-size: 15px; font-weight: 600; }
+.sidebar h4:first-child { margin-top: 0; }
+.sidebar a { display: block; padding: 7px 12px; border-radius: 9px; color: var(--muted); font-size: 15px; }
+.sidebar a:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
+.sidebar a.active { color: var(--text); background: var(--surface-2); font-weight: 600; }
+main { padding: 36px 0 120px; min-width: 0; max-width: 1060px; }
+
+section { margin-bottom: 64px; }
+.eyebrow { font-size: 13px; font-weight: 600; color: var(--accent-text); letter-spacing: .02em; margin-bottom: 6px; }
+h1 { font: 600 40px/1.15 var(--serif); margin: 0 0 14px; letter-spacing: -.01em; }
+h2 { font: 600 30px/1.2 var(--serif); margin: 0 0 12px; letter-spacing: -.005em; }
+h3 { font-size: 18px; margin: 28px 0 8px; }
+.lead { font-size: 18px; color: var(--muted); max-width: 760px; margin: 0 0 20px; }
+p { max-width: 780px; }
+.muted { color: var(--muted); }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; margin: 24px 0; }
+.stat { padding: 16px 18px; }
+.stat b { display: block; font: 600 28px/1.1 var(--serif); }
+.stat span { color: var(--muted); font-size: 14px; }
+
+.callout { border: 1px solid var(--border); border-left: 3px solid var(--accent); background: var(--surface); border-radius: 10px; padding: 12px 16px; margin: 16px 0; max-width: 820px; }
+.callout.warn { border-left-color: var(--warn); }
+.callout p { margin: 0; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); margin: 14px 0; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-weight: 600; background: var(--surface-2); font-size: 13.5px; }
+tr:last-child td { border-bottom: 0; }
+
+.steps { counter-reset: step; display: grid; gap: 12px; margin: 18px 0; }
+.step { display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 16px 18px; }
+.step::before { counter-increment: step; content: counter(step); width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.step h3 { margin: 2px 0 6px; font-size: 16px; }
+.step p { margin: 0 0 10px; }
+
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px; margin-bottom: 12px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 8px; cursor: pointer; font: 500 14px var(--sans); }
+.seg button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.tabpanel[hidden] { display: none; }
+
+/* ---------- explorer ---------- */
+.explorer { overflow: hidden; }
+.explorer-head { padding: 22px 26px 18px; border-bottom: 1px solid var(--border); }
+.explorer-head h2 { font-size: 26px; margin-bottom: 6px; }
+.explorer-head p { margin: 0; color: var(--muted); }
+.explorer-body { display: grid; grid-template-columns: minmax(250px, 340px) minmax(0, 1fr); min-height: 620px; }
+.tree-pane { border-right: 1px solid var(--border); padding: 18px 0 18px; background: var(--surface); }
+.pane-label { font-size: 13px; font-weight: 600; color: var(--muted); padding: 0 20px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.tree { list-style: none; margin: 0; padding: 0; font: 14px/1.4 var(--mono); }
+.tree button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 20px; cursor: pointer; color: var(--text); white-space: nowrap; }
+.tree button:hover { background: var(--surface-2); }
+.tree button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tree button.selected { background: var(--accent-soft); }
+.tree button.child-of-selected { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+.tree .ico { width: 16px; height: 16px; flex: none; color: var(--muted); }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.tree .dot { margin-left: auto; }
+.dot.gen { background: var(--gen); } .dot.hand { background: var(--hand); } .dot.proj { background: var(--proj); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 14px 20px 0; font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--border); margin-top: 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.detail-pane { padding: 18px 28px 28px; min-width: 0; background: var(--surface); }
+.detail-pane h3 { font: 600 26px/1.2 var(--serif); margin: 4px 0 4px; }
+.detail-path { font: 13.5px var(--mono); color: #c2410c; margin-bottom: 10px; display: block; word-break: break-all; }
+:root[data-theme="dark"] .detail-path { color: #fb923c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .detail-path { color: #fb923c; } }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; margin: 0 6px 6px 0; }
+.badge.gen { background: var(--gen-soft); color: var(--gen); }
+.badge.hand { background: var(--hand-soft); color: var(--hand); }
+.badge.proj { background: var(--proj-soft); color: var(--proj); }
+.badge.neutral { background: var(--surface-2); color: var(--muted); }
+.detail-pane .desc { font-size: 16.5px; line-height: 1.6; margin: 8px 0 14px; }
+.detail-pane .desc p { margin: 0 0 10px; }
+.kv { display: grid; gap: 10px; margin: 16px 0; }
+.kv > div { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--bg); }
+.kv h5 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.kv p, .kv ul { margin: 0; font-size: 14.5px; }
+.kv ul { padding-left: 18px; }
+.code-wrap { position: relative; margin-top: 12px; }
+.code-label { font-size: 12.5px; color: var(--muted); margin: 0 0 6px; font-family: var(--mono); }
+.copy { position: absolute; top: 30px; right: 8px; font-size: 12px; padding: 4px 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; }
+.copy:hover { color: var(--text); }
+
+/* ---------- flow diagram ---------- */
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 18px 0 8px; }
+.flow .node { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); position: relative; }
+.flow .node b { display: block; font-size: 14.5px; margin-bottom: 4px; }
+.flow .node span { font-size: 13px; color: var(--muted); }
+.flow .node code { font-size: 11.5px; }
+.flow .node:not(:last-child)::after { content: "→"; position: absolute; right: -11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; background: var(--bg); line-height: 1; }
+.guard-band { margin-top: 10px; border: 1px dashed var(--warn); color: var(--text); border-radius: 12px; padding: 10px 14px; font-size: 14px; background: color-mix(in srgb, var(--proj-soft) 60%, transparent); }
+
+.lifecycle { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
+.lifecycle span { padding: 6px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 13.5px; }
+.lifecycle span b { color: var(--accent-text); margin-right: 4px; }
+
+.persona-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.persona { padding: 18px; }
+.persona h3 { margin: 0 0 6px; }
+.persona ul { margin: 6px 0 0; padding-left: 18px; font-size: 14.5px; }
+
+footer { border-top: 1px solid var(--border); padding-top: 22px; color: var(--muted); font-size: 14px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) {
+  .explorer-body { grid-template-columns: 1fr; }
+  .tree-pane { border-right: 0; border-bottom: 1px solid var(--border); max-height: 360px; overflow-y: auto; }
+  .flow { grid-template-columns: 1fr 1fr; }
+  .flow .node::after { display: none; }
+  .persona-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; padding: 0 16px; gap: 0; }
+  .topbar-inner { padding: 0 16px; gap: 12px; }
+  .tabs { display: none; }
+  .menu-btn { display: inline-flex; }
+  .brand small { display: none; }
+  .sidebar { position: fixed; top: 60px; left: 0; width: 290px; max-width: 85vw; background: var(--bg); border-right: 1px solid var(--border); padding: 20px 12px; z-index: 25; transform: translateX(-102%); transition: transform .2s ease; }
+  body.nav-open .sidebar { transform: none; }
+  main { padding-top: 24px; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 25px; }
+  .detail-pane { padding: 16px; }
+  .explorer-head { padding: 18px 16px; }
+  .flow { grid-template-columns: 1fr; }
+  .gh-label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <a class="brand" href="#overview"><span class="brand-mark">sf</span>sf-sdlc <small>plugin docs</small></a>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#overview" data-tab="start">Getting started</a>
+      <a href="#structure" data-tab="plugin">Plugin structure</a>
+      <a href="#configure" data-tab="configure">Configuration</a>
+      <a href="#lifecycle" data-tab="use">Using the plugin</a>
+      <a href="#safety" data-tab="safety">Safety</a>
+      <a href="#maintain" data-tab="ref">Reference</a>
+    </nav>
+    <div class="top-actions">
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle colour theme" title="Toggle theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <a class="icon-btn" href="https://github.com/nagarroARBsf/Sf-skills-agents" aria-label="GitHub repository">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+        <span class="gh-label">GitHub</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Documentation">
+    <h4>Getting started</h4>
+    <a href="#overview">Overview</a>
+    <a href="#install">Install</a>
+    <a href="#quickstart">Quickstart</a>
+
+    <h4>Plugin structure</h4>
+    <a href="#structure">What goes in the plugin</a>
+    <a href="#how-it-fits">How the pieces work together</a>
+    <a href="#two-forms">Plugin vs. copy-in folder</a>
+
+    <h4>Configuration</h4>
+    <a href="#configure">What you need to provide</a>
+    <a href="#config-keys">Project config keys</a>
+    <a href="#user-options">Per-user options</a>
+    <a href="#verify">Verify the install</a>
+
+    <h4>Using the plugin</h4>
+    <a href="#lifecycle">The SDLC lifecycle</a>
+    <a href="#walkthrough">Walk-through</a>
+    <a href="#personas">By role</a>
+    <a href="#skills">Skills on demand</a>
+
+    <h4>Safety &amp; reference</h4>
+    <a href="#safety">Guards and hooks</a>
+    <a href="#limitations">Known limitations</a>
+    <a href="#maintain">Maintaining the kit</a>
+  </aside>
+
+  <main id="main">
+
+    <!-- ===================== OVERVIEW ===================== -->
+    <section id="overview" data-tab="start">
+      <div class="eyebrow">Getting started</div>
+      <h1>Salesforce SDLC plugin for Claude Code</h1>
+      <p class="lead">One plugin that takes a Salesforce project from meeting transcripts to a production release: BRD, Jira stories, architecture, spec-driven build, code review, validated deployment, testing, re-test and release, with guard hooks around every org-changing command.</p>
+      <div class="lifecycle" aria-label="Lifecycle">
+        <span><b>0</b>Setup</span><span><b>1</b>BRD</span><span><b>2</b>Stories</span><span><b>3</b>Architecture</span><span><b>4</b>Spec &amp; plan</span><span><b>5</b>Build</span><span><b>6</b>Review</span><span><b>7</b>Deploy</span><span><b>8</b>Test</span><span><b>9</b>Re-test</span><span><b>10</b>Release</span>
+      </div>
+      <div class="stat-grid">
+        <div class="card stat"><b>10</b><span>agents, one per stage</span></div>
+        <div class="card stat"><b>22</b><span>slash commands</span></div>
+        <div class="card stat"><b>11</b><span>SDLC method skills</span></div>
+        <div class="card stat"><b>174</b><span>Salesforce skills, installed on demand</span></div>
+        <div class="card stat"><b>7</b><span>hook events guarded</span></div>
+        <div class="card stat"><b>3 · 2 · 2</b><span>workflows · monitors · output styles</span></div>
+      </div>
+      <div class="callout"><p>Every stage writes a <strong>draft</strong> and stops. A person reviews it and fills in its approval record before the next stage starts. Agents never approve their own work.</p></div>
+    </section>
+
+    <!-- ===================== INSTALL ===================== -->
+    <section id="install" data-tab="start">
+      <h2>Install</h2>
+      <p>Pick one form per project. Using both makes every agent and command appear twice.</p>
+      <div class="seg" role="tablist" data-tabs="install">
+        <button role="tab" aria-selected="true" data-target="inst-plugin">Plugin (recommended)</button>
+        <button role="tab" aria-selected="false" data-target="inst-copy">Copy the .claude/ folder</button>
+      </div>
+      <div class="tabpanel" id="inst-plugin">
+<pre><code>/plugin marketplace add nagarroARBsf/Sf-skills-agents
+/plugin install sf-sdlc@nagarro-sf
+/sf-sdlc:setup</code></pre>
+        <p class="muted">Commands are namespaced <code>/sf-sdlc:&lt;name&gt;</code>. The CLI is on the PATH as <code>sf-sdlc</code>. Try a local checkout with <code>claude --plugin-dir plugins/sf-sdlc</code>.</p>
+      </div>
+      <div class="tabpanel" id="inst-copy" hidden>
+<pre><code># from the root of your Salesforce DX project
+cp -r /path/to/Sf-skills-agents/.claude ./.claude
+claude
+/sdlc-setup</code></pre>
+        <p class="muted">Lifecycle commands are <code>/sdlc-&lt;name&gt;</code> and build-phase commands are <code>/sdd-&lt;name&gt;</code>. The CLI is <code>node .claude/bin/sf-sdlc</code>.</p>
+      </div>
+      <h3>Prerequisites</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Tool</th><th>Needed for</th></tr></thead>
+        <tbody>
+          <tr><td>Claude Code 2.1.271+ and Node.js 18+</td><td>Everything: the hooks and the CLI are plain Node, no <code>npm install</code></td></tr>
+          <tr><td>Git</td><td>Change delta, branch guard</td></tr>
+          <tr><td>Salesforce CLI <code>sf</code> v2</td><td>Build, test, deploy</td></tr>
+          <tr><td><code>sf plugins install code-analyzer</code> + Java 11+</td><td>Code review, <code>analyze</code>, the commit gate</td></tr>
+          <tr><td>GitHub CLI <code>gh</code> (optional)</td><td>Pull requests, tags, releases</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">Business analysts and managers who only produce documents need Claude Code and Node.js only.</p>
+    </section>
+
+    <!-- ===================== QUICKSTART ===================== -->
+    <section id="quickstart" data-tab="start">
+      <h2>Quickstart</h2>
+      <div class="steps">
+        <div class="card step"><div><h3>Run setup in your Salesforce project</h3><p>Checks tools, writes <code>.claude/sf-sdlc.json</code>, records what already exists and recommends only the skills the project needs.</p><pre><code>/sf-sdlc:setup</code></pre></div></div>
+        <div class="card step"><div><h3>Tell it which orgs are production</h3><p>Open <code>.claude/sf-sdlc.json</code> and list every production alias in <code>orgs.production</code>. This is the one setting you must get right.</p><pre><code>"orgs": { "dev": "orion-dev", "qa": "orion-qa", "uat": "orion-uat", "production": ["orion-prod"] }</code></pre></div></div>
+        <div class="card step"><div><h3>Start at the stage you are in</h3><p>Transcripts? Start with the BRD. A story already in Jira? Start with the spec.</p><pre><code>/sf-sdlc:brd docs/sdlc/00-inputs/
+/sf-sdlc:specify US-04-02
+/sf-sdlc:trace        # where are we, what is blocked</code></pre></div></div>
+      </div>
+    </section>
+
+    <!-- ===================== STRUCTURE / EXPLORER ===================== -->
+    <section id="structure" data-tab="plugin">
+      <div class="eyebrow">Plugin structure</div>
+      <div class="card explorer">
+        <div class="explorer-head">
+          <h2>What goes in the plugin</h2>
+          <p>The <code>sf-sdlc</code> plugin has one of nearly every kind of Claude Code plugin component. Select a file or folder to read what it is for, what you configure, and how you use it. Switch to <em>Your project</em> to see what setup creates in your Salesforce repository.</p>
+        </div>
+        <div class="explorer-body">
+          <div class="tree-pane">
+            <div class="pane-label">
+              <span id="treeTitle">Plugin directory</span>
+              <div class="seg" role="tablist" data-tabs="tree" style="margin:0">
+                <button role="tab" aria-selected="true" data-target="tree-plugin">Plugin</button>
+                <button role="tab" aria-selected="false" data-target="tree-project">Your project</button>
+              </div>
+            </div>
+            <ul class="tree tabpanel" id="tree-plugin" role="tree" aria-label="Plugin directory"></ul>
+            <ul class="tree tabpanel" id="tree-project" role="tree" aria-label="Your project after setup" hidden></ul>
+            <div class="legend">
+              <span><i class="dot gen"></i>Generated from <code>.claude/</code></span>
+              <span><i class="dot hand"></i>Hand-written</span>
+              <span><i class="dot proj"></i>Lives in your project</span>
+            </div>
+          </div>
+          <div class="detail-pane" id="detail" aria-live="polite">
+            <div class="eyebrow" style="color:var(--muted)">Selected piece</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== HOW IT FITS ===================== -->
+    <section id="how-it-fits" data-tab="plugin">
+      <h2>How the pieces work together</h2>
+      <p>A command names an agent; the agent loads its method skills and any Salesforce skills installed in the project; real work on Salesforce goes through the <code>sf-sdlc</code> CLI and the <code>sf</code> CLI. Hooks sit around every tool call.</p>
+      <div class="flow">
+        <div class="node"><b>Command</b><span>You type <code>/sf-sdlc:review US-04-02</code></span></div>
+        <div class="node"><b>Agent</b><span><code>sdlc-code-review-agent</code>, read-only tools</span></div>
+        <div class="node"><b>Skills</b><span><code>sdlc-code-review</code>, <code>sdlc-workflow</code> + installed Apex skills</span></div>
+        <div class="node"><b>CLI</b><span><code>sf-sdlc analyze</code>, <code>delta</code> → <code>sf code-analyzer</code></span></div>
+        <div class="node"><b>Draft</b><span><code>specs/US-04-02-…/review.md</code> with a verdict, then stop</span></div>
+      </div>
+      <div class="guard-band"><strong>Hooks around every step:</strong> <code>SessionStart</code> prints project facts and instructions · <code>PreToolUse</code> runs the production-org, secret, branch and commit guards · <code>PostToolUse</code> runs source checks and writes the audit log · <code>PostToolUseFailure</code> explains deploy failures · <code>Stop</code> checks task evidence. Monitors report when a background deploy or test run changes state.</div>
+    </section>
+
+    <!-- ===================== TWO FORMS ===================== -->
+    <section id="two-forms" data-tab="plugin">
+      <h2>Plugin vs. copy-in folder</h2>
+      <p><code>.claude/</code> in this repository is the single source of truth. <code>plugins/sf-sdlc/</code> is generated from it by <code>python3 scripts/build-claude-plugin.py</code>, which rewrites paths and command names on the way.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Component</th><th>Copy-in <code>.claude/</code></th><th>Plugin <code>plugins/sf-sdlc/</code></th></tr></thead>
+        <tbody>
+          <tr><td>Agents, commands, SDLC skills, skill library</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td>Command names</td><td><code>/sdlc-brd</code>, <code>/sdd-plan</code></td><td><code>/sf-sdlc:brd</code>, <code>/sf-sdlc:plan</code></td></tr>
+          <tr><td>Hooks</td><td>In <code>settings.json</code></td><td><code>hooks/hooks.json</code></td></tr>
+          <tr><td>CLI</td><td><code>node .claude/bin/sf-sdlc</code></td><td><code>sf-sdlc</code> on the PATH</td></tr>
+          <tr><td>Project instructions and coding rules</td><td><code>CLAUDE.md</code>, <code>rules/</code></td><td>Printed at session start; rules become the <code>salesforce-coding-rules</code> skill</td></tr>
+          <tr><td>Monitors, themes, Jira MCP, per-user options</td><td>No (plugin-only features)</td><td>Yes</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- ===================== CONFIGURE ===================== -->
+    <section id="configure" data-tab="configure">
+      <div class="eyebrow">Configuration</div>
+      <h2>What you need to provide</h2>
+      <p>The plugin ships no project-specific values. Everything that differs between projects (org aliases, branches, Jira keys, thresholds, paths) comes from files in <em>your</em> repository. <code>sf-sdlc init</code> creates them; setup never overwrites an existing file.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>File in your project</th><th>Commit?</th><th>What you set</th></tr></thead>
+        <tbody>
+          <tr><td><code>.claude/sf-sdlc.json</code></td><td>Yes</td><td>Org aliases and <strong>which are production</strong>, branch rules, Jira project, coverage target, promotion order, document paths, hook mode</td></tr>
+          <tr><td><code>.claude/sf-sdlc.local.json</code></td><td>No</td><td>Personal overrides, same shape; for example your own scratch org</td></tr>
+          <tr><td><code>.claude/settings.json</code></td><td>Yes</td><td>Claude Code permissions (allow / ask / deny). Plugin users get a template from <code>templates/project-settings.json</code></td></tr>
+          <tr><td><code>code-analyzer.yml</code></td><td>Yes</td><td>Which Code Analyzer rules run and at what severity</td></tr>
+          <tr><td><code>.claude/sf-sdlc.skills.lock.json</code></td><td>Yes</td><td>Nothing by hand: records installed skills so <code>skills sync</code> never overwrites your edits</td></tr>
+          <tr><td><code>specs/constitution.md</code></td><td>Yes</td><td>Created by <code>/sf-sdlc:constitution</code>: your engineering principles, trigger framework, logging utility</td></tr>
+        </tbody>
+      </table></div>
+      <h3>A filled-in <code>.claude/sf-sdlc.json</code></h3>
+<div class="code-wrap"><button class="copy" data-copy="cfgExample">Copy</button><p class="code-label">templates/sf-sdlc.example.json (abridged)</p><pre><code id="cfgExample">{
+  "project":  { "name": "Orion Sales Cloud", "code": "ORION" },
+  "orgs":     { "dev": "orion-dev", "qa": "orion-qa", "uat": "orion-uat",
+                "devHub": "orion-hub", "production": ["orion-prod"] },
+  "git":      { "mainBranch": "main", "integrationBranch": "develop",
+                "protectedBranches": ["main", "develop", "release/*"],
+                "branchPattern": "feature/{ticket}-{slug}" },
+  "jira":     { "enabled": true, "site": "https://acme.atlassian.net", "projectKey": "ORION" },
+  "quality":  { "coverageTarget": 85, "analyzerSeverityThreshold": 2, "bulkTestSize": 200 },
+  "deploy":   { "pipeline": ["dev", "qa", "uat", "production"],
+                "testLevel": { "qa": "RunLocalTests", "production": "RunLocalTests" },
+                "validateBeforeDeploy": true, "allowDirectProductionDeploy": false, "useDelta": true },
+  "paths":    { "docs": "docs/sdlc", "specs": "specs" },
+  "hooks":    { "mode": "observe", "auditLog": true }
+}</code></pre></div>
+    </section>
+
+    <section id="config-keys" data-tab="configure">
+      <h2>Project config keys that matter most</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Key</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td><code>orgs.production</code></td><td>Every alias listed here is treated as production regardless of what the org looks like. An org that cannot be classified is never treated as safe.</td></tr>
+          <tr><td><code>git.protectedBranches</code></td><td>Branches agents may not push to; force-pushes to them are always blocked.</td></tr>
+          <tr><td><code>jira.projectKey</code>, <code>jira.fields.*</code></td><td>Where the story agent creates issues, and your custom field IDs (story points, acceptance criteria).</td></tr>
+          <tr><td><code>quality.coverageTarget</code>, <code>analyzerSeverityThreshold</code></td><td>Per-class Apex coverage target and the Code Analyzer severity that blocks a commit (1 Critical … 5 Info).</td></tr>
+          <tr><td><code>deploy.pipeline</code>, <code>deploy.testLevel</code></td><td>Promotion order and test level per stage. Production may not be <code>NoTestRun</code>.</td></tr>
+          <tr><td><code>hooks.mode</code></td><td><code>observe</code> reports what would be blocked; <code>enforce</code> blocks. Start in observe for a week. The production and secret guards enforce in every mode.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">Every key, with examples: <a href="https://github.com/nagarroARBsf/Sf-skills-agents/blob/main/SETUP.md">SETUP.md</a>.</p>
+    </section>
+
+    <section id="user-options" data-tab="configure">
+      <h2>Per-user options</h2>
+      <p>Declared under <code>userConfig</code> in <code>plugin.json</code>. Each developer sets them for themselves with <code>/plugin configure sf-sdlc@nagarro-sf</code>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>Values</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>Hook mode</td><td><code>project</code> (default), <code>observe</code>, <code>enforce</code>, <code>off</code></td><td>Overrides <code>hooks.mode</code> for you only</td></tr>
+          <tr><td>Audit log</td><td>on (default) / off</td><td>Turns the local audit log off for you</td></tr>
+        </tbody>
+      </table></div>
+      <p>Jira: the plugin's <code>.mcp.json</code> connects the Atlassian remote MCP server. Sign in once with <code>/mcp</code>. Without it, the story agent writes a Jira CSV you can import.</p>
+    </section>
+
+    <section id="verify" data-tab="configure">
+      <h2>Verify the install</h2>
+<pre><code>sf-sdlc doctor            # every required line should show ✔
+sf-sdlc config validate
+sf-sdlc org classify      # your production org must report "production"
+sf-sdlc analyze --changed # the official Code Analyzer runs</code></pre>
+      <p class="muted">Copy-in folder: prefix each with <code>node .claude/bin/</code>. Or run <code>/sf-sdlc:doctor</code>.</p>
+    </section>
+
+    <!-- ===================== LIFECYCLE ===================== -->
+    <section id="lifecycle" data-tab="use">
+      <div class="eyebrow">Using the plugin</div>
+      <h2>The SDLC lifecycle</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Stage</th><th>Plugin command</th><th>Copy-in command</th><th>Agent</th><th>Draft it writes</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>Setup</td><td><code>setup</code> <code>doctor</code> <code>skills</code></td><td><code>/sdlc-setup</code></td><td>project scout</td><td>config, baseline, installed skills</td></tr>
+          <tr><td>1</td><td>BRD</td><td><code>brd &lt;files&gt;</code></td><td><code>/sdlc-brd</code></td><td>BRD</td><td><code>docs/sdlc/01-brd/BRD.md</code></td></tr>
+          <tr><td>2</td><td>Stories</td><td><code>stories</code></td><td><code>/sdlc-stories</code></td><td>Jira story</td><td>backlog, Jira CSV; issues after you say yes</td></tr>
+          <tr><td>3</td><td>Architecture</td><td><code>architecture</code> <code>diagram</code></td><td><code>/sdlc-architecture</code></td><td>solution architect</td><td>HLD, LLD per story, ADRs, diagrams marking New / Changed / Unchanged</td></tr>
+          <tr><td>4</td><td>Spec &amp; plan</td><td><code>constitution</code> <code>specify</code> <code>clarify</code> <code>plan</code> <code>tasks</code></td><td><code>/sdd-specify</code> …</td><td>planner</td><td><code>specs/&lt;story&gt;/spec.md</code>, <code>plan.md</code>, <code>tasks.md</code></td></tr>
+          <tr><td>5</td><td>Build</td><td><code>implement</code> <code>verify</code></td><td><code>/sdd-implement</code></td><td>developer</td><td>Apex, LWC, Flow, metadata, tests, evidence per task</td></tr>
+          <tr><td>6</td><td>Review</td><td><code>review</code> <code>analyze</code></td><td><code>/sdlc-review</code></td><td>code reviewer (read-only)</td><td><code>review.md</code> with a verdict</td></tr>
+          <tr><td>7</td><td>Deploy</td><td><code>deploy &lt;org&gt;</code></td><td><code>/sdlc-deploy</code></td><td>deployment</td><td>validate, quick deploy, <code>DEP-nnn.md</code> with rollback</td></tr>
+          <tr><td>8</td><td>Test</td><td><code>test-cases</code> <code>test-run &lt;org&gt;</code></td><td><code>/sdlc-test-run</code></td><td>QA</td><td>test cases, <code>TR-*</code> reports, <code>DEF-nnn</code> defects</td></tr>
+          <tr><td>9</td><td>Re-test</td><td><code>retest</code></td><td><code>/sdlc-retest</code></td><td>QA</td><td>defect status with the passing run cited</td></tr>
+          <tr><td>10</td><td>Release</td><td><code>release &lt;version&gt;</code></td><td><code>/sdlc-release</code></td><td>release manager</td><td>readiness, release notes, Jira version and GitHub release after yes</td></tr>
+        </tbody>
+      </table></div>
+      <p>Traceability runs through one ID chain: <code>BR-04</code> → <code>FR-04.2</code> → <code>US-04-02</code> → <code>LLD-US-04-02</code> → <code>TC-US-04-02-007</code> → <code>TR-…</code> → <code>DEF-012</code> → <code>DEP-005</code> → <code>REL-1.4.0</code>. <code>/sf-sdlc:trace</code> shows it at any time.</p>
+    </section>
+
+    <section id="walkthrough" data-tab="use">
+      <h2>Walk-through</h2>
+<pre><code>/sf-sdlc:setup                          # once per project
+/sf-sdlc:brd docs/sdlc/00-inputs/       # transcripts in, BRD draft out      → BA reviews and signs
+/sf-sdlc:stories                        # backlog and Jira CSV               → PO reviews; "yes" creates issues
+/sf-sdlc:architecture                   # HLD; then /sf-sdlc:architecture US-04-02 for the LLD
+/sf-sdlc:diagram solution US-04-02      # what is new, changed, unchanged
+/sf-sdlc:specify US-04-02               # then clarify → plan → tasks, each reviewed
+/sf-sdlc:implement                      # tests first, task by task
+/sf-sdlc:verify                         # evidence for each acceptance criterion
+/sf-sdlc:review US-04-02                # independent review + Code Analyzer
+/sf-sdlc:deploy qa                      # validate, then quick deploy
+/sf-sdlc:test-run qa US-04-02           # run tests, coverage, log defects
+/sf-sdlc:retest DEF-012                 # after the fix
+/sf-sdlc:deploy production              # only when you name it; asks again
+/sf-sdlc:release 1.4.0                  # readiness, notes, close-out</code></pre>
+    </section>
+
+    <section id="personas" data-tab="use">
+      <h2>By role</h2>
+      <div class="persona-grid">
+        <div class="card persona"><h3>Business analyst / manager</h3><p class="muted">No Salesforce CLI or org needed.</p><ul><li><code>brd</code>, <code>stories</code>, <code>test-cases</code>, <code>trace</code></li><li><code>/output-style</code> → <strong>Salesforce Delivery Lead</strong> for plain English</li><li>Jira CSV when Jira is not connected</li></ul></div>
+        <div class="card persona"><h3>Developer / architect</h3><p class="muted">Spec first, tests first.</p><ul><li><code>specify</code> → <code>plan</code> → <code>tasks</code> → <code>implement</code> → <code>verify</code></li><li><code>/output-style</code> → <strong>Salesforce Engineer</strong> for terse, evidence-led answers</li><li><code>sf-sdlc check</code> and <code>analyze</code> before committing</li></ul></div>
+        <div class="card persona"><h3>Release engineer / QA</h3><p class="muted">Validate before deploying.</p><ul><li><code>deploy &lt;org&gt;</code> and <code>release</code> can only be started by a person</li><li><code>test-run</code>, <code>retest</code>; monitors report job completion</li><li>Workflow <code>sdlc-release-readiness</code> gathers evidence in parallel</li></ul></div>
+      </div>
+    </section>
+
+    <section id="skills" data-tab="use">
+      <h2>Skills on demand</h2>
+      <p>No Salesforce technical skill is loaded by default, because every loaded skill costs context in every session. The 174 skills sit in <code>skill-library/</code>. Setup reads your project and recommends a small set with the evidence for each; only the ones you confirm are copied into your project's <code>.claude/skills/</code>.</p>
+<pre><code>sf-sdlc skills recommend                 # evidence-based, from your metadata folders
+sf-sdlc skills recommend --profile admin # starter sets: developer, admin, ba
+sf-sdlc skills install platform-apex-generate platform-apex-test-run
+sf-sdlc skills sync --dry-run            # after an upgrade; never overwrites a skill you edited</code></pre>
+      <p class="muted">Or simply run <code>/sf-sdlc:skills</code>.</p>
+    </section>
+
+    <!-- ===================== SAFETY ===================== -->
+    <section id="safety" data-tab="safety">
+      <div class="eyebrow">Safety</div>
+      <h2>Guards and hooks</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Guard</th><th>What it does</th><th>Can be relaxed?</th></tr></thead>
+        <tbody>
+          <tr><td>Production-org guard</td><td>Classifies the target of every org-changing <code>sf</code> command. Production: denies <code>NoTestRun</code> and direct deploys, asks for everything else. Unknown orgs also ask.</td><td>Policy only; on in every mode</td></tr>
+          <tr><td>Secret guard</td><td>Blocks writing or committing auth URLs, private keys, tokens and anything in <code>.sf/</code> or <code>.sfdx/</code></td><td>No</td></tr>
+          <tr><td>Branch guard</td><td>Blocks pushes to protected branches; force-pushes always blocked</td><td><code>hooks.mode</code></td></tr>
+          <tr><td>Commit gate</td><td>Runs the official Code Analyzer on the files being committed</td><td><code>hooks.mode</code></td></tr>
+          <tr><td>Source check</td><td>After each edit: SOQL/DML in loops, missing sharing, hard-coded IDs, <code>SeeAllData</code></td><td>Advisory</td></tr>
+          <tr><td>Audit log</td><td>Who ran which org-affecting command against which org, in <code>.sf-sdlc/audit.jsonl</code></td><td><code>hooks.auditLog</code></td></tr>
+          <tr><td>Person-only commands</td><td><code>deploy</code> and <code>release</code> carry <code>disable-model-invocation: true</code></td><td>No</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout warn"><p>Hooks and permission rules steer an agent; they are not a security boundary. Keep org permissions, branch protection and CI in place.</p></div>
+    </section>
+
+    <section id="limitations" data-tab="safety">
+      <h2>Known limitations</h2>
+      <ul>
+        <li>Not yet run end to end against a real org or Jira project. Prove deploy, test-run and Jira paths in a sandbox first.</li>
+        <li>No behavioural evaluation suite yet; agent quality is unmeasured.</li>
+        <li>Monitors and themes are experimental in Claude Code; monitors do not run in headless sessions.</li>
+        <li>No Salesforce MCP server: all Salesforce work goes through the <code>sf</code> CLI.</li>
+        <li>Source checks are heuristics; the Code Analyzer is the authoritative scan.</li>
+      </ul>
+      <p class="muted">The full list is in the <a href="https://github.com/nagarroARBsf/Sf-skills-agents#known-limitations">README</a>.</p>
+    </section>
+
+    <section id="maintain" data-tab="ref">
+      <div class="eyebrow">Reference</div>
+      <h2>Maintaining the kit</h2>
+      <p>Edit <code>.claude/</code>, never the generated folders in <code>plugins/sf-sdlc/</code>. Then regenerate and check:</p>
+<pre><code>python3 scripts/build-claude-plugin.py          # regenerate the plugin and the skill catalog
+python3 scripts/build-claude-plugin.py --check  # fail if anything generated is stale
+node --test tests/kit.test.js                   # hook and CLI unit tests
+claude plugin validate plugins/sf-sdlc --strict</code></pre>
+      <p>Bump <code>version</code> in <code>plugins/sf-sdlc/.claude-plugin/plugin.json</code> on every release, or installed copies will not update.</p>
+    </section>
+
+    <footer>
+      Apache-2.0. Official skills from forcedotcom/sf-skills; community skills from Clientell-Ai/salesforce-skills; spec-driven development adapted from github/spec-kit. Not affiliated with or endorsed by Salesforce, Atlassian, GitHub or Anthropic.
+    </footer>
+  </main>
+</div>
+
+<!-- =============== code samples for the explorer (plain text, read by script) =============== -->
+<script type="text/plain" id="c-plugin-json">{
+  "name": "sf-sdlc",
+  "displayName": "Salesforce SDLC",
+  "version": "2.0.0",
+  "description": "Salesforce delivery lifecycle for Claude Code: BRD, Jira stories, ...",
+  "author": { "name": "Nagarro Salesforce CoE" },
+  "license": "Apache-2.0",
+  "userConfig": {
+    "hook_mode": {
+      "type": "string",
+      "title": "Hook mode",
+      "options": ["project", "observe", "enforce", "off"],
+      "default": "project"
+    },
+    "audit_log": { "type": "boolean", "title": "Audit log", "default": true }
+  }
+}</script>
+<script type="text/plain" id="c-mcp">{
+  "mcpServers": {
+    "atlassian": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v2/mcp"
+    }
+  }
+}</script>
+<script type="text/plain" id="c-agent">---
+name: sdlc-code-review-agent
+description: Read-only Salesforce code review and verification agent — checks a change
+  against its spec and acceptance criteria, ... Use when the user asks to review, verify,
+  audit or check code, a branch, a pull request or a story before merge or deployment.
+tools: Read, Glob, Grep, Bash
+model: inherit
+skills: sdlc-code-review, sdlc-workflow
+---
+
+# SDLC Code Review Agent
+
+You are a principal Salesforce engineer reviewing someone else's change. You are
+independent of the author: you verify claims instead of trusting them, and you report
+what you could not verify.</script>
+<script type="text/plain" id="c-command">---
+description: Validate, then deploy to a named org through the Salesforce CLI, with a
+  deployment record and rollback plan
+argument-hint: "<org role or alias: qa | uat | production | alias> [validate | quick | status]"
+disable-model-invocation: true
+---
+Use the **sdlc-deployment-agent** subagent to run the deployment.
+
+Target and scope from the user: $ARGUMENTS
+
+If no target org was named, ask for it and stop; never choose one.</script>
+<script type="text/plain" id="c-skill">sdlc-code-review/
+├── SKILL.md
+└── references/
+
+---
+name: sdlc-code-review
+description: "Independent, read-only review of Salesforce changes ... TRIGGER when: user
+  asks for a code, peer, PR, security or best-practice review ... DO NOT TRIGGER when:
+  the user wants code fixed or written (use sdlc-spec-driven-development)."
+metadata:
+  version: "1.0"
+  author: "Nagarro Salesforce CoE"
+---
+
+# sdlc-code-review
+
+Review someone else's change as an independent engineer: verify claims instead of
+trusting them, report what could not be verified, and never touch the code.</script>
+<script type="text/plain" id="c-rules">salesforce-coding-rules/
+├── SKILL.md
+└── references/
+    ├── salesforce-apex.md         # generated from .claude/rules/salesforce-apex.md
+    ├── salesforce-apex-tests.md
+    ├── salesforce-lwc.md
+    ├── salesforce-metadata.md
+    └── sdlc-artifacts.md</script>
+<script type="text/plain" id="c-library">skill-library/
+├── platform-apex-generate/       # official, forcedotcom/sf-skills
+├── platform-apex-test-run/
+├── experience-lwc-generate/
+├── sf-flow/                      # community, Clientell-Ai/salesforce-skills
+└── ... 174 skills, never loaded from here
+
+# copy the ones this project needs into .claude/skills/
+sf-sdlc skills recommend
+sf-sdlc skills install platform-apex-generate platform-apex-test-run</script>
+<script type="text/plain" id="c-hooks">{
+  "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "command",
+      "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.js\" session-start" }] }],
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [{ "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.js\" pre-bash",
+          "timeout": 900, "statusMessage": "sf-sdlc guard" }] },
+      { "matcher": "Write|Edit|MultiEdit",
+        "hooks": [{ "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.js\" pre-write" }] }
+    ],
+    "PostToolUse":        [ "... post-write, post-bash ..." ],
+    "PostToolUseFailure": [ "... bash-failure ..." ],
+    "Stop":               [ "... stop ..." ]
+  }
+}</script>
+<script type="text/plain" id="c-runjs">hooks/
+├── hooks.json   # wires Claude Code events to run.js
+├── run.js       # single dispatcher: session-start | pre-bash | pre-write |
+│                #   post-write | post-bash | bash-failure | stop
+├── lib.js       # config, command parsing, org classification
+├── ops.js       # Code Analyzer wrapper, inventory, delta
+└── checks.js    # source checks and secret patterns</script>
+<script type="text/plain" id="c-monitors">[
+  {
+    "name": "deploy-watch",
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/sf-sdlc\" jobs watch --type deploy",
+    "description": "Reports when a Salesforce validation or deployment started with sf-sdlc changes state",
+    "when": "on-skill-invoke:sdlc-deploy-release"
+  },
+  {
+    "name": "test-watch",
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/sf-sdlc\" jobs watch --type test",
+    "description": "Reports when an asynchronous Apex test run started with sf-sdlc finishes",
+    "when": "on-skill-invoke:sdlc-test-execution"
+  }
+]</script>
+<script type="text/plain" id="c-style">---
+name: Salesforce Delivery Lead
+description: Plain-English answers for business analysts, product owners and managers —
+  outcome first, Salesforce terms explained, decisions and risks called out
+keep-coding-instructions: true
+---
+
+- Lead with the answer or the decision needed, in one or two sentences, in business terms.
+- Explain each Salesforce or engineering term the first time it appears.
+- Give status as: done, in progress, blocked — and for anything blocked, who can unblock it.
+- Keep file paths, commands and code out of the main answer; put the few that matter at
+  the end under "For the technical team".</script>
+<script type="text/plain" id="c-theme">{
+  "name": "SF SDLC Dark",
+  "base": "dark",
+  "overrides": {
+    "claude": "#4bb7f5",
+    "promptBorder": "#0b8fd9",
+    "success": "#45c65a",
+    "error": "#fe5c4c",
+    "warning": "#fcc003"
+  }
+}</script>
+<script type="text/plain" id="c-workflow">export const meta = {
+  name: 'sdlc-review-changes',
+  description: 'Review the changes on this branch with parallel Salesforce reviewers, then verify each finding',
+  phases: [{ title: 'Scope' }, { title: 'Review' }, { title: 'Verify' }, { title: 'Report' }],
+}
+
+phase('Scope')
+const scope = await agent(
+  'Run `node .claude/bin/sf-sdlc delta --json` and `git diff --name-only` ...'
+)
+// Review: one reviewer per dimension, in parallel. Verify: each finding re-checked.</script>
+<script type="text/plain" id="c-cli">$ sf-sdlc help
+  doctor                       check tools, plugins, config and org setup
+  init                         create .claude/sf-sdlc.json, .gitignore entries, code-analyzer.yml
+  config show|validate         show the merged configuration, or validate it
+  detect                       what this project contains (metadata folders, counts, tooling)
+  inventory                    existing-state inventory of the source tree, by metadata type
+  delta [--from <git-ref>]     components new / changed / removed against a git ref
+  skills recommend|install|remove|list|sync
+  org classify [alias]         production | sandbox | scratch | developer | unknown
+  analyze [--staged | --changed [ref] | <paths>]   official Salesforce Code Analyzer
+  check [files...]             fast offline source checks
+  deploy validate|quick|report|preview --org <role|alias> [--delta --from <ref>]
+  test run|report --org <role|alias> [--tests A,B.method] [--level RunLocalTests]
+  diagram render <file>        Mermaid to SVG (needs mermaid-cli)
+  audit [--tail N]             local log of org-affecting commands</script>
+<script type="text/plain" id="c-catalog">{
+  "id": "base",
+  "reason": "Deploy, retrieve, query and scan are needed by every Salesforce DX project",
+  "when": { "always": true, "profiles": ["developer", "admin"] },
+  "skills": [
+    "platform-metadata-deploy", "platform-metadata-retrieve",
+    "platform-soql-query", "dx-code-analyzer-run", "dx-org-manage"
+  ]
+}
+// a rule fires when any listed metadata folder exists, e.g. "folders": ["lwc"]</script>
+<script type="text/plain" id="c-context">(generated from .claude/CLAUDE.md and the always-on .claude/rules/)
+
+# Salesforce project — AI delivery kit
+
+## Project settings
+Project-specific values live in `.claude/sf-sdlc.json` ...
+
+## Salesforce engineering rules (always)
+- Security: `with sharing` by default; `WITH USER_MODE`; bind variables ...
+- Bulk-safe: no SOQL/DML in loops; one trigger per object with a handler.
+
+## Orgs and deployment
+- Never deploy to, delete from or change data in production unless the user names the
+  org and confirms in this conversation.</script>
+<script type="text/plain" id="c-templates">templates/
+├── sf-sdlc.example.json       # filled-in example of .claude/sf-sdlc.json
+├── project-settings.json      # permissions written to your .claude/settings.json by init
+├── code-analyzer.yml          # Code Analyzer v5 rule config
+└── pull_request_template.md   # PR checklist written to .github/ by init</script>
+<script type="text/plain" id="c-settings">{
+  "env": { "SF_AUTOUPDATE_DISABLE": "true", "SF_DISABLE_TELEMETRY": "true" },
+  "permissions": {
+    "allow": [ "Bash(sf-sdlc doctor*)", "Bash(sf org list*)", "Bash(sf code-analyzer *)" ],
+    "ask":   [ "Bash(sf project deploy start*)", "Bash(sf project deploy quick*)",
+               "Bash(sf data delete*)", "Bash(git push*)", "Bash(gh release create*)" ],
+    "deny":  [ "Read(./.sf/**)", "Read(./.sfdx/**)", "Bash(sf org auth*)" ]
+  }
+}</script>
+<script type="text/plain" id="c-local">{ "orgs": { "dev": "my-scratch-org" }, "hooks": { "mode": "enforce" } }</script>
+<script type="text/plain" id="c-analyzer"># Salesforce Code Analyzer (v5) configuration, read by `sf code-analyzer run`
+# and `sf-sdlc analyze`. The blocking severity comes from
+# quality.analyzerSeverityThreshold in .claude/sf-sdlc.json (1 = Critical ... 5 = Info).
+
+ignores:
+  files:
+    - "**/node_modules/**"
+    - "**/staticresources/**"
+    - "**/__tests__/**"</script>
+<script type="text/plain" id="c-installed">.claude/
+├── sf-sdlc.json
+├── sf-sdlc.skills.lock.json   # name → source + hash for each installed skill
+└── skills/
+    ├── platform-apex-generate/
+    ├── platform-apex-test-run/
+    └── experience-lwc-generate/</script>
+<script type="text/plain" id="c-docs">docs/sdlc/
+├── 00-inputs/                 raw transcripts, notes, emails (never edited)
+├── 01-brd/BRD.md
+├── 02-backlog/                backlog.md, jira-import.csv
+├── 03-architecture/           baseline/, components.json, HLD.md, LLD/, ADR/
+├── 04-qa/                     test-strategy.md, test-cases/, test-runs/, defects/, rtm.md
+└── 05-release/                deployments/DEP-001.md, REL-1.2.0/</script>
+<script type="text/plain" id="c-specs">specs/
+├── constitution.md
+└── US-04-02-deal-health-score/
+    ├── spec.md            what and why (no implementation)
+    ├── plan.md            12-section plan: root cause, metadata scope, impact, tests ...
+    ├── tasks.md           ordered, test-first; ticked with evidence
+    ├── verification.md    evidence per acceptance criterion
+    └── review.md          independent review with a verdict</script>
+<script type="text/plain" id="c-state">.sf-sdlc/                      # ignored by git; the folder ignores itself
+├── audit.jsonl                # one JSON object per org-affecting command:
+│                              #   at, user, agent, action, targetOrg, orgKind,
+│                              #   outcome, command, branch
+└── jobs, test results, caches</script>
+
+<script>
+(function () {
+  // ---------- explorer data ----------
+  var PLUGIN = [
+    { id: 'root', label: 'sf-sdlc/', depth: 0, folder: true, kind: null,
+      title: 'The sf-sdlc plugin', path: 'plugins/sf-sdlc/',
+      desc: '<p>The whole plugin. Claude Code reads the manifest in <code>.claude-plugin/</code> and discovers every other component from its default folder, so nothing needs to be registered by hand.</p><p>Most folders are <strong>generated</strong> from the repository\'s <code>.claude/</code> folder. Edit there, then run the build script.</p>',
+      provide: 'Nothing to install separately. Install from the marketplace, then run <code>/sf-sdlc:setup</code> in your Salesforce project.',
+      use: '<code>/plugin marketplace add nagarroARBsf/Sf-skills-agents</code> then <code>/plugin install sf-sdlc@nagarro-sf</code>.' },
+    { id: 'manifest-dir', label: '.claude-plugin/', depth: 1, folder: true, kind: 'hand',
+      title: 'Plugin metadata folder', path: '.claude-plugin/',
+      desc: '<p>Holds the plugin manifest. Only <code>plugin.json</code> belongs here; every component lives at the plugin root.</p>',
+      provide: 'Nothing.', use: 'Read by Claude Code at install and update time.' },
+    { id: 'plugin-json', label: 'plugin.json', depth: 2, kind: 'hand', code: 'c-plugin-json', codeLabel: '.claude-plugin/plugin.json',
+      title: 'Plugin manifest', path: '.claude-plugin/plugin.json',
+      desc: '<p>Name, version, description, licence and keywords, plus <code>userConfig</code>: the two options each developer can set for themselves, <strong>Hook mode</strong> and <strong>Audit log</strong>.</p>',
+      provide: '<ul><li>Maintainers: bump <code>version</code> on every release, or installed copies will not update.</li><li>Users: set your options with <code>/plugin configure sf-sdlc@nagarro-sf</code>.</li></ul>',
+      use: 'Hooks read the options as <code>CLAUDE_PLUGIN_OPTION_HOOK_MODE</code> and <code>CLAUDE_PLUGIN_OPTION_AUDIT_LOG</code>.' },
+    { id: 'skills', label: 'skills/', depth: 1, folder: true, kind: 'gen', code: 'c-skill', codeLabel: 'skills/sdlc-code-review/SKILL.md',
+      title: 'Skills', path: 'skills/',
+      desc: '<p>The 11 <code>sdlc-*</code> method skills (templates, checklists and the step-by-step method behind each lifecycle stage) and <code>salesforce-coding-rules</code>. Claude loads a skill when its description matches the task, and each agent preloads the skills listed in its frontmatter.</p>',
+      provide: 'Nothing. Salesforce <em>technical</em> skills (Apex, LWC, Flow ...) are not here: they are installed into your project from the skill library.',
+      use: 'Automatic. Ask for "a BRD from these transcripts" and <code>sdlc-brd-generate</code> loads; run <code>/sf-sdlc:review</code> and the reviewer loads <code>sdlc-code-review</code>.' },
+    { id: 'skill-review', label: 'sdlc-code-review/', depth: 2, folder: true, kind: 'gen', code: 'c-skill', codeLabel: 'skills/sdlc-code-review/SKILL.md',
+      title: 'An SDLC skill', path: 'skills/sdlc-code-review/',
+      desc: '<p>Every skill is a folder with a <code>SKILL.md</code>: frontmatter with a <code>name</code> and a <code>description</code> that says when to trigger (and when not to), then the method. Long templates go in <code>references/</code> so they load only when needed.</p>',
+      provide: 'Nothing.', use: 'Loaded by the code-review agent and the <code>sdlc-review-changes</code> workflow.' },
+    { id: 'skill-md', label: 'SKILL.md', depth: 3, kind: 'gen', code: 'c-skill', codeLabel: 'skills/sdlc-code-review/SKILL.md',
+      title: 'SKILL.md', path: 'skills/sdlc-code-review/SKILL.md',
+      desc: '<p>The skill itself. The <code>description</code> is what Claude reads to decide whether to load it, so it lists explicit <em>TRIGGER</em> and <em>DO NOT TRIGGER</em> cases. Keep it under 1,024 characters.</p>',
+      provide: 'Nothing.', use: 'Edit the source in <code>.claude/skills/</code>, then run the build script.' },
+    { id: 'skill-rules', label: 'salesforce-coding-rules/', depth: 2, folder: true, kind: 'gen', code: 'c-rules', codeLabel: 'skills/salesforce-coding-rules/',
+      title: 'Coding rules as a skill', path: 'skills/salesforce-coding-rules/',
+      desc: '<p>The copy-in folder has file-scoped rules in <code>.claude/rules/</code> that load when matching files are opened. Plugins cannot ship rules, so the build turns each rule with <code>paths:</code> into a reference of this one skill.</p>',
+      provide: 'Nothing. Add your own conventions to <code>specs/constitution.md</code> in your project.',
+      use: 'Loaded when Claude writes Apex, tests, LWC or metadata.' },
+    { id: 'library', label: 'skill-library/', depth: 1, folder: true, kind: 'gen', code: 'c-library', codeLabel: 'skill-library/',
+      title: 'Skill library (never loaded)', path: 'skill-library/',
+      desc: '<p>174 Salesforce technical skills: 156 official ones from forcedotcom/sf-skills and 18 community <code>sf-*</code> skills. They are <strong>not</strong> a plugin component, so Claude never loads them from here and they cost no context.</p>',
+      provide: 'Choose which ones your project gets. Setup recommends a small set with evidence from your metadata folders.',
+      use: '<code>/sf-sdlc:skills</code>, or <code>sf-sdlc skills recommend</code> then <code>sf-sdlc skills install &lt;names&gt;</code>. They land in your project\'s <code>.claude/skills/</code>.' },
+    { id: 'commands', label: 'commands/', depth: 1, folder: true, kind: 'gen', code: 'c-command', codeLabel: 'commands/deploy.md',
+      title: 'Slash commands', path: 'commands/',
+      desc: '<p>22 commands, one per lifecycle step. Each routes to an agent with <code>Use the <strong>&lt;agent&gt;</strong> subagent to …</code> and passes your words in <code>$ARGUMENTS</code>. The build drops the <code>sdlc-</code>/<code>sdd-</code> prefix, so <code>/sdlc-deploy</code> becomes <code>/sf-sdlc:deploy</code>.</p>',
+      provide: 'Arguments when you call them: files for <code>brd</code>, a story ID for <code>specify</code>, an org for <code>deploy</code>.',
+      use: 'Commands that change an org, Jira or GitHub carry <code>disable-model-invocation: true</code>: only a person can start them.' },
+    { id: 'cmd-file', label: 'deploy.md', depth: 2, kind: 'gen', code: 'c-command', codeLabel: 'commands/deploy.md',
+      title: 'A command file', path: 'commands/deploy.md',
+      desc: '<p>Frontmatter: <code>description</code>, <code>argument-hint</code> shown in the picker, and the person-only flag. The body is the instruction Claude runs.</p>',
+      provide: 'The target org. If none is named, the agent asks and stops; it never chooses one.',
+      use: '<code>/sf-sdlc:deploy qa</code> · <code>/sf-sdlc:deploy uat validate</code> · <code>/sf-sdlc:deploy production</code> (asks again).' },
+    { id: 'agents', label: 'agents/', depth: 1, folder: true, kind: 'gen', code: 'c-agent', codeLabel: 'agents/sdlc-code-review-agent.md',
+      title: 'Subagents', path: 'agents/',
+      desc: '<p>10 agents, one per stage: project scout, BRD, Jira story, solution architect, planner, developer, code reviewer, QA, deployment, release manager. Each runs in its own context with its own tool list and preloaded skills, writes a draft, and stops.</p>',
+      provide: 'Nothing. Agents read project values from <code>.claude/sf-sdlc.json</code> and never hard-code an org, branch or Jira key.',
+      use: 'Started by the commands, or ask by name: "use the sdlc-plan-agent to plan US-04-02".' },
+    { id: 'agent-file', label: 'sdlc-code-review-agent.md', depth: 2, kind: 'gen', code: 'c-agent', codeLabel: 'agents/sdlc-code-review-agent.md',
+      title: 'An agent definition', path: 'agents/sdlc-code-review-agent.md',
+      desc: '<p>The reviewer has <code>Read, Glob, Grep, Bash</code> and deliberately no <code>Write</code> or <code>Edit</code>, so it cannot change the code it reviews. <code>skills:</code> preloads the method it follows.</p>',
+      provide: 'Nothing.', use: '<code>/sf-sdlc:review US-04-02</code> or <code>/sf-sdlc:review</code> for the current branch.' },
+    { id: 'hooks', label: 'hooks/', depth: 1, folder: true, kind: 'gen', code: 'c-runjs', codeLabel: 'hooks/',
+      title: 'Hooks', path: 'hooks/',
+      desc: '<p>Plain Node.js (no dependencies) that Claude Code runs at fixed points: session start, before and after each shell command or file write, on failure, and at the end of a turn. This is where the <strong>production-org guard</strong>, <strong>secret guard</strong>, branch guard and commit gate live.</p>',
+      provide: '<ul><li><code>orgs.production</code> and <code>git.protectedBranches</code> in your config.</li><li><code>hooks.mode</code>: <code>observe</code> (report only) → <code>enforce</code> after a week.</li></ul>',
+      use: 'Nothing to run. Watch the "sf-sdlc guard" status while a command is checked. Denials explain why; do not rephrase a command to get around one.' },
+    { id: 'hooks-json', label: 'hooks.json', depth: 2, kind: 'gen', code: 'c-hooks', codeLabel: 'hooks/hooks.json',
+      title: 'Hook configuration', path: 'hooks/hooks.json',
+      desc: '<p>Maps Claude Code events to the one dispatcher, <code>run.js</code>. <code>${CLAUDE_PLUGIN_ROOT}</code> points at the installed plugin. Generated from the <code>hooks</code> block of <code>.claude/settings.json</code>.</p>',
+      provide: 'Nothing.', use: 'See the events in the code below.' },
+    { id: 'monitors', label: 'monitors/', depth: 1, folder: true, kind: 'hand', code: 'c-monitors', codeLabel: 'monitors/monitors.json',
+      title: 'Monitors', path: 'monitors/',
+      desc: '<p>Background watchers that tell Claude when something outside the conversation changes. Here: <code>deploy-watch</code> reports when a validation or deployment changes state, and <code>test-watch</code> when an async Apex test run finishes. Each starts only when the matching skill is used.</p>',
+      provide: 'Nothing. Experimental in Claude Code; they do not run in headless (<code>claude -p</code>) sessions.',
+      use: 'Start a long deploy with <code>/sf-sdlc:deploy uat</code> and keep working; the monitor reports when the job completes.' },
+    { id: 'monitors-json', label: 'monitors.json', depth: 2, kind: 'hand', code: 'c-monitors', codeLabel: 'monitors/monitors.json',
+      title: 'monitors.json', path: 'monitors/monitors.json',
+      desc: '<p>A list of monitors: a command that prints a line when something changes, and a <code>when</code> trigger.</p>',
+      provide: 'Nothing.', use: 'Automatic.' },
+    { id: 'styles', label: 'output-styles/', depth: 1, folder: true, kind: 'gen', code: 'c-style', codeLabel: 'output-styles/sf-delivery-lead.md',
+      title: 'Output styles', path: 'output-styles/',
+      desc: '<p>Change how Claude writes for different readers. <strong>Salesforce Delivery Lead</strong>: plain English for BAs, POs and managers, outcome first. <strong>Salesforce Engineer</strong>: terse, exact API names, <code>file:line</code> evidence.</p>',
+      provide: 'Pick one per person.',
+      use: '<code>/output-style</code> and choose <em>Salesforce Delivery Lead</em> or <em>Salesforce Engineer</em>.' },
+    { id: 'style-file', label: 'sf-delivery-lead.md', depth: 2, kind: 'gen', code: 'c-style', codeLabel: 'output-styles/sf-delivery-lead.md',
+      title: 'An output style', path: 'output-styles/sf-delivery-lead.md',
+      desc: '<p>Frontmatter names the style; <code>keep-coding-instructions: true</code> keeps Claude Code\'s engineering behaviour while changing the tone.</p>',
+      provide: 'Nothing.', use: '<code>/output-style</code>.' },
+    { id: 'themes', label: 'themes/', depth: 1, folder: true, kind: 'hand', code: 'c-theme', codeLabel: 'themes/sf-sdlc-dark.json',
+      title: 'Themes', path: 'themes/',
+      desc: '<p>Two colour themes for the Claude Code terminal, <strong>SF SDLC Dark</strong> and <strong>SF SDLC Light</strong>, in Salesforce blues. Cosmetic only.</p>',
+      provide: 'Nothing. Experimental in Claude Code.', use: '<code>/theme</code>.' },
+    { id: 'workflows', label: 'workflows/', depth: 1, folder: true, kind: 'gen', code: 'c-workflow', codeLabel: 'workflows/sdlc-review-changes.js',
+      title: 'Workflows', path: 'workflows/',
+      desc: '<p>Scripts that run several agents in parallel and then combine their output:</p><ul><li><code>sdlc-review-changes</code>: parallel reviewers per dimension, then each finding verified.</li><li><code>sdlc-stories-fanout</code>: LLDs or test cases for many stories at once.</li><li><code>sdlc-release-readiness</code>: traceability, reviews, tests, analysis and approvals gathered in parallel.</li></ul>',
+      provide: 'Nothing. They depend on your Claude plan and may be disabled by an administrator. Each has a plain command that does the same job without parallelism.',
+      use: 'Ask for it by name, for example "run the sdlc-release-readiness workflow for 1.4.0".' },
+    { id: 'bin', label: 'bin/', depth: 1, folder: true, kind: 'gen', code: 'c-cli', codeLabel: 'bin/sf-sdlc',
+      title: 'The sf-sdlc CLI', path: 'bin/sf-sdlc',
+      desc: '<p>A dependency-free Node CLI that does the deterministic work agents should not improvise: tool checks, config, metadata detection, change delta, skill installer, org classification, the official Code Analyzer, validated deploys and test runs. A plugin\'s <code>bin/</code> is added to the PATH, so it is just <code>sf-sdlc</code>.</p>',
+      provide: 'Node.js 18+. For deploy and test: the <code>sf</code> CLI, authenticated to your orgs.',
+      use: '<code>sf-sdlc doctor</code>, <code>sf-sdlc config show</code>, <code>sf-sdlc delta --from main</code>, <code>sf-sdlc analyze --staged</code>. Add <code>--json</code> to any command.' },
+    { id: 'catalog', label: 'catalog/', depth: 1, folder: true, kind: 'gen', code: 'c-catalog', codeLabel: 'catalog/detection-rules.json (one rule)',
+      title: 'Skill catalog and detection rules', path: 'catalog/',
+      desc: '<p><code>skills.json</code> lists every library skill (generated). <code>detection-rules.json</code> maps project signals (metadata folders, greenfield, profile) to the skills to recommend, with the reason shown to you.</p>',
+      provide: 'Nothing. Maintainers add a rule when adding a skill family.', use: 'Read by <code>sf-sdlc skills recommend</code>.' },
+    { id: 'context', label: 'context/', depth: 1, folder: true, kind: 'gen', code: 'c-context', codeLabel: 'context/project-instructions.md',
+      title: 'Project instructions', path: 'context/project-instructions.md',
+      desc: '<p>Plugins cannot ship a <code>CLAUDE.md</code>, so the build compiles <code>.claude/CLAUDE.md</code> and the always-on rules into this file, and the <code>SessionStart</code> hook prints it into every session. It must stay under 10,000 characters.</p>',
+      provide: 'Nothing. Put project-specific conventions in your own <code>CLAUDE.md</code> or <code>specs/constitution.md</code>.', use: 'Automatic.' },
+    { id: 'templates', label: 'templates/', depth: 1, folder: true, kind: 'gen', code: 'c-templates', codeLabel: 'templates/',
+      title: 'Templates', path: 'templates/',
+      desc: '<p>Starting files that <code>sf-sdlc init</code> writes into your project: the config example, Claude Code permissions, Code Analyzer config and a pull request template.</p>',
+      provide: 'Review and adjust the files once they are in your project.', use: '<code>sf-sdlc init</code> (run by <code>/sf-sdlc:setup</code>).' },
+    { id: 'mcp', label: '.mcp.json', depth: 1, kind: 'hand', code: 'c-mcp', codeLabel: '.mcp.json',
+      title: 'MCP servers', path: '.mcp.json',
+      desc: '<p>Connects the Atlassian remote MCP server so the story, QA and release agents can search and create Jira issues and read Confluence. No Salesforce MCP is included: Salesforce work goes through the <code>sf</code> CLI.</p>',
+      provide: 'Sign in once with <code>/mcp</code>. Set <code>jira.projectKey</code> and field IDs in your config.',
+      use: 'Agents always preview and ask for an explicit yes before creating issues. Without the connection, <code>/sf-sdlc:stories</code> writes a CSV to import.' },
+    { id: 'readme', label: 'README.md · NOTICE', depth: 1, kind: 'hand',
+      title: 'README and NOTICE', path: 'README.md, NOTICE',
+      desc: '<p>The plugin README shown in the marketplace, and third-party attribution for the vendored skills (Apache-2.0).</p>',
+      provide: 'Nothing.', use: 'Read them.' }
+  ];
+
+  var PROJECT = [
+    { id: 'p-root', label: 'your-salesforce-project/', depth: 0, folder: true, kind: null,
+      title: 'Your Salesforce DX project', path: './',
+      desc: '<p>What <code>/sf-sdlc:setup</code> and the lifecycle stages create in your own repository. The plugin itself never stores project data.</p>',
+      provide: 'A Salesforce DX project with <code>sfdx-project.json</code> for build stages. Document stages work in any folder.',
+      use: '<code>/sf-sdlc:setup</code>, then <code>/sf-sdlc:doctor</code>.' },
+    { id: 'p-claude', label: '.claude/', depth: 1, folder: true, kind: 'proj', code: 'c-installed', codeLabel: '.claude/',
+      title: 'Project Claude Code folder', path: '.claude/',
+      desc: '<p>Your project\'s config, permissions and installed Salesforce skills. Commit it so the whole team shares the same setup.</p>',
+      provide: 'Review it once after setup.', use: '<code>sf-sdlc config show</code>.' },
+    { id: 'p-config', label: 'sf-sdlc.json', depth: 2, kind: 'proj', code: 'cfgExample', codeLabel: '.claude/sf-sdlc.json',
+      title: 'Project configuration', path: '.claude/sf-sdlc.json',
+      desc: '<p>The one file that makes the generic plugin fit your project: org aliases and which are production, branch rules, Jira project and fields, coverage and analyzer thresholds, promotion order, document paths and hook mode.</p>',
+      provide: '<ul><li><strong>Every production alias in <code>orgs.production</code>.</strong></li><li>Your branch names and protected branches.</li><li>Jira site, project key and custom field IDs, if you use Jira.</li></ul>',
+      use: '<code>sf-sdlc config validate</code>. Commit it.' },
+    { id: 'p-local', label: 'sf-sdlc.local.json', depth: 2, kind: 'proj', code: 'c-local', codeLabel: '.claude/sf-sdlc.local.json',
+      title: 'Personal overrides', path: '.claude/sf-sdlc.local.json',
+      desc: '<p>Same shape as the main file; any key here wins. Ignored by git.</p>',
+      provide: 'Optional: your own dev org, a stricter hook mode.', use: 'Do not commit.' },
+    { id: 'p-settings', label: 'settings.json', depth: 2, kind: 'proj', code: 'c-settings', codeLabel: '.claude/settings.json (excerpt)',
+      title: 'Claude Code permissions', path: '.claude/settings.json',
+      desc: '<p>Allow read-only commands without prompts; always ask before deploys, deletions, data changes, pushes and releases; deny reading CLI credentials. These prompt even if a hook cannot run.</p>',
+      provide: 'Add your own allow rules if prompts get in the way.', use: 'Commit it.' },
+    { id: 'p-skills', label: 'skills/', depth: 2, folder: true, kind: 'proj', code: 'c-installed', codeLabel: '.claude/skills/',
+      title: 'Installed Salesforce skills', path: '.claude/skills/ + sf-sdlc.skills.lock.json',
+      desc: '<p>Only the technical skills this project needs, copied from the plugin\'s library. The lock file records each one\'s hash, so <code>skills sync</code> updates untouched skills and leaves your edits alone.</p>',
+      provide: 'Confirm the recommended set. Edit a skill freely.', use: '<code>/sf-sdlc:skills</code> · <code>sf-sdlc skills sync --dry-run</code>.' },
+    { id: 'p-analyzer', label: 'code-analyzer.yml', depth: 1, kind: 'proj', code: 'c-analyzer', codeLabel: 'code-analyzer.yml',
+      title: 'Code Analyzer config', path: 'code-analyzer.yml',
+      desc: '<p>Which Code Analyzer rules run and how they are weighted. The blocking threshold itself comes from <code>quality.analyzerSeverityThreshold</code>.</p>',
+      provide: 'Adjust rules to your standards.', use: '<code>sf-sdlc analyze --changed</code> · <code>/sf-sdlc:analyze</code>.' },
+    { id: 'p-docs', label: 'docs/sdlc/', depth: 1, folder: true, kind: 'proj', code: 'c-docs', codeLabel: 'docs/sdlc/',
+      title: 'Lifecycle documents', path: 'docs/sdlc/',
+      desc: '<p>Where the BRD, backlog, architecture, QA and release drafts are written. Each carries an approval record that only a person fills in.</p>',
+      provide: 'Drop transcripts and notes into <code>00-inputs/</code>. Change the root with <code>paths.docs</code>.', use: '<code>/sf-sdlc:brd docs/sdlc/00-inputs/</code> · <code>/sf-sdlc:trace</code>.' },
+    { id: 'p-specs', label: 'specs/', depth: 1, folder: true, kind: 'proj', code: 'c-specs', codeLabel: 'specs/',
+      title: 'Spec-driven development', path: 'specs/',
+      desc: '<p>One folder per story: spec (what and why), plan (how), tasks (test-first steps), verification and review. Any change beyond a trivial edit goes through a spec first.</p>',
+      provide: 'Run <code>/sf-sdlc:constitution</code> once to record your engineering principles.', use: '<code>/sf-sdlc:specify US-04-02</code> → <code>clarify</code> → <code>plan</code> → <code>tasks</code> → <code>implement</code> → <code>verify</code>.' },
+    { id: 'p-state', label: '.sf-sdlc/', depth: 1, folder: true, kind: 'proj', code: 'c-state', codeLabel: '.sf-sdlc/',
+      title: 'Local state and audit log', path: '.sf-sdlc/',
+      desc: '<p>Written by the hooks and CLI: the audit log of org-affecting commands, tracked jobs for the monitors, test results and caches. Never committed.</p>',
+      provide: 'Nothing. Ship <code>audit.jsonl</code> to your own logging if you need a tamper-proof record.', use: '<code>sf-sdlc audit --tail 20</code>.' }
+  ];
+
+  var KIND = {
+    gen: ['gen', 'Generated from .claude/'],
+    hand: ['hand', 'Hand-written'],
+    proj: ['proj', 'In your project']
+  };
+
+  var FOLDER = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  var FILE = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function codeText(id) { var el = document.getElementById(id); return el ? el.textContent.replace(/^\n+|\s+$/g, '') : ''; }
+
+  var detail = document.getElementById('detail');
+  var all = {};
+
+  function buildTree(listEl, items) {
+    items.forEach(function (it) {
+      all[it.id] = it;
+      var li = document.createElement('li');
+      li.setAttribute('role', 'none');
+      var b = document.createElement('button');
+      b.setAttribute('role', 'treeitem');
+      b.dataset.id = it.id;
+      b.dataset.depth = it.depth;
+      b.style.paddingLeft = (20 + it.depth * 20) + 'px';
+      b.innerHTML = (it.folder ? FOLDER : FILE) + '<span>' + esc(it.label) + '</span>' + (it.kind ? '<i class="dot ' + it.kind + '"></i>' : '');
+      b.addEventListener('click', function () { select(it.id, listEl); });
+      li.appendChild(b);
+      listEl.appendChild(li);
+    });
+  }
+
+  function select(id, listEl) {
+    var it = all[id];
+    var buttons = listEl.querySelectorAll('button');
+    var idx = -1;
+    buttons.forEach(function (b, i) { b.classList.remove('selected', 'child-of-selected'); if (b.dataset.id === id) idx = i; });
+    if (idx >= 0) {
+      buttons[idx].classList.add('selected');
+      var d = +buttons[idx].dataset.depth;
+      if (all[id].folder) {
+        for (var j = idx + 1; j < buttons.length && +buttons[j].dataset.depth > d; j++) buttons[j].classList.add('child-of-selected');
+      }
+    }
+    var badges = '';
+    if (it.kind) badges += '<span class="badge ' + KIND[it.kind][0] + '">' + KIND[it.kind][1] + '</span>';
+    badges += '<span class="badge neutral">' + (it.folder ? 'Folder' : 'File') + '</span>';
+    var html = '<div class="eyebrow" style="color:var(--muted)">Selected piece</div>' +
+      '<h3>' + esc(it.title) + '</h3>' +
+      '<span class="detail-path">' + esc(it.path) + '</span>' + badges +
+      '<div class="desc">' + it.desc + '</div>' +
+      '<div class="kv">' +
+        '<div><h5>What you provide or configure</h5>' + (it.provide.indexOf('<ul>') === 0 ? it.provide : '<p>' + it.provide + '</p>') + '</div>' +
+        '<div><h5>How to use it</h5><p>' + it.use + '</p></div>' +
+      '</div>';
+    if (it.code) {
+      html += '<div class="code-wrap"><p class="code-label">' + esc(it.codeLabel || '') + '</p><button class="copy" data-copy-text="' + it.code + '">Copy</button><pre><code>' + esc(codeText(it.code)) + '</code></pre></div>';
+    }
+    detail.innerHTML = html;
+  }
+
+  var treePlugin = document.getElementById('tree-plugin');
+  var treeProject = document.getElementById('tree-project');
+  buildTree(treePlugin, PLUGIN);
+  buildTree(treeProject, PROJECT);
+  select('skill-md', treePlugin);
+
+  // keyboard: up/down within the visible tree
+  [treePlugin, treeProject].forEach(function (tree) {
+    tree.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      var btns = Array.prototype.slice.call(tree.querySelectorAll('button'));
+      var i = btns.indexOf(document.activeElement);
+      if (i < 0) return;
+      e.preventDefault();
+      var n = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
+      n.focus(); n.click();
+    });
+  });
+
+  // ---------- segmented tabs ----------
+  document.querySelectorAll('.seg[data-tabs]').forEach(function (seg) {
+    var btns = seg.querySelectorAll('button');
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        btns.forEach(function (o) {
+          o.setAttribute('aria-selected', String(o === b));
+          var p = document.getElementById(o.dataset.target);
+          if (p) p.hidden = o !== b;
+        });
+        if (seg.dataset.tabs === 'tree') {
+          var isPlugin = b.dataset.target === 'tree-plugin';
+          document.getElementById('treeTitle').textContent = isPlugin ? 'Plugin directory' : 'Your project';
+          select(isPlugin ? 'skill-md' : 'p-config', isPlugin ? treePlugin : treeProject);
+        }
+      });
+    });
+  });
+
+  // ---------- copy buttons ----------
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.copy');
+    if (!b) return;
+    var text = b.dataset.copy ? document.getElementById(b.dataset.copy).textContent : codeText(b.dataset.copyText);
+    var done = function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1400); };
+    try { navigator.clipboard.writeText(text).then(done, function () {}); } catch (err) { /* clipboard unavailable */ }
+  });
+
+  // ---------- theme ----------
+  var root = document.documentElement;
+  try { var saved = localStorage.getItem('sfsdlc-theme'); if (saved) root.dataset.theme = saved; } catch (e) {}
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('sfsdlc-theme', root.dataset.theme); } catch (e) {}
+  });
+
+  // ---------- mobile nav ----------
+  var menuBtn = document.getElementById('menuBtn');
+  menuBtn.addEventListener('click', function () {
+    var open = document.body.classList.toggle('nav-open');
+    menuBtn.setAttribute('aria-expanded', String(open));
+  });
+  document.querySelectorAll('.sidebar a').forEach(function (a) {
+    a.addEventListener('click', function () { document.body.classList.remove('nav-open'); menuBtn.setAttribute('aria-expanded', 'false'); });
+  });
+
+  // ---------- scroll spy ----------
+  var links = document.querySelectorAll('.sidebar a');
+  var tabs = document.querySelectorAll('.tabs a');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section[id]'));
+  function spy() {
+    var y = window.scrollY + 110, current = sections[0];
+    sections.forEach(function (s) { if (s.offsetTop <= y) current = s; });
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) current = sections[sections.length - 1];
+    links.forEach(function (a) { a.classList.toggle('active', a.getAttribute('href') === '#' + current.id); });
+    tabs.forEach(function (a) { a.classList.toggle('active', a.dataset.tab === current.dataset.tab); });
+  }
+  window.addEventListener('scroll', spy, { passive: true });
+  spy();
+})();
+</script>
+</body>
+</html>

@@ -1,9 +1,13 @@
 ---
-description: Write the implementation plan for an approved spec, checked against the constitution (SDD phase 3)
-argument-hint: "[feature folder, default: most recent under specs/]"
+description: Write the implementation plan for an approved spec in the project's spec-driven format (SDD phase 3)
+argument-hint: "[feature folder, story ID or ticket; default: most recent under specs/]"
 ---
-Follow the `sdlc-spec-driven-development` skill, **Phase 3 — Plan**, for: $ARGUMENTS
+Use the **sdlc-plan-agent** subagent to write the implementation plan.
 
-Read `specs/constitution.md`, the spec, the story's LLD if one exists, and the code that will
-change. Write `plan.md` (constitution check, metadata inventory with exact API names, design, test
-plan, deployment) and stop for review. Do not write code.
+Feature or ticket from the user: $ARGUMENTS
+
+The agent follows the `sdlc-spec-driven-development` skill, **Phase 3 — Plan**: reads
+`specs/constitution.md`, the spec, the story's LLD if one exists and the code that will change,
+traces callers and dependencies in both directions, and writes `plan.md` from the plan template with
+every section in order, including the technical-flow diagram that marks new and changed components.
+No code is written. Stop for review.

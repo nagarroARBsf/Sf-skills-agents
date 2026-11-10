@@ -57,6 +57,13 @@ Measurable, technology-agnostic: "Managers identify all critical deals for a rev
 | Date | Question | Answer | By |
 |---|---|---|---|
 
+## Approval record
+| Status | Approver | Role | Date | Comment |
+|---|---|---|---|---|
+| Draft for review | — | — | — | — |
+
+Filled in by a person only.
+
 ---
 ### Spec checklist (run before stopping)
 - [ ] No implementation detail (class, field API, flow, component names).

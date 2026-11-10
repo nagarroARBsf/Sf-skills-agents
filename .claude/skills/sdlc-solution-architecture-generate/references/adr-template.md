@@ -22,3 +22,10 @@ The chosen option and why, in two or three sentences.
 
 ## Consequences
 What becomes easier, what becomes harder, follow-up work (stories, monitoring, documentation).
+
+## Approval record
+| Status | Approver | Role | Date | Comment |
+|---|---|---|---|---|
+| Draft for review | — | — | — | — |
+
+Filled in by a person only.

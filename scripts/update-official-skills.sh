@@ -4,6 +4,7 @@
 #
 #   scripts/update-official-skills.sh            # latest main
 #   scripts/update-official-skills.sh <git-ref>   # a tag or commit
+#   scripts/update-official-skills.sh --no-sync [<git-ref>]   # leave .github/ and .cursor/ untouched
 #
 # Only the listed folders are replaced. Nagarro skills (sdlc-*) and community skills (sf-*) are
 # never touched. Review the git diff before committing.
@@ -14,6 +15,8 @@ LIST="$ROOT/scripts/official-skills.txt"
 LOCK="$ROOT/scripts/official-skills.lock"
 DEST="$ROOT/.claude/skills"
 LIB="$ROOT/.claude/skill-library"   # on-demand skills; a listed skill is refreshed where it already lives
+SYNC=1
+if [[ "${1:-}" == "--no-sync" ]]; then SYNC=0; shift; fi
 REF="${1:-main}"
 
 TMP="$(mktemp -d)"
@@ -25,25 +28,35 @@ git -C "$TMP/sf-skills" checkout --quiet "$REF"
 missing=0
 while IFS= read -r skill; do
   [[ -z "$skill" || "$skill" == \#* ]] && continue
-  if [[ ! -f "$TMP/sf-skills/skills/$skill/SKILL.md" ]]; then
+  src="$TMP/sf-skills/skills/$skill"
+  if [[ ! -f "$src/SKILL.md" ]]; then
+    # Some skills exist only inside an upstream plugin (plugins/<group>/<plugin>/skills/<skill>).
+    src="$(find "$TMP/sf-skills/plugins" -type d -path "*/skills/$skill" -print -quit 2>/dev/null || true)"
+  fi
+  if [[ -z "$src" || ! -f "$src/SKILL.md" ]]; then
     echo "missing upstream (renamed or removed?): $skill" >&2
     missing=$((missing + 1))
     continue
   fi
-  target="$DEST"
-  [[ -d "$LIB/$skill" ]] && target="$LIB"
+  target="$LIB"   # official skills live in the library; a project installs the ones it needs
+  [[ -d "$DEST/$skill" ]] && target="$DEST"
   rm -rf "${target:?}/$skill"
-  cp -R "$TMP/sf-skills/skills/$skill" "$target/$skill"
+  cp -R "$src" "$target/$skill"
 done < "$LIST"
 
-cp "$TMP/sf-skills/LICENSE.txt" "$DEST/LICENSE-forcedotcom-sf-skills.txt"
+cp "$TMP/sf-skills/LICENSE.txt" "$LIB/LICENSE-forcedotcom-sf-skills.txt"
 git -C "$TMP/sf-skills" log -1 --format='%H %cs' > "$LOCK"
 echo "Pinned forcedotcom/sf-skills at $(cat "$LOCK")"
 
 echo "New upstream skills not in the list (add them to official-skills.txt if wanted):"
 comm -13 <(grep -v '^#' "$LIST" | sort) <(ls "$TMP/sf-skills/skills" | sort) | sed 's/^/  /' | head -50
 
-python3 "$ROOT/scripts/sync-platforms.py"
+if (( SYNC )); then
+  python3 "$ROOT/scripts/sync-platforms.py"
+else
+  echo "Skipped the Copilot/Cursor sync (--no-sync). Run scripts/sync-platforms.py when you want them regenerated."
+fi
+echo "Now run: python3 scripts/build-claude-plugin.py"
 
 if (( missing > 0 )); then
   echo "$missing listed skill(s) were not found upstream; update official-skills.txt." >&2

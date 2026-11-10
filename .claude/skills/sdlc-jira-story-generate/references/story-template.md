@@ -18,7 +18,7 @@ columns.
 | Source | BR-04 / FR-04.2, RULE-04.1–04.5 |
 | Blocked by | US-03-02 |
 | Readiness | Not Ready — Q-06 (stagnation threshold) |
-| Jira key | — |
+| Jira key | — (filled from Jira after creation or import; never invented) |
 
 **User story**
 As a Sales Manager, I want each open opportunity to carry a health score calculated from agreed
@@ -76,10 +76,14 @@ risk rules, so that I can find at-risk deals in reviews and reports without chec
 - Estimated by the team.
 
 **Definition of Done** (reference once in backlog.md; do not repeat per story):
-- Metadata in source control; deployed to the integration sandbox through the pipeline.
-- Apex: tests with meaningful assertions, positive/negative/bulk/permission cases, org-wide
-  coverage ≥ 75% (project target 85%+); LWC: Jest tests for logic.
-- Code Analyzer / PMD: no new high-severity violations.
+- Metadata in source control; deployed to the first shared org in `deploy.pipeline` through the
+  pipeline.
+- Apex: tests with meaningful assertions, positive/negative/bulk/permission cases; coverage of
+  new and changed classes at or above `quality.coverageTarget`, org-wide at or above
+  `quality.orgCoverageMinimum`; LWC: Jest tests for logic.
+- Salesforce Code Analyzer: no new violation at or above `quality.analyzerSeverityThreshold`.
+- Code review verdict Approve (or conditions met) in `specs/<story>/review.md`.
 - CRUD/FLS and sharing enforced; permission set updated.
-- Test cases linked and passed in QA; AC evidence attached.
+- Test cases linked and passed in a recorded test run (`TR-…`); no open defect above the agreed
+  severity; AC evidence attached.
 - Documentation (LLD, release notes, manual post-deploy steps) updated.

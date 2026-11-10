@@ -1,7 +1,14 @@
 # Mermaid patterns for Salesforce architecture
 
-Copy and adapt. All patterns use diagram types that render on GitHub, GitLab, Azure DevOps,
-VS Code and Cursor previews.
+Copy and adapt. All patterns use diagram types that render on common Git hosts, wikis and editor
+previews.
+
+These patterns show structure only. Any diagram that shows components of the solution must also
+show what is New, Changed, Unchanged and Removed: for that, use the `sdlc-architecture-diagram`
+skill and its templates (`.claude/skills/sdlc-architecture-diagram/references/diagram-templates.md`),
+which add the status classes, label prefixes and the Key to patterns 1, 3, 4, 6 and 7. Patterns 2
+(sequence), 5 (state), 8 (pipeline) and 9 (timeline) carry status through label prefixes only,
+or not at all.
 
 ## Syntax rules that avoid broken renders
 - Quote labels with spaces, parentheses, slashes, colons or `#`: `A["Apex (async)"]`.

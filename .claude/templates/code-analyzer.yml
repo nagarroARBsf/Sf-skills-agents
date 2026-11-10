@@ -1,0 +1,20 @@
+# Salesforce Code Analyzer (v5) configuration, read by `sf code-analyzer run` and `sf-sdlc analyze`.
+# Reference: `sf code-analyzer config --help` prints the full default configuration.
+#
+# The blocking severity is not set here: it comes from quality.analyzerSeverityThreshold in
+# .claude/sf-sdlc.json (1 = Critical ... 5 = Info). This file adjusts which rules count as what.
+
+# Files that are never scanned.
+ignores:
+  files:
+    - "**/node_modules/**"
+    - "**/staticresources/**"
+    - "**/__tests__/**"
+
+# Rule overrides. Governor-limit and sharing mistakes are raised so they block a commit.
+rules:
+  pmd:
+    OperationWithLimitsInLoop:
+      severity: 2
+    ApexSharingViolations:
+      severity: 2

@@ -1,0 +1,56 @@
+{
+  "env": {
+    "SF_AUTOUPDATE_DISABLE": "true",
+    "SF_DISABLE_TELEMETRY": "true"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(sf-sdlc doctor*)",
+      "Bash(sf-sdlc config*)",
+      "Bash(sf-sdlc detect*)",
+      "Bash(sf-sdlc inventory*)",
+      "Bash(sf-sdlc delta*)",
+      "Bash(sf-sdlc skills list*)",
+      "Bash(sf-sdlc skills recommend*)",
+      "Bash(sf-sdlc org classify*)",
+      "Bash(sf-sdlc analyze*)",
+      "Bash(sf-sdlc check*)",
+      "Bash(sf-sdlc audit*)",
+      "Bash(sf org list*)",
+      "Bash(sf config get*)",
+      "Bash(sf code-analyzer *)",
+      "Bash(sf project deploy report*)",
+      "Bash(sf project deploy preview*)",
+      "Bash(sf project retrieve preview*)",
+      "Bash(sf sobject describe*)",
+      "Bash(sf sobject list*)",
+      "Bash(sf org list metadata*)",
+      "Bash(sf apex get test*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
+    "ask": [
+      "Bash(sf project deploy start*)",
+      "Bash(sf project deploy quick*)",
+      "Bash(sf project delete*)",
+      "Bash(sf org delete*)",
+      "Bash(sf data delete*)",
+      "Bash(sf data import*)",
+      "Bash(sf data upsert*)",
+      "Bash(sf data update*)",
+      "Bash(sf package install*)",
+      "Bash(sf package uninstall*)",
+      "Bash(git push*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh release create*)"
+    ],
+    "deny": [
+      "Read(./.sf/**)",
+      "Read(./.sfdx/**)",
+      "Read(./**/server.key)",
+      "Bash(sf org display*--verbose*)",
+      "Bash(sf org auth*)"
+    ]
+  }
+}

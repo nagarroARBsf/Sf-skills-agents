@@ -4,6 +4,7 @@ argument-hint: "[feature folder, default: most recent under specs/]"
 ---
 Follow the `sdlc-spec-driven-development` skill, **Phase 6 — Verify**, for: $ARGUMENTS
 
-Write `verification.md`: each AC with evidence, test and coverage results, Code Analyzer results,
-a security review of the diff, deviations from spec/plan, and the hand-off to QA. Update the spec
-status. Report any failing gate plainly.
+Write `verification.md`: each AC with its evidence, test and coverage results against the project
+targets, the Salesforce Code Analyzer result (`node .claude/bin/sf-sdlc analyze --changed`),
+deviations from spec and plan, and the hand-off. Update the spec status. Report any failing gate
+plainly, then point to the next step: an independent review with `/sdlc-review`.

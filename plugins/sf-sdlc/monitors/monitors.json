@@ -1,0 +1,14 @@
+[
+  {
+    "name": "deploy-watch",
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/sf-sdlc\" jobs watch --type deploy",
+    "description": "Reports when a Salesforce validation or deployment started with sf-sdlc changes state",
+    "when": "on-skill-invoke:sdlc-deploy-release"
+  },
+  {
+    "name": "test-watch",
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/sf-sdlc\" jobs watch --type test",
+    "description": "Reports when an asynchronous Apex test run started with sf-sdlc finishes",
+    "when": "on-skill-invoke:sdlc-test-execution"
+  }
+]

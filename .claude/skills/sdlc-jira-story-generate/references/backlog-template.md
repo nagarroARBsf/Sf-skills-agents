@@ -2,18 +2,21 @@
 
 | Item | Details |
 |---|---|
-| Source BRD | `docs/sdlc/01-brd/BRD.md` v{x.y} ({status}) |
+| Source BRD | `docs/sdlc/01-brd/BRD.md` v{x.y} ({approval status}) |
 | Generated | {YYYY-MM-DD} |
-| Jira project | {KEY or [TBD]} |
+| Jira site / project | {jira.site} / {jira.projectKey} from the project config, or "Jira not enabled" |
 | Status | Draft for PO review |
 
 ## 1. Summary
 
-| Epic | Name | Source BR | Stories | Points | Priority |
-|---|---|---|---|---|---|
-| EPIC-01 | {Project} - {Capability} | BR-01 | 3 | 8 | Must |
+| Epic | Name | Source BR | Stories | Points | Priority | Jira key |
+|---|---|---|---|---|---|---|
+| EPIC-01 | {Project} - {Capability} | BR-01 | 3 | 8 | Must | — |
 
-Totals: {n} epics, {n} stories, {n} points. Stories not ready: {n}.
+Totals: {n} epics, {n} stories, {n} points. Stories not ready: {n}. In Jira: {n} of {n}.
+
+`Jira key` stays `—` until the issue exists. Keys are written here only from a tool response or
+from the user; never invented.
 
 ## 2. Requirement coverage
 
@@ -61,3 +64,15 @@ flowchart LR
 
 ## 8. Definition of Ready / Definition of Done
 {Paste the project DoR/DoD once here.}
+
+## 9. Jira synchronisation log
+| Date | Action | Result | By |
+|---|---|---|---|
+| {YYYY-MM-DD} | Created through Jira tool after preview | 4 epics, 17 stories created; 2 already existed; 1 conflict (US-04-05) | {person who said yes} |
+
+## Approval record
+| Status | Approver | Role | Date | Comment |
+|---|---|---|---|---|
+| Draft for review | — | — | — | — |
+
+Filled in by a person only.

@@ -1,0 +1,11 @@
+{
+  "name": "SF SDLC Light",
+  "base": "light",
+  "overrides": {
+    "claude": "#0176d3",
+    "promptBorder": "#014486",
+    "success": "#2e844a",
+    "error": "#ba0517",
+    "warning": "#a96404"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "SF SDLC Dark",
+  "base": "dark",
+  "overrides": {
+    "claude": "#4bb7f5",
+    "promptBorder": "#0b8fd9",
+    "success": "#45c65a",
+    "error": "#fe5c4c",
+    "warning": "#fcc003"
+  }
+}

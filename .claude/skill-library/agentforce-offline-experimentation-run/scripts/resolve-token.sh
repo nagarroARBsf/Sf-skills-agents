@@ -2,7 +2,9 @@
 # Resolve an SFAP access token (JWT, sfap_api scope) for SFAP AI Gateway calls.
 # Adapted from the dx-apexguru-scan skill's resolve-token.sh.
 #
-# Usage: bash resolve-token.sh [--org <alias>]
+# Usage: bash resolve-token.sh [--org <alias>] [--core-tenant-id <id>]
+#
+# --core-tenant-id sets coreTenantId as given, for an org whose id the rules below do not build.
 #
 # Output (stdout, single line JSON):
 #   {"baseUrl":"https://test.api.salesforce.com/ai/gpt/v1","tokenFile":"/tmp/...","source":"...","env":"...","coreTenantId":"..."}
@@ -11,9 +13,11 @@
 set -euo pipefail
 
 ORG_ALIAS=""
+CORE_TENANT_OVERRIDE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --org) ORG_ALIAS="${2:-}"; shift 2 ;;
+    --core-tenant-id) CORE_TENANT_OVERRIDE="${2:-}"; shift 2 ;;
     *) shift ;;
   esac
 done
@@ -47,7 +51,7 @@ if command -v sf >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 && command -v 
     SID="$(awk -F'\t' 'tolower($6)=="sid"{print $7}' "$COOKIE_JAR" 2>/dev/null | head -1)"
 
     if [ -n "$SID" ]; then
-      AUTH_JSON="$(curl -sS "${INSTANCE_URL%/}/ide/auth" -H "Authorization: Bearer $SID" 2>/dev/null || true)"
+      AUTH_JSON="$(printf 'Authorization: Bearer %s' "$SID" | curl -sS "${INSTANCE_URL%/}/ide/auth" -H @- 2>/dev/null || true)"
       CANDIDATE="$(printf '%s' "$AUTH_JSON" | jq -r '.jwt // empty' 2>/dev/null || true)"
       if [ -n "$CANDIDATE" ] && [ "$CANDIDATE" != "null" ]; then
         TOKEN="$CANDIDATE"
@@ -73,13 +77,20 @@ ISS=$(printf '%s' "$DECODED" | jq -r '.iss // empty' 2>/dev/null || true)
 SFAP_RH=$(printf '%s' "$DECODED" | jq -r '.sfap_rh // empty' 2>/dev/null || true)
 
 # Determine environment and base URL
-DETECTED_ENV="prod"
+DETECTED_ENV=""
 if echo "$ISS$SFAP_RH" | grep -qi 'test1\|test\b'; then
   DETECTED_ENV="test"
 elif echo "$ISS$SFAP_RH" | grep -qi 'stage'; then
   DETECTED_ENV="stage"
 elif echo "$ISS$SFAP_RH" | grep -qi 'dev\b'; then
   DETECTED_ENV="dev"
+elif [ -n "$ISS$SFAP_RH" ]; then
+  DETECTED_ENV="prod"
+fi
+
+if [ -z "$DETECTED_ENV" ]; then
+  printf '{"error":"cannot detect SFAP environment from JWT claims (issuer and sfap_rh are both empty)","hint":"set SFAP_BASE_URL or check the org authentication"}\n'
+  exit 1
 fi
 
 case "$DETECTED_ENV" in
@@ -93,12 +104,18 @@ BASE_URL="https://${API_HOST}/ai/gpt/v1"
 # Build core tenant ID from the org's instance name
 INSTANCE_NAME=""
 if [ -n "$ISS" ]; then
-  # Extract instance hint from issuer URL (e.g. test1 from orgfarm-xxx.test1.my.pc-rnd.salesforce.com)
-  INSTANCE_NAME=$(echo "$ISS" | grep -oE '(test1|na[0-9]+|cs[0-9]+|eu[0-9]+)' | head -1 || true)
+  # Extract instance hint from issuer URL (e.g. test1 from orgfarm-xxx.test1.my.pc-rnd.salesforce.com;
+  # test2 and the other test instances the same way)
+  INSTANCE_NAME=$(echo "$ISS" | grep -oE '(test[0-9]+|na[0-9]+|cs[0-9]+|eu[0-9]+)' | head -1 || true)
 fi
 CORE_TENANT_ID=""
-if [ -n "$ORG_ID" ] && [ -n "$INSTANCE_NAME" ]; then
+if [ -n "$CORE_TENANT_OVERRIDE" ]; then
+  CORE_TENANT_ID="$CORE_TENANT_OVERRIDE"
+elif [ -n "$ORG_ID" ] && [ -n "$INSTANCE_NAME" ]; then
   CORE_TENANT_ID="core/falcon${INSTANCE_NAME}-core4/${ORG_ID}"
+elif [ -n "$ORG_ID" ] && [ "$DETECTED_ENV" = "prod" ]; then
+  # A production org whose issuer names no instance (a Hyperforce org or sandbox, e.g. instance USA874S)
+  CORE_TENANT_ID="core/prod/${ORG_ID}"
 fi
 
 # Write JWT to secure temp file

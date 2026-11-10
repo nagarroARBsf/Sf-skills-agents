@@ -26,6 +26,8 @@ the questions below and record trade-offs in HLD §13/§15.
 - [ ] Business thresholds configurable (Custom Metadata).
 - [ ] Clear module boundaries (package directories / naming prefixes).
 - [ ] Changes deployable through the pipeline; destructive changes planned.
+- [ ] Every component has a change status checked against the baseline; no `Unchanged` is assumed;
+      the regression surface of every `Changed` component is named.
 - [ ] Tests are deterministic (no `SeeAllData`, no hard-coded IDs/dates), so refactoring is safe.
 
 ## Governor limits quick reference (per synchronous transaction)

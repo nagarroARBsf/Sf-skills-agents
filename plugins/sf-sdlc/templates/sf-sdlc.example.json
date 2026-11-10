@@ -1,0 +1,34 @@
+{
+  "$comment": "Filled-in example of .claude/sf-sdlc.json. `sf-sdlc init` creates the real file; every key is explained in SETUP.md.",
+  "project": { "name": "Orion Sales Cloud", "code": "ORION", "client": "Acme Manufacturing" },
+  "salesforce": { "apiVersion": "auto", "packageDirectories": "auto", "namespacePrefix": "", "componentPrefix": "ORN" },
+  "orgs": { "dev": "orion-dev", "qa": "orion-qa", "uat": "orion-uat", "devHub": "orion-hub", "production": ["orion-prod"] },
+  "git": {
+    "mainBranch": "main",
+    "integrationBranch": "develop",
+    "protectedBranches": ["main", "develop", "release/*"],
+    "branchPattern": "feature/{ticket}-{slug}",
+    "commitPattern": "{ticket}: {summary}",
+    "pullRequestBase": "develop"
+  },
+  "jira": {
+    "enabled": true,
+    "site": "https://acme.atlassian.net",
+    "projectKey": "ORION",
+    "issueTypes": { "epic": "Epic", "story": "Story", "bug": "Bug", "task": "Task" },
+    "fields": { "storyPoints": "customfield_10016", "epicLink": "parent", "acceptanceCriteria": "customfield_10042" },
+    "labels": ["salesforce"],
+    "transitions": { "inProgress": "In Progress", "inReview": "In Review", "readyForQa": "Ready for QA", "done": "Done" }
+  },
+  "quality": { "coverageTarget": 85, "orgCoverageMinimum": 75, "analyzerSeverityThreshold": 2, "analyzerRuleSelector": "Recommended", "bulkTestSize": 200 },
+  "deploy": {
+    "pipeline": ["dev", "qa", "uat", "production"],
+    "testLevel": { "dev": "NoTestRun", "qa": "RunLocalTests", "uat": "RunLocalTests", "production": "RunLocalTests" },
+    "validateBeforeDeploy": true,
+    "allowDirectProductionDeploy": false,
+    "useDelta": true,
+    "waitMinutes": 60
+  },
+  "paths": { "docs": "docs/sdlc", "specs": "specs" },
+  "hooks": { "mode": "observe", "auditLog": true, "strictEvidence": false }
+}

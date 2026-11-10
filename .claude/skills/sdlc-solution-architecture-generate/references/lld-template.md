@@ -5,6 +5,7 @@
 | Story | US-{nn-mm} ({Jira key}) — Source BR-{nn} / FR-{nn.m} |
 | HLD | HLD §{n} |
 | ADRs | {ADR-nnn} |
+| Baseline | `baseline/inventory.md` @ `{commit}`; statuses from `components.json` |
 | Status | Draft for tech-lead review |
 
 ## 1. Summary
@@ -18,19 +19,37 @@ rejected (one line each).
 | AC-6 | `OpportunityHealthBatch` (scope 200) | Apex test `batch_10kRecords` + QA TC-…-012 |
 
 ## 3. Metadata inventory
-| # | Type | API name | Action | Notes |
+| # | Type | API name | Change | What changes / verification |
 |---|---|---|---|---|
 | 1 | CustomField | `Opportunity.Deal_Health_Score__c` | New | Number(3,0) |
-| 2 | ApexClass | `OpportunityHealthService` | New | |
-| 3 | ApexClass | `OpportunityHealthServiceTest` | New | |
-| 4 | ApexTrigger | `OpportunityTrigger` | Modify | add handler call |
-| 5 | PermissionSet | `Sales_Manager_Access` | Modify | FLS read on new field |
+| 2 | CustomObject | `Opportunity` | Changed | gains field #1; nothing else |
+| 3 | ApexClass | `OpportunityHealthService` | New | |
+| 4 | ApexClass | `OpportunityHealthServiceTest` | New | |
+| 5 | ApexClass | `OpportunityTriggerHandler` | Changed | `afterUpdate` calls the new service; existing handler logic untouched |
+| 6 | ApexTrigger | `OpportunityTrigger` | Unchanged | in baseline; already delegates all events to the handler |
+| 7 | PermissionSet | `Sales_Manager_Access` | Changed | adds FLS read on field #1 |
+| 8 | CustomField | `Opportunity.Legacy_Score__c` | Removed | replaced by #1; values not migrated (see §11) |
 
-Deployment order follows the table order.
+Change values: **New** (absent from the baseline), **Changed** (present, modified by this story),
+**Unchanged** (present, verified, listed because the design depends on it or it is a regression
+risk), **Removed** (present, deleted by this story). The values are copied from
+`components.json`; update the model first. Never write Unchanged for a component that
+was not found in the baseline inventory or the org.
+
+Deployment order follows the table order. New and Changed rows form `package.xml`; Removed rows
+form the destructive manifest.
+
+### 3.1 Component diagram
+Solution architecture diagram for this story with the change-status overlay (template 3 in
+`.claude/skills/sdlc-architecture-diagram/references/diagram-templates.md`), generated from the
+rows above.
 
 ## 4. Data model changes
-| Object | Field label | API name | Type | Length/precision | Default | Required | Help text | FLS (read/edit) |
-|---|---|---|---|---|---|---|---|---|
+| Object | Field label | API name | Change | Type | Length/precision | Default | Required | Help text | FLS (read/edit) |
+|---|---|---|---|---|---|---|---|---|---|
+
+For a Changed field state the old and new definition (type changes and length reductions can
+lose data; a changed picklist value affects existing records, reports and automation).
 
 Picklist values, record types, validation rules (with formula and exact error message and location).
 
@@ -83,11 +102,14 @@ sequenceDiagram
     actor U as Sales Rep
     participant P as Opportunity page
     participant T as OpportunityTrigger
-    participant S as OpportunityHealthService
+    participant H as [CHG] OpportunityTriggerHandler
+    participant S as [NEW] OpportunityHealthService
+    Note over U,S: Key - [NEW] new, [CHG] changed, no prefix unchanged
     U->>P: Edit discount to 25%
     P->>T: after update
-    T->>S: recalculate(changed Ids)
-    S-->>T: scores updated
+    T->>H: afterUpdate(newMap, oldMap)
+    H->>S: [NEW] recalculate(changed Ids)
+    S-->>H: scores updated
     P-->>U: refreshed score 90
 ```
 
@@ -116,8 +138,23 @@ What can fail, what the user sees, what is logged where, retry behaviour.
 Test data approach (TestDataFactory), personas (`System.runAs`), mocks.
 
 ## 11. Deployment notes
-Pre- and post-deployment manual steps (feature enablement, data backfill, scheduling the batch,
-permission set assignment), rollback approach, destructive changes.
+- Pre-deployment manual steps (feature enablement, data export before a removal).
+- Post-deployment manual steps (data backfill, scheduling the batch, permission set assignment,
+  flow activation).
+- Destructive changes: one line per `Removed` row in §3 — pre- or post-deployment manifest, what
+  replaces it, what data is lost, who confirmed.
+- Rollback approach, and what cannot be rolled back (data changes, deleted fields).
+- Regression surface: the `Changed` and `Unchanged` rows in §3 that must behave as before, and
+  the tests that prove it.
+
+The deployment itself follows the `sdlc-deploy-release` skill.
 
 ## 12. Open issues
 Questions, assumptions made in the design, and deviations from the story (to be raised to the PO).
+
+## Approval record
+| Status | Approver | Role | Date | Comment |
+|---|---|---|---|---|
+| Draft for review | — | — | — | — |
+
+Filled in by a person only.

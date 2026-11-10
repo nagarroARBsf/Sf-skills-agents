@@ -4,124 +4,169 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-This is **not a Salesforce project** — it is the *harness that gets copied into* Salesforce projects.
-It ships 171 skills (27 loaded in `skills/`, 144 on demand in `skill-library/`), 4 SDLC agents, 12 commands and 6 rules in three tool-native formats, so a
-downstream team copies one folder (`.claude/`, `.github/` or `.cursor/`) into their own repo.
+This is **not a Salesforce project** — it is the *kit that gets installed into* Salesforce projects,
+for Claude Code. It ships 10 SDLC agents, 22 commands, 11 always-available `sdlc-*` skills, a
+174-skill on-demand library, guard hooks, the `sf-sdlc` CLI, output styles and workflows, in two
+forms:
 
-Consequence: 13,644 of the 13,651 tracked files are payload. The only hand-written, repo-owned code
-is `scripts/sync-platforms.py`, `scripts/update-official-skills.sh`, `scripts/official-skills.txt`
-and `README.md`. Work here is almost always *editing harness content* or *editing the generator*.
+- `.claude/` — the copy-in folder, and the **single source of truth**.
+- `plugins/sf-sdlc/` — the Claude Code plugin, **generated** from `.claude/` (marketplace `nagarro-sf`).
 
-### `.claude/CLAUDE.md` does not describe this repo
+Almost every tracked file is payload. The repo-owned code is: `.claude/hooks/*.js`,
+`.claude/bin/sf-sdlc`, `.claude/workflows/*.js`, `scripts/*`, `tests/kit.test.js`, and the
+hand-written plugin files listed under "Claude Code plugin". Work here is editing kit content,
+the Node tooling, or the generator.
 
-Claude Code loads `.claude/CLAUDE.md` as project instructions, but it is **payload** — instructions
-written for the downstream Salesforce project that copies it. Its rules (Apex `with sharing`,
-bulkification, the `/sdd-specify`-before-coding gate, "never deploy to prod") apply to generated
-Salesforce metadata, not to work in this repository. There is no `force-app/`, `docs/sdlc/` or
-`specs/` here. Treat it as a file to maintain, not as orders.
+### `.claude/` is payload, but it is also live in this repo
+
+Claude Code loads `.claude/CLAUDE.md`, `.claude/rules/` and `.claude/settings.json` here, so:
+
+- `.claude/CLAUDE.md` and the rules are instructions written for the *downstream Salesforce
+  project*. Their rules (Apex `with sharing`, the `/sdd-specify`-before-coding gate, "never deploy
+  to prod") apply to generated Salesforce metadata, not to work in this repository. There is no
+  `force-app/`, `docs/sdlc/` or `specs/` here. Treat them as files to maintain, not as orders.
+- The hooks in `.claude/settings.json` **do run** in this repo (session facts, the `sf`/`git`
+  guards, the secret guard). That is intended: it dogfoods them. They write local state to
+  `.sf-sdlc/` (ignored by git).
 
 ## Commands
 
 ```bash
-python3 scripts/sync-platforms.py            # regenerate .github/ and .cursor/ from .claude/
-python3 scripts/sync-platforms.py --check    # exit 1 and list stale paths; run before committing
-scripts/update-official-skills.sh            # re-vendor official skills from upstream main
-scripts/update-official-skills.sh <git-ref>  # ...from a tag or commit; re-pins official-skills.lock
+python3 scripts/build-claude-plugin.py            # regenerate plugins/sf-sdlc/ and .claude/catalog/skills.json
+python3 scripts/build-claude-plugin.py --check    # exit 1 and list stale paths; run before committing
+node --test tests/kit.test.js                     # unit tests for hooks, CLI library, catalog consistency
+claude plugin validate plugins/sf-sdlc --strict   # validate the plugin
+claude plugin validate .                          # validate the marketplace manifest
+scripts/update-official-skills.sh --no-sync       # re-vendor official skills from upstream main
+scripts/update-official-skills.sh --no-sync <ref> # ...from a tag or commit; re-pins official-skills.lock
+node .claude/bin/sf-sdlc help                     # the kit's CLI
 ```
 
-There is no package manager, build, lint or test suite. The generator is Python 3 **standard library
-only** — keep it that way; it has to run on a bare checkout. `update-official-skills.sh` calls
-`sync-platforms.py` itself, so you never need both.
+There is no package manager and no build step. The generator is Python 3 **standard library only**
+and the hooks and CLI are Node.js **standard library only** — keep both that way; they run on a
+bare checkout and on customer machines with no `npm install`.
 
-There is no CI. `--check` is the only verification gate, and it is on you to run it.
+`.github/workflows/sf-sdlc-ci.yml` runs the tests and the `--check`. Run both locally too, plus
+`claude plugin validate` (CI does not have the Claude Code CLI). After `update-official-skills.sh`,
+run `build-claude-plugin.py`.
+
+## GitHub Copilot and Cursor outputs are frozen
+
+`.github/` (except `workflows/`) and `.cursor/` hold the previous release's generated output for
+Copilot and Cursor. The owner will rebuild them separately. **Do not run `scripts/sync-platforms.py`**
+(it `rmtree`s and rewrites those folders from the new `.claude/`, whose content is now Claude Code
+specific) and do not edit or delete those folders. `build-claude-plugin.py` only imports
+`sync-platforms.py` for its frontmatter parser; that is safe. Always pass `--no-sync` to
+`update-official-skills.sh`.
 
 ## Generation model
 
-`.claude/` is the single source of truth. `.github/` and `.cursor/` are byte-for-byte derived:
-
-| Source | Copilot (`.github/`) | Cursor (`.cursor/`) |
+| Source in `.claude/` | Plugin output | Transformation |
 |---|---|---|
-| `CLAUDE.md` | `copilot-instructions.md` | `rules/00-project.mdc` (`alwaysApply: true`) |
-| `rules/*.md` | `instructions/*.instructions.md` (`applyTo`) | `rules/*.mdc` (`globs`) |
-| `agents/*.md` | `agents/*.agent.md` (+ handoff buttons) | `agents/*.md` (+ `readonly`) |
-| `commands/*.md` | `prompts/*.prompt.md` (+ `agent:` routing) | `commands/*.md` |
-| `skills/**` | `skills/**` (verbatim) | `skills/**` (verbatim) |
-| `skill-library/**` | `skill-library/**` (verbatim) | `skill-library/**` (verbatim) |
+| `agents/*.md` | `agents/*.md` | Body paths rewritten |
+| `commands/*.md` | `commands/*.md` | `sdlc-`/`sdd-` prefix dropped (`/sdlc-brd` → `/sf-sdlc:brd`); subagent names namespaced |
+| `skills/**` | `skills/**` | Paths and command names rewritten in `.md` files |
+| `rules/*.md` with `paths:` | `skills/salesforce-coding-rules/` | One skill, one reference per rule |
+| `CLAUDE.md` + rules without `paths:` | `context/project-instructions.md` | Printed by the SessionStart hook; must stay under 10,000 characters |
+| `skill-library/**` | `skill-library/**` | Verbatim; never loaded |
+| `hooks/*.js` + `settings.json` `hooks` | `hooks/*.js`, `hooks/hooks.json` | `$CLAUDE_PROJECT_DIR/.claude/` → `${CLAUDE_PLUGIN_ROOT}/` |
+| `settings.json` minus `hooks` | `templates/project-settings.json` | Written into customer projects by `sf-sdlc init` |
+| `bin/`, `catalog/`, `templates/`, `output-styles/`, `workflows/` | same | Copied; text rewritten |
 
-**Never edit `.github/` or `.cursor/` directly** — `sync-platforms.py` `rmtree`s every generated path
-before rewriting it, so edits and stray untracked files there are destroyed without warning. Each
-generated file carries a `<!-- Generated from ... -->` note.
+Body rewrites (`PATH_REWRITES` in the build script): `node .claude/bin/sf-sdlc` → `sf-sdlc`;
+`.claude/skills/sdlc-…` → `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-…`; `.claude/rules/`,
+`.claude/skill-library/`, `.claude/catalog/`, `.claude/templates/` likewise. A bare `.claude/skills/`
+is deliberately **not** rewritten: it means the project's own installed skills in both forms.
+`/sdlc-x` and `/sdd-x` are rewritten only when `x` is a real command file.
 
-Expect any `.claude/` change to produce a 3× diff (one tracked file count per platform dir, currently
-4,548 each). A diff that touches only `.claude/` means the sync was not run.
+**Never edit generated paths in `plugins/sf-sdlc/`**: `agents`, `commands`, `skills`,
+`skill-library`, `context`, `hooks`, `bin`, `catalog`, `output-styles`, `workflows`, `templates`.
+They are `rmtree`d on every build. Two files inside `.claude/` are also generated:
+`catalog/skills.json` and `skill-library/README.md`.
 
-## Authoring conventions the generator depends on
+## Authoring conventions the generator and tests depend on
 
-These are load-bearing, not style. The generator parses sources with a hand-rolled frontmatter
-parser and a few regexes; breaking the shape fails quietly in a downstream tool rather than erroring.
+- **Frontmatter** stays simple: `key: value`, optionally quoted, and `key:` followed by two-space
+  `- item` lists. No block scalars (`|`, `>`) or flow collections.
+- **Always write the CLI as `node .claude/bin/sf-sdlc <command>`** in agents, commands, skills and
+  workflows. Any other spelling survives unrewritten and fails for plugin users.
+- **Commands** that route to an agent open with exactly `Use the **<agent-name>** subagent to <verb>…`.
+  Use `$ARGUMENTS`. Commands that change an org, Jira or GitHub carry
+  `disable-model-invocation: true` so only a person can start them.
+- **Agents**: frontmatter `name` equals the file name; `skills:` lists only skills that exist in
+  `.claude/skills/` (the tests check this). Omit `tools:` when the agent needs MCP tools. The
+  code-review agent has no `Write`/`Edit` on purpose. Agents must not assume a technical skill is
+  loaded — skills are installed per project.
+- **Skills**: frontmatter `name` equals the folder name; `description` ≤ 1,024 characters after
+  whitespace collapsing (the build warns).
+- **No project-specific values** in agents, commands or skills. Org aliases, branch names, Jira
+  keys, thresholds and paths come from `.claude/sf-sdlc.json`; defaults live in `DEFAULTS` in
+  `.claude/hooks/lib.js`. A new config key needs: the default there, validation in
+  `validateConfig`, a row in `SETUP.md`, and the example in `.claude/templates/sf-sdlc.example.json`.
+- **Workflows** (`.claude/workflows/*.js`): `export const meta = {…}` is the first statement and a
+  plain literal; no `Date.now()`, `Math.random()` or imports.
 
-- **Frontmatter** must stay simple: `key: value`, optionally quoted, and `key:` followed by
-  two-space `- item` lists. Nested maps, block scalars (`|`, `>`) and flow collections are not
-  parsed — they will be mangled.
-- **Commands** must open with exactly `Use the **<agent-name>** subagent to <verb>…`. `SUBAGENT_RE`
-  matches that literal bold form to emit Copilot's `agent:` key, and rewrites the opener by
-  upper-casing the verb ("…subagent to generate" → "Generate"). Rephrase it and the Copilot prompt
-  loses agent routing and reads oddly. Use `$ARGUMENTS`; it is swapped for prose on other platforms.
-- **Agents**: `tools:` listing none of `Write`/`Edit`/`Bash` makes the Cursor agent `readonly: true`.
-  Omit `tools:` entirely when the agent needs MCP tools (e.g. the Jira story agent), so Copilot and
-  Cursor hand it the full workspace toolset. Copilot never receives a `tools:` key.
-- **Rules**: `paths:` globs become Copilot `applyTo` / Cursor `globs`. No `paths:` means always-on in
-  every session on every platform — costly, so keep those short.
-- **Skills**: frontmatter `name` must equal the folder name, and `description` must be ≤ 1,024 chars
-  after whitespace collapsing. Copilot and Cursor *silently skip* skills violating either; the sync
-  script prints a `warning:` for both. Three upstream skills are known to exceed the limit.
-- **Paths in bodies**: write them as `.claude/skills/…`, `.claude/rules/…` etc. `PATH_REWRITES`
-  translates that prefix per platform. A bare or differently-spelled path survives unrewritten and
-  points at a non-existent file for Copilot and Cursor users.
-- Adding a fifth SDLC agent to the pipeline also means editing the `HANDOFFS` dict in
-  `sync-platforms.py` — Copilot's inter-agent handoff buttons are hardcoded there, not derived.
+## Hooks and CLI
+
+`.claude/hooks/run.js <hook>` is the single dispatcher (`session-start`, `pre-bash`, `pre-write`,
+`post-write`, `post-bash`, `bash-failure`, `stop`); `lib.js` holds config, command parsing and org
+classification; `ops.js` the Code Analyzer wrapper, inventory and delta; `checks.js` the source
+checks and secret patterns. `.claude/bin/sf-sdlc` is the CLI over the same modules.
+
+Rules that must hold when changing them:
+
+- The org guard and the secret guard enforce in every hook mode, and a guard that throws must end in
+  an `ask`, never a silent allow.
+- An org that cannot be classified is never treated as safe.
+- `sf-sdlc deploy …` runs `sf` itself, so `kitInvocations` in `run.js` maps it onto the guarded `sf`
+  command; keep the two in step.
+- Hooks must not make network calls other than through the `sf` CLI, and must not print credentials.
+- Add a test in `tests/kit.test.js` for any new guard decision or check.
+
+## Claude Code plugin
+
+Hand-written, never touched by the generator: `plugins/sf-sdlc/.claude-plugin/plugin.json`
+(including `userConfig`), `.mcp.json` (Atlassian remote server only), `monitors/monitors.json`,
+`themes/*.json`, `README.md`, `NOTICE`. Monitors and themes are experimental in Claude Code.
+A plugin `settings.json` is deliberately not shipped: it honours only `agent` and
+`subagentStatusLine`. Bump `version` in `plugin.json` when releasing, or installed copies will not
+update. `.claude-plugin/marketplace.json` carries a `renames` entry from the old plugin name
+`nagarro-sf-sdlc`.
 
 ## Skill provenance — three kinds, three rules
 
-`.claude/skills/` mixes sources that must be maintained differently:
+- **156 official** skills vendored from [forcedotcom/sf-skills](https://github.com/forcedotcom/sf-skills),
+  Apache-2.0, pinned in `scripts/official-skills.lock`. **Do not hand-edit** —
+  `update-official-skills.sh` `rm -rf`s each listed folder. To add or drop one, edit
+  `scripts/official-skills.txt`. The script also finds skills that exist only inside an upstream
+  plugin. Industry packs are deliberately excluded.
+- **18 community** `sf-*` skills from Clientell-Ai/salesforce-skills, Apache-2.0. Edited in place in
+  `.claude/skill-library/`; mark changed files as changed (Apache-2.0 requirement).
+- **11 Nagarro SDLC** skills (`sdlc-*`), edited in place in `.claude/skills/`.
 
-- **147 official** (`platform-*`, `experience-*`, `dx-*`, `agentforce-*`, `omnistudio-*`, …) vendored
-  from [forcedotcom/sf-skills](https://github.com/forcedotcom/sf-skills), Apache-2.0, pinned in
-  `scripts/official-skills.lock`. **Do not hand-edit** — `update-official-skills.sh` `rm -rf`s each
-  listed folder. To add or drop one, edit `scripts/official-skills.txt` (the script also prints
-  upstream skills absent from the list). Industry packs are deliberately excluded to keep agent
-  context small.
-- **18 community** `sf-*` skills. Edited in place (now in `.claude/skill-library/`); the update script never
-  touches them.
-- **6 Nagarro SDLC** skills (`sdlc-*`). Edited in place in `.claude/skills/`.
+All technical skills live in `skill-library/`; only `sdlc-*` skills are in `skills/` (a test
+enforces this). Which library skills a project gets is decided by
+`.claude/catalog/detection-rules.json` — add a rule there when adding a skill family. Attribution is
+in `NOTICE`; keep it current. Official skills bundle their own scripts and assets; none of that is
+this repo's code — do not refactor or lint it.
 
-Official skills bundle their own scripts and assets (~450 `.py`, ~250 `.sh`, ~177 `.cls` files, all
-inside `skills/`). None of that is this repo's code; do not refactor or lint it.
+Five official skills (`automation-flow-generate`, `platform-flexipage-generate`,
+`experience-lwr-site-generate`, `platform-lightning-app-coordinate`, `experience-lwc-widget-migrate`)
+expect Salesforce's Metadata Experts MCP tool, which this kit does not ship. Detection recommends
+`sf-flow` for Flows instead.
 
-## Context budget: `skills/` vs `skill-library/`
+## The product this kit delivers
 
-Every skill in `skills/` has its name and description injected into the system prompt on every
-message, so `skills/` is capped at about 30 entries (27 now: 6 SDLC + 21 core Salesforce).
-`skill-library/` is never loaded by any tool. Move a skill between them with `git mv` inside
-`.claude/`, then run the sync script. `update-official-skills.sh` refreshes a skill wherever it lives.
-Do not add skills to `skills/` without removing one.
+Lifecycle: setup → BRD → stories → architecture → spec/plan → build → review → deploy → test →
+re-test → release. Each stage runs in its own agent, writes a **draft** and stops for human review;
+only a person fills in an approval record. Stages are decoupled by a shared ID scheme
+(`BR-04` → `FR-04.2` → `US-04-02` → `LLD-US-04-02` → `TC-US-04-02-007` → `TR-…` → `DEF-nnn` →
+`DEP-nnn` → `REL-x.y.z`). The ID scheme, artifact layout and feasibility checklist live in the
+`sdlc-workflow` skill and are referenced by every agent — change them there, not per agent.
 
-## The product this harness delivers
+Integrations: Salesforce through the `sf` CLI only (no Salesforce MCP; `@salesforce/mcp` ended on
+2 November 2026); Jira through the Atlassian remote MCP when connected, otherwise CSV; GitHub
+through the `gh` CLI.
 
-Worth knowing when editing agents, commands or the SDLC skills — the two pipelines are what
-downstream users actually run:
-
-- **SDLC documents** → `/sdlc-brd` → `/sdlc-stories` → `/sdlc-architecture` → `/sdlc-test-cases`,
-  with `/sdlc-trace` for status. Each stage runs in its own subagent, writes a **draft** under
-  `docs/sdlc/` and stops for human review. Stages are decoupled by a shared ID scheme
-  (`BR-04` → `FR-04.2` → `US-04-02` → `LLD-US-04-02` → `TC-US-04-02-007`), which is what lets a
-  stage run in a fresh session or on a different tool. IDs are never renumbered once approved.
-- **Spec-driven build** → `/sdd-constitution` (once) → `/sdd-specify` → `/sdd-clarify` → `/sdd-plan`
-  → `/sdd-tasks` → `/sdd-implement` → `/sdd-verify`, writing under `specs/`.
-
-The ID scheme and the Salesforce feasibility checklist live in the `sdlc-workflow` skill and are
-referenced by every agent — change them there, not per agent.
-
-The kit intentionally ships **no MCP configuration**: `@salesforce/mcp` reaches end of life on
-2 November 2026 and that tooling is now the bundled skills. Jira issue creation is the one optional
-MCP, connected by the user; without it the story agent emits a CSV.
+`README.md` lists the known limitations honestly, including what has not been run against a real
+org. Keep that list true when changing behaviour.

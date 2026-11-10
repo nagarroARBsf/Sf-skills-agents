@@ -1,0 +1,31 @@
+Nagarro Salesforce SDLC kit (sf-sdlc)
+Maintained by the Nagarro Salesforce CoE.
+
+This product includes third-party material, redistributed under its original licence:
+
+1. Salesforce skills — forcedotcom/sf-skills
+   https://github.com/forcedotcom/sf-skills
+   Copyright Salesforce, Inc. Licensed under the Apache License, Version 2.0.
+   Vendored without modification into .claude/skill-library/ (and the generated copies) for every
+   skill named in scripts/official-skills.txt, at the commit recorded in scripts/official-skills.lock.
+   Licence text: .claude/skill-library/LICENSE-forcedotcom-sf-skills.txt
+   Some of these skills bundle further third-party code; their own notices inside each skill folder apply.
+
+2. Community Salesforce skills (sf-agentforce, sf-apex, sf-data, sf-debug, sf-deploy, sf-diagram,
+   sf-docs, sf-eval, sf-find, sf-flow, sf-integration, sf-lwc, sf-omnistudio, sf-permissions,
+   sf-schema, sf-security, sf-soql, sf-test) — Clientell-Ai/salesforce-skills
+   https://github.com/Clientell-Ai/salesforce-skills
+   Copyright the Clientell-Ai/salesforce-skills contributors. Licensed under the Apache License, Version 2.0.
+   Vendored into .claude/skill-library/. Any file changed from upstream must carry a notice of the change.
+
+3. Spec-driven development method — adapted from github/spec-kit (MIT License)
+   https://github.com/github/spec-kit
+   See .claude/skills/sdlc-spec-driven-development/CREDITS.md.
+
+"Salesforce", "Apex", "Lightning" and related names are trademarks of Salesforce, Inc. This product
+is not affiliated with or endorsed by Salesforce, Atlassian or GitHub. No Salesforce logo or product
+icon is included.
+
+Tools this product invokes but does not include (installed by the user under their own licences):
+Salesforce CLI (Apache-2.0), Salesforce Code Analyzer (BSD-3-Clause), sfdx-git-delta (MIT),
+Lightning Flow Scanner (MIT), mermaid-cli (MIT), GitHub CLI (MIT).
