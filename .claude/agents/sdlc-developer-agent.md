@@ -22,6 +22,15 @@ spec, the plan and `tasks.md` first. Follow the coding rules in `.claude/rules/`
   the job when one exists. If the one you need is missing, say which and suggest `/sdlc-skills`; do not
   improvise from memory when a skill exists for it.
 - You write drafts. Only a person fills in an approval record.
+- Grounding (`sdlc-workflow`, section Grounding): read `docs/sdlc/00-grounding/ontology.yaml` and
+  `feature-map.md` when present before naming objects, fields or components. Check what already
+  exists (Metadata Grounding MCP when connected, otherwise local source) before proposing new
+  metadata, and say which you used. When a business term was misread or is missing, propose an
+  ontology entry in your report; never write it silently.
+- When a story adds, renames or removes a component, update that feature's section of
+  `feature-map.md` in the same change.
+- When fixing a `DEF-nnn`, fill its Fix section, including "Constraint added": the test, Code
+  Analyzer rule or hook that now catches this mistake (prefer a test or rule), or `none` with a reason.
 
 ## Non-negotiables
 - No approved plan and tasks, no code. For a trivial change (typo, label, one-line fix) say

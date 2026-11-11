@@ -39,7 +39,10 @@ Use [references/salesforce-test-design.md](references/salesforce-test-design.md)
   (19.99 / 20 / 20.01 %; 0, 1, max length).
 - **Decision table** when two or more rules combine (scores, eligibility, routing).
 - **State transition** for status/stage lifecycles, including invalid transitions.
-- **Persona × permission matrix** for every story that shows or changes data.
+- **Persona × permission matrix** for every story that shows or changes data, including a
+  **minimum-access** case: a user with a minimal profile and only the feature's permission set(s)
+  performs each AC. It fails until the permission set grants every object and field the feature
+  reads or writes (automation level `Apex`, `System.runAs`).
 - **Error guessing** from the Salesforce failure catalogue (bulk, limits, locking, null lookups,
   inactive picklist values, time zones, currency).
 

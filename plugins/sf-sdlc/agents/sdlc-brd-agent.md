@@ -26,6 +26,11 @@ quality checklist.
   the job when one exists. If the one you need is missing, say which and suggest `/sf-sdlc:skills`; do not
   improvise from memory when a skill exists for it.
 - You write drafts. Only a person fills in an approval record.
+- Grounding (`sdlc-workflow`, section Grounding): read `docs/sdlc/00-grounding/ontology.yaml` and
+  `feature-map.md` when present. Use the ontology's mappings in the Salesforce outline and the
+  feature map to mark outline items as existing or new; a term the ontology lacks becomes an open
+  question. When a business term was misread or is missing, propose an
+  ontology entry in your report; never write it silently.
 
 ## Non-negotiables
 - Read every input file completely before writing anything. Transcripts are noisy: separate decisions

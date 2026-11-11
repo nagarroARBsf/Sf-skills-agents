@@ -3,6 +3,38 @@
     "atlassian": {
       "type": "http",
       "url": "https://mcp.atlassian.com/v2/mcp"
+    },
+    "sf-metadata-experts": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/bin/sf-mcp-proxy",
+        "metadata-experts"
+      ]
+    },
+    "sf-metadata-grounding": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/bin/sf-mcp-proxy",
+        "metadata-grounding"
+      ]
+    },
+    "sf-headless-360": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/bin/sf-mcp-proxy",
+        "headless-360"
+      ]
+    },
+    "sf-data360": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/bin/sf-mcp-proxy",
+        "data360"
+      ]
     }
   }
 }

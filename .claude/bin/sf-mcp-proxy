@@ -1,0 +1,138 @@
+#!/usr/bin/env node
+'use strict';
+// sf-mcp-proxy <server> — stdio MCP bridge from Claude Code to one Salesforce Hosted MCP Server,
+// signed in through the Salesforce CLI (see hooks/mcp.js). Node.js standard library only (Node 18+).
+//
+//   node .claude/bin/sf-mcp-proxy metadata-grounding
+//
+// A server that is not listed in mcp.servers, has no org, cannot authenticate or is not turned on
+// in Setup → MCP Servers still answers the MCP handshake, with no tools and the reason on stderr,
+// so Claude Code shows an empty server instead of a startup error. Nothing secret is printed.
+
+const readline = require('readline');
+const lib = require('../hooks/lib');
+const mcp = require('../hooks/mcp');
+
+const name = process.argv[2];
+const log = (m) => process.stderr.write(`[sf-mcp-proxy ${name || ''}] ${m}\n`);
+const send = (msg) => process.stdout.write(JSON.stringify(msg) + '\n');
+
+function replyError(line, code, message) {
+  try {
+    const m = JSON.parse(line);
+    if (m && m.id !== undefined && m.id !== null) send({ jsonrpc: '2.0', id: m.id, error: { code, message } });
+  } catch { send({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }); }
+}
+
+// Answer the handshake with no tools. Used when the server cannot or should not run.
+function serveEmpty(reason) {
+  log(`${reason} — serving no tools`);
+  readline.createInterface({ input: process.stdin }).on('line', (line) => { if (line.trim()) inactiveReply(line, reason); });
+}
+
+async function forward(state, line) {
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' };
+  const post = () => fetch(state.url, {
+    method: 'POST', body: line,
+    headers: { ...headers, Authorization: `Bearer ${state.jwt}`, ...(state.session ? { 'Mcp-Session-Id': state.session } : {}) },
+  });
+  let res = await post();
+  if (res.status === 401) { // JWTs are short-lived: mint a new one once and retry
+    await res.text().catch(() => {});
+    log('upstream 401 — renewing the JWT and retrying once');
+    state.jwt = mcp.mintJwt(state.org, state.root);
+    res = await post();
+  }
+  const sid = res.headers.get('mcp-session-id');
+  if (sid) state.session = sid;
+  if (res.status === 202) return;
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  if (ct.startsWith('text/event-stream') && res.body) {
+    let buf = '';
+    for await (const chunk of res.body) {
+      buf += Buffer.from(chunk).toString('utf8');
+      let i;
+      while ((i = buf.search(/\r?\n\r?\n/)) >= 0) {
+        const event = buf.slice(0, i);
+        buf = buf.slice(i).replace(/^\r?\n\r?\n/, '');
+        for (const m of mcp.parseRpcBody('text/event-stream', event + '\n\n')) send(m);
+      }
+    }
+    for (const m of mcp.parseRpcBody('text/event-stream', buf)) send(m);
+    return;
+  }
+  const text = await res.text();
+  if (res.status >= 400) {
+    const st = mcp.classifyStatus(res.status, text);
+    let msg = `Salesforce hosted MCP returned HTTP ${res.status}`;
+    if (st === 'inactive') msg = `sf-${name} is not active in org ${state.org}: turn it on in Setup → MCP Servers (API Catalog), wait two minutes, then restart Claude Code`;
+    else if (st === 'auth') msg += ` for org ${state.org}: the signed-in user may lack API access or the server's permissions`;
+    try { for (const m of mcp.parseRpcBody(ct, text)) if (m && m.jsonrpc) { send(m); return; } } catch { /* not JSON-RPC */ }
+    return replyError(line, -32000, msg);
+  }
+  try { for (const m of mcp.parseRpcBody(ct, text)) send(m); } catch { log(`unexpected ${ct || 'response'}: ${text.slice(0, 200)}`); replyError(line, -32603, 'Unexpected response from the Salesforce hosted MCP server'); }
+}
+
+async function main() {
+  if (!mcp.HOSTED_SERVERS[name]) {
+    process.stderr.write(`usage: sf-mcp-proxy <${Object.keys(mcp.HOSTED_SERVERS).join('|')}>\n`);
+    process.exit(2);
+  }
+  if (Number(process.versions.node.split('.')[0]) < 18) return serveEmpty('Node.js 18 or later is required');
+  const root = lib.projectDir();
+  const cfg = lib.loadConfig(root);
+  if (!mcp.enabledServers(cfg).includes(name)) return serveEmpty(`"${name}" is not listed in mcp.servers in .claude/sf-sdlc.json`);
+  const org = mcp.mcpOrg(root, cfg);
+  if (!org) return serveEmpty('no target org (set mcp.org in .claude/sf-sdlc.json or run `sf config set target-org <alias>`)');
+  const state = { root, org, url: mcp.serverUrl(name), jwt: null, session: null };
+  try { state.jwt = mcp.mintJwt(org, root); } catch (e) {
+    mcp.recordHealth(root, name, { state: 'auth', detail: e.message, org });
+    return serveEmpty(e.message);
+  }
+  log(`signed in to org ${org} through the sf CLI`);
+
+  // The first message (initialize) must finish before anything else so the session ID is known.
+  let ready = null;
+  let inactive = null;
+  const rl = readline.createInterface({ input: process.stdin });
+  rl.on('line', (line) => {
+    if (!line.trim()) return;
+    if (inactive) return inactiveReply(line, inactive);
+    const isInit = (() => { try { return JSON.parse(line).method === 'initialize'; } catch { return false; } })();
+    const job = async () => {
+      if (inactive) return inactiveReply(line, inactive); // decided while this line waited
+      if (isInit) {
+        const probe = await fetch(state.url, { method: 'POST', body: line, headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', Authorization: `Bearer ${state.jwt}` } });
+        const text = await probe.text();
+        const st = mcp.classifyStatus(probe.status, text);
+        mcp.recordHealth(root, name, { state: st, detail: st === 'ok' ? 'connected' : `HTTP ${probe.status}`, org });
+        if (st === 'inactive') {
+          inactive = `not turned on in org ${org} (Setup → MCP Servers)`;
+          log(inactive);
+          return inactiveReply(line, inactive);
+        }
+        const sid = probe.headers.get('mcp-session-id');
+        if (sid) state.session = sid;
+        if (probe.status >= 400) return replyError(line, -32000, `Salesforce hosted MCP returned HTTP ${probe.status} for org ${org}`);
+        for (const m of mcp.parseRpcBody(probe.headers.get('content-type'), text)) send(m);
+        return;
+      }
+      return forward(state, line);
+    };
+    const run = () => job().catch((e) => { log(String(e && e.message || e)); replyError(line, -32603, `sf-mcp-proxy: ${String(e && e.message || e).slice(0, 300)}`); });
+    if (isInit) ready = run();
+    else (ready || Promise.resolve()).then(run);
+  });
+}
+
+function inactiveReply(line, reason) {
+  let m;
+  try { m = JSON.parse(line); } catch { return replyError(line, -32700, 'Parse error'); }
+  if (!m || m.id === undefined || m.id === null) return;
+  if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2025-06-18', capabilities: { tools: {} }, serverInfo: { name: `sf-${name} (inactive)`, version: '1.0.0' }, instructions: `Inactive: ${reason}` } });
+  else if (m.method === 'tools/list') send({ jsonrpc: '2.0', id: m.id, result: { tools: [] } });
+  else if (m.method === 'ping') send({ jsonrpc: '2.0', id: m.id, result: {} });
+  else send({ jsonrpc: '2.0', id: m.id, error: { code: -32601, message: `sf-${name} is inactive: ${reason}` } });
+}
+
+main().catch((e) => { log(String(e && e.message || e)); process.exit(1); });

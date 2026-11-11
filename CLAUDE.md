@@ -6,14 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is **not a Salesforce project** — it is the *kit that gets installed into* Salesforce projects,
 for Claude Code. It ships 10 SDLC agents, 22 commands, 11 always-available `sdlc-*` skills, a
-174-skill on-demand library, guard hooks, the `sf-sdlc` CLI, output styles and workflows, in two
+176-skill on-demand library, guard hooks, the `sf-sdlc` CLI, output styles and workflows, in two
 forms:
 
 - `.claude/` — the copy-in folder, and the **single source of truth**.
 - `plugins/sf-sdlc/` — the Claude Code plugin, **generated** from `.claude/` (marketplace `nagarro-sf`).
 
 Almost every tracked file is payload. The repo-owned code is: `.claude/hooks/*.js`,
-`.claude/bin/sf-sdlc`, `.claude/workflows/*.js`, `scripts/*`, `tests/kit.test.js`, and the
+`.claude/bin/sf-sdlc`, `.claude/bin/sf-mcp-proxy`, `.claude/workflows/*.js`, `scripts/*`, `tests/kit.test.js`, and the
 hand-written plugin files listed under "Claude Code plugin". Work here is editing kit content,
 the Node tooling, or the generator.
 
@@ -109,9 +109,12 @@ They are `rmtree`d on every build. Two files inside `.claude/` are also generate
 ## Hooks and CLI
 
 `.claude/hooks/run.js <hook>` is the single dispatcher (`session-start`, `pre-bash`, `pre-write`,
-`post-write`, `post-bash`, `bash-failure`, `stop`); `lib.js` holds config, command parsing and org
-classification; `ops.js` the Code Analyzer wrapper, inventory and delta; `checks.js` the source
-checks and secret patterns. `.claude/bin/sf-sdlc` is the CLI over the same modules.
+`pre-mcp`, `post-write`, `post-bash`, `bash-failure`, `stop`); `lib.js` holds config, command parsing
+and org classification; `ops.js` the Code Analyzer wrapper, inventory and delta; `checks.js` the
+source checks and secret patterns; `mcp.js` the Salesforce Hosted MCP routes, JWT minting and probe.
+`.claude/bin/sf-sdlc` is the CLI over the same modules; `.claude/bin/sf-mcp-proxy <server>` is the
+stdio MCP bridge Claude Code starts (registered in the plugin's `.mcp.json` and, for the copy-in
+folder, in the project `.mcp.json` that `sf-sdlc init` merges from `templates/mcp.json`).
 
 Rules that must hold when changing them:
 
@@ -121,12 +124,15 @@ Rules that must hold when changing them:
 - `sf-sdlc deploy …` runs `sf` itself, so `kitInvocations` in `run.js` maps it onto the guarded `sf`
   command; keep the two in step.
 - Hooks must not make network calls other than through the `sf` CLI, and must not print credentials.
+  The proxy (not a hook) talks to `api.salesforce.com` with a JWT from `sf api request rest
+  /ide/auth`; it must never print or store that JWT. Hosted MCP tools that can change an org
+  (`WRITE_TOOLS` in `mcp.js`) always get `ask` from `pre-mcp`.
 - Add a test in `tests/kit.test.js` for any new guard decision or check.
 
 ## Claude Code plugin
 
 Hand-written, never touched by the generator: `plugins/sf-sdlc/.claude-plugin/plugin.json`
-(including `userConfig`), `.mcp.json` (Atlassian remote server only), `monitors/monitors.json`,
+(including `userConfig`), `.mcp.json` (Atlassian remote server and the four `sf-*` hosted-MCP proxies), `monitors/monitors.json`,
 `themes/*.json`, `README.md`, `NOTICE`. Monitors and themes are experimental in Claude Code.
 A plugin `settings.json` is deliberately not shipped: it honours only `agent` and
 `subagentStatusLine`. Bump `version` in `plugin.json` when releasing, or installed copies will not
@@ -135,7 +141,7 @@ update. `.claude-plugin/marketplace.json` carries a `renames` entry from the old
 
 ## Skill provenance — three kinds, three rules
 
-- **156 official** skills vendored from [forcedotcom/sf-skills](https://github.com/forcedotcom/sf-skills),
+- **158 official** skills vendored from [forcedotcom/sf-skills](https://github.com/forcedotcom/sf-skills),
   Apache-2.0, pinned in `scripts/official-skills.lock`. **Do not hand-edit** —
   `update-official-skills.sh` `rm -rf`s each listed folder. To add or drop one, edit
   `scripts/official-skills.txt`. The script also finds skills that exist only inside an upstream
@@ -152,20 +158,23 @@ this repo's code — do not refactor or lint it.
 
 Five official skills (`automation-flow-generate`, `platform-flexipage-generate`,
 `experience-lwr-site-generate`, `platform-lightning-app-coordinate`, `experience-lwc-widget-migrate`)
-expect Salesforce's Metadata Experts MCP tool, which this kit does not ship. Detection recommends
-`sf-flow` for Flows instead.
+expect Salesforce's Metadata Experts MCP server; they work when `metadata-experts` is in
+`mcp.servers` (on by default) and turned on in the org. Detection still recommends `sf-flow` for
+Flows. `platform-capability-search` and `platform-lsp-integrate` are deliberately not vendored: they
+drive scripts that exist only in Salesforce's own plugin.
 
 ## The product this kit delivers
 
-Lifecycle: setup → BRD → stories → architecture → spec/plan → build → review → deploy → test →
-re-test → release. Each stage runs in its own agent, writes a **draft** and stops for human review;
+Lifecycle: setup → ground → BRD → stories → architecture → spec/plan → build → review → deploy →
+test → re-test → release → observe. Each stage runs in its own agent, writes a **draft** and stops for human review;
 only a person fills in an approval record. Stages are decoupled by a shared ID scheme
 (`BR-04` → `FR-04.2` → `US-04-02` → `LLD-US-04-02` → `TC-US-04-02-007` → `TR-…` → `DEF-nnn` →
 `DEP-nnn` → `REL-x.y.z`). The ID scheme, artifact layout and feasibility checklist live in the
 `sdlc-workflow` skill and are referenced by every agent — change them there, not per agent.
 
-Integrations: Salesforce through the `sf` CLI only (no Salesforce MCP; `@salesforce/mcp` ended on
-2 November 2026); Jira through the Atlassian remote MCP when connected, otherwise CSV; GitHub
+Integrations: Salesforce through the `sf` CLI, plus Salesforce Hosted MCP Servers (Metadata
+Grounding, Metadata Experts, optional Headless 360 and Data 360) through `sf-mcp-proxy`, signed in
+with the CLI login — no local Salesforce MCP package (`@salesforce/mcp` ended on 2 November 2026); Jira through the Atlassian remote MCP when connected, otherwise CSV; GitHub
 through the `gh` CLI.
 
 `README.md` lists the known limitations honestly, including what has not been run against a real

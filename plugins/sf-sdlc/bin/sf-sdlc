@@ -8,6 +8,7 @@ const path = require('path');
 const lib = require('../hooks/lib');
 const ops = require('../hooks/ops');
 const checks = require('../hooks/checks');
+const mcp = require('../hooks/mcp');
 
 const argv = process.argv.slice(2);
 const JSON_OUT = argv.includes('--json');
@@ -70,6 +71,13 @@ function doctor() {
     const org = lib.classifyOrg(target, cfg, root);
     add('default target org', Boolean(target), target ? `${target} (${org.kind})` : 'none', 'sf config set target-org <alias>', false);
   }
+  const servers = mcp.enabledServers(cfg);
+  if (servers.length) {
+    const health = mcp.readHealth(root);
+    const seen = servers.map((n) => `${n}: ${health[n] ? `${health[n].state} (${health[n].org || '?'}, ${String(health[n].checkedAt || '').slice(0, 10)})` : 'not checked'}`);
+    const allOk = servers.every((n) => health[n] && health[n].state === 'ok');
+    add('Salesforce hosted MCP servers (last observed)', allOk, seen.join('; '), 'Run `sf-sdlc mcp status`. Turn the servers on in Setup → MCP Servers (API Catalog) and log in with `sf org login web --alias <alias>`.', false);
+  }
   const gi = fs.existsSync(path.join(root, '.gitignore')) ? fs.readFileSync(path.join(root, '.gitignore'), 'utf8') : '';
   add('.gitignore covers .sf/, .sfdx/, .sf-sdlc/', ['.sf/', '.sfdx/', '.sf-sdlc/'].every((p) => gi.includes(p)), '', 'Run `sf-sdlc init` to add the entries.');
   const sk = skillsState();
@@ -115,11 +123,56 @@ function init() {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(src, dest); done.push(to);
   };
-  if (lib.sfdxProject(root)) copyIfMissing('code-analyzer.yml', 'code-analyzer.yml');
+  if (lib.sfdxProject(root)) {
+    copyIfMissing('code-analyzer.yml', 'code-analyzer.yml');
+    copyIfMissing('code-analyzer-ci.yml', '.github/workflows/sf-code-analyzer.yml');
+  }
+  if (!lib.IS_PLUGIN) mergeMcpServers(done, skipped);
   copyIfMissing('pull_request_template.md', '.github/pull_request_template.md');
   if (lib.IS_PLUGIN) copyIfMissing('project-settings.json', '.claude/settings.json');
   out({ ok: true, created: done, skipped, next: 'Edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run `sf-sdlc doctor` and `sf-sdlc skills recommend`.' },
     () => `${done.map((d) => 'created  ' + d).concat(skipped.map((s) => 'kept     ' + s)).join('\n')}\n\nNext: edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run \`sf-sdlc doctor\` and \`sf-sdlc skills recommend\`.`);
+}
+
+// The copy-in folder registers the hosted MCP servers in the project's .mcp.json (the plugin ships
+// its own). Existing entries are never overwritten.
+function mergeMcpServers(done, skipped) {
+  const tpl = lib.readJson(path.join(lib.KIT_ROOT, 'templates', 'mcp.json'));
+  if (!tpl) return;
+  const file = path.join(root, '.mcp.json');
+  const exists = fs.existsSync(file);
+  const cur = exists ? lib.readJson(file) : { mcpServers: {} };
+  if (!cur) { skipped.push('.mcp.json (not valid JSON; add the sf-* servers by hand from .claude/templates/mcp.json)'); return; }
+  cur.mcpServers = cur.mcpServers || {};
+  const added = Object.keys(tpl.mcpServers).filter((k) => !cur.mcpServers[k]);
+  if (!added.length) { skipped.push('.mcp.json (hosted MCP servers already registered)'); return; }
+  for (const k of added) cur.mcpServers[k] = tpl.mcpServers[k];
+  fs.writeFileSync(file, JSON.stringify(cur, null, 2) + '\n');
+  done.push(`.mcp.json (+${added.join(', ')})`);
+}
+
+// ------------------------------------------------------------------ mcp
+
+async function mcpCmd() {
+  const sub = pos[1] || 'status';
+  if (sub === 'list') {
+    const on = mcp.enabledServers(cfg);
+    const rows = Object.entries(mcp.HOSTED_SERVERS).map(([n, s]) => ({ name: n, server: `sf-${n}`, enabled: on.includes(n), canChangeOrg: s.writes, summary: s.summary }));
+    return out({ org: mcp.mcpOrg(root, cfg) || null, servers: rows }, () => `Org: ${mcp.mcpOrg(root, cfg) || '(none)'}\n` + rows.map((r) => `${r.enabled ? '✔' : '•'} ${r.server.padEnd(22)} ${r.summary}${r.canChangeOrg ? ' — can change the org; every change asks first' : ''}`).join('\n'));
+  }
+  if (sub !== 'status') fail('usage: sf-sdlc mcp status|list [server...]');
+  const names = pos.slice(2).length ? pos.slice(2) : mcp.enabledServers(cfg);
+  for (const n of names) if (!mcp.HOSTED_SERVERS[n]) fail(`unknown server "${n}" (known: ${Object.keys(mcp.HOSTED_SERVERS).join(', ')})`);
+  if (!names.length) fail('no hosted MCP servers are enabled: add names to mcp.servers in .claude/sf-sdlc.json');
+  const org = mcp.mcpOrg(root, cfg);
+  if (!org) fail('no target org: set mcp.org in .claude/sf-sdlc.json or run `sf config set target-org <alias>`');
+  const kind = lib.classifyOrg(org, cfg, root).kind;
+  const results = [];
+  for (const n of names) results.push(await mcp.probe(n, root, cfg, org));
+  const hint = { inactive: 'turn it on in Setup → MCP Servers (API Catalog), wait two minutes', auth: 'check the sf CLI login and the user\'s API access', unreachable: 'check the network and the org' };
+  const ok = results.every((r) => r.state === 'ok');
+  out({ ok, org, orgKind: kind, servers: results }, () => `Org: ${org} (${kind})\n` + results.map((r) => `${r.state === 'ok' ? '✔' : '✘'} sf-${r.name.padEnd(19)} ${r.state}${r.state === 'ok' ? ` — ${r.tools.length} tools: ${r.tools.join(', ')}` : ` — ${r.detail}\n    fix: ${hint[r.state] || ''}`}`).join('\n') + '\n\nRestart Claude Code after changing servers in the org or in mcp.servers.');
+  process.exit(ok ? 0 : 1);
 }
 
 // ------------------------------------------------------------------ detect / skills
@@ -189,6 +242,7 @@ function recommend() {
     else if (w.folders && w.folders.some((f) => d.folders.includes(f))) evidence = `metadata folder(s): ${w.folders.filter((f) => d.folders.includes(f)).join(', ')}`;
     else if (w.rootFiles && w.rootFiles.some((f) => d.rootFiles.includes(f))) evidence = `file(s): ${w.rootFiles.filter((f) => d.rootFiles.includes(f)).join(', ')}`;
     else if (w.packaging && d.packaging) evidence = 'packageAliases in sfdx-project.json';
+    else if (w.mcpServers && w.mcpServers.some((n) => mcp.enabledServers(cfg).includes(n))) evidence = `hosted MCP server enabled in mcp.servers: ${w.mcpServers.filter((n) => mcp.enabledServers(cfg).includes(n)).join(', ')}`;
     if (!evidence) continue;
     for (const s of rule.skills) {
       if (!names.has(s)) continue;
@@ -516,6 +570,7 @@ const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
   test run|report --org <role|alias> [--tests A,B.method] [--level RunLocalTests]
   diagram render <file>        Mermaid to SVG (needs mermaid-cli)
   audit [--tail N]             local log of org-affecting commands
+  mcp status|list [server...]  Salesforce hosted MCP servers: probe through the sf CLI login, or list
 `;
 
 function main() {
@@ -559,6 +614,7 @@ function main() {
     case 'jobs': return pos[1] === 'watch' ? watchJobs() : out(readJobs());
     case 'diagram': return diagram();
     case 'audit': return audit();
+    case 'mcp': return mcpCmd().catch((e) => fail(String(e && e.message || e)));
     default: process.stdout.write(HELP); process.exit(pos[0] && pos[0] !== 'help' ? 1 : 0);
   }
 }

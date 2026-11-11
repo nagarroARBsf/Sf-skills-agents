@@ -30,5 +30,6 @@
     "waitMinutes": 60
   },
   "paths": { "docs": "docs/sdlc", "specs": "specs" },
+  "mcp": { "servers": ["metadata-experts", "metadata-grounding"], "org": "dev" },
   "hooks": { "mode": "observe", "auditLog": true, "strictEvidence": false }
 }

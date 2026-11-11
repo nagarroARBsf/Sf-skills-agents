@@ -1,6 +1,6 @@
 ---
 name: sdlc-project-setup
-description: "Set a Salesforce project up for the SDLC kit: check tooling with doctor, detect what the project and org contain, create and fill the project configuration (.claude/sf-sdlc.json) from detection first and questions only for what cannot be detected (production org aliases, Jira project, promotion order, branch model), choose which Salesforce technical skills to install with the evidence for each, keep the set small, sync skills after upgrades without overwriting local edits, pick a persona profile (developer, admin, business analyst), and record the brownfield baseline inventory. TRIGGER when: user asks to set up or configure a project for the kit, which skills to install or remove, what a configuration key means, reports a failing doctor check, or runs /sdlc-setup, /sdlc-doctor or /sdlc-skills. DO NOT TRIGGER when: the user wants architecture work (use sdlc-solution-architecture-generate) or a deployment (use sdlc-deploy-release)."
+description: "Set a Salesforce project up for the SDLC kit: check tooling with doctor, detect what the project and org contain, create and fill the project configuration (.claude/sf-sdlc.json) from detection first and questions only for what cannot be detected (production org aliases, Jira project, promotion order, branch model), choose which Salesforce technical skills to install with the evidence for each, keep the set small, sync skills after upgrades without overwriting local edits, pick a persona profile (developer, admin, business analyst), record the brownfield baseline inventory, and draft the grounding files (business ontology, feature map). TRIGGER when: user asks to set up or configure a project for the kit, which skills to install or remove, what a configuration key means, reports a failing doctor check, or runs /sdlc-setup, /sdlc-doctor or /sdlc-skills. DO NOT TRIGGER when: the user wants architecture work (use sdlc-solution-architecture-generate) or a deployment (use sdlc-deploy-release)."
 metadata:
   version: "1.0"
   author: "Nagarro Salesforce CoE"
@@ -11,13 +11,14 @@ metadata:
 Find out what is there before anyone designs or builds, and leave the project configured so
 every other agent works from facts. **Detect first, ask second, never guess.**
 
-Sequence: doctor → detect → init → configuration → skill selection → baseline → final check.
+Sequence: doctor → detect → init → configuration → skill selection → baseline → grounding →
+final check.
 
 ## Ground rules
 - Read-only towards orgs and source: setup does not deploy, retrieve into the source tree,
   change an org, or edit Salesforce metadata. It writes only `.claude/sf-sdlc.json`,
   `.claude/sf-sdlc.local.json`, installed skills and their lock file, the files `init` creates,
-  and the baseline inventory.
+  the baseline inventory and the grounding drafts.
 - Never read, print or write CLI credentials (`.sf/`, `.sfdx/`, auth URLs, access tokens).
 - Never guess which org is production. An empty `orgs.production` is reported as a risk.
 - Never install skills without the user's confirmation of the list.
@@ -139,6 +140,30 @@ can mark components New, Changed, Unchanged or Removed:
 Greenfield: write the short greenfield statement in the same file. Requirements-only projects:
 skip the baseline and say so.
 
+## 6b. Grounding
+Draft the two grounding files described in the `sdlc-workflow` skill (section Grounding), under
+`<paths.docs>/00-grounding/`. Never overwrite existing ones; propose additions instead.
+
+1. **Check the hosted MCP servers**: `node .claude/bin/sf-sdlc mcp status --json`. It reports
+   which servers `mcp.servers` turns on and whether each answers. If Metadata Grounding is off or
+   inactive, say what it needs (turned on in Setup → MCP Servers; Data 360, API access and
+   Salesforce Catalog; not available in scratch orgs) and continue without it.
+2. **`feature-map.md`** from
+   `.claude/skills/sdlc-workflow/references/feature-map-template.md`: group the baseline
+   inventory by business capability (folder names, naming prefixes, object ownership, the BRD if
+   one exists). When the grounding tools are connected, use `describe_metadata` and
+   `search_metadata` to find org-only components (flows, fields, permission sets created in
+   Setup) and mark them `(org only)`. Otherwise say "grounding not used: local source only".
+3. **`ontology.yaml`** from `.claude/skills/sdlc-workflow/references/ontology-template.yaml`:
+   only the terms that are ambiguous or project-specific (from the BRD, object labels that differ
+   from API names, record types that split one object into several business things). Remove the
+   template's example terms. Mark every inferred mapping `source: inferred` and list it as a
+   question for the lead.
+4. Greenfield or requirements-only projects: write the ontology from the BRD when one exists and
+   an empty feature map with the header; say so.
+
+Both files are drafts until the lead confirms the terms.
+
 ## 7. Final check
 Run [references/setup-checklist.md](references/setup-checklist.md), then
 `node .claude/bin/sf-sdlc doctor --json` and `node .claude/bin/sf-sdlc config validate --json`
@@ -151,7 +176,7 @@ Report, in this order:
    (for example "`orgs.production` empty: production is recognised only by org type").
 4. Skills installed and why; skills deliberately not installed; locally modified skills.
 5. Failed doctor checks with the fix for each.
-6. Baseline path, or why none was written.
+6. Baseline path, or why none was written; grounding files and whether the grounding MCP was used.
 7. Next step: commit `.claude/sf-sdlc.json`, the skills and the lock file; then `/sdlc-brd` for
    new requirements, or `/sdd-constitution` and `/sdd-specify` for build work.
 

@@ -1,0 +1,32 @@
+# Business ontology: how this business's words map to Salesforce.
+# Path: <paths.docs>/00-grounding/ontology.yaml (default docs/sdlc/00-grounding/ontology.yaml)
+#
+# Write down only what an agent cannot guess. Keep it small; add a term when an agent misreads one.
+# Agents read this file before naming objects or fields, and propose (never silently add) entries.
+# Every entry cites where the meaning came from: a BRD ID (BR-04, DEC-03), a person, or the org.
+#
+# Fields per term:
+#   sf:            the Salesforce object (or Object.Field) the term means, when it is unambiguous
+#   meaning:       context_dependent when the term means different things in different contexts
+#   resolve:       one entry per context: how to tell which object/record type is meant
+#   never_assume:  the tempting wrong mapping
+#   note:          anything else an agent must know (related objects, record types, lifecycle)
+#   source:        where this was decided
+
+version: 1
+terms:
+  customer:
+    meaning: context_dependent
+    resolve:
+      homeowner_context: "Account is the household; Contact is the resident."
+      enterprise_sales_context: "Account (RecordType=Business) is the B2B customer."
+    never_assume: "Customer == Contact"
+    source: "DEC-03"
+  device:
+    sf: Asset
+    note: "An installed unit. Its catalog definition is Product2."
+    source: "BR-04"
+  # deal_health:
+  #   sf: Opportunity.Deal_Health_Score__c
+  #   note: "0-100, calculated nightly; never edited by users."
+  #   source: "FR-04.2"

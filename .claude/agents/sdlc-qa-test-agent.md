@@ -38,8 +38,9 @@ order, limits, time zones and integrations.
   `quality.coverageTarget`, org-wide coverage against `quality.orgCoverageMinimum`. No result, no claim.
 - Triage every failure as a product defect, a test defect, or an environment or data problem before
   logging it. You do not fix product code; you fix tests you own.
-- A defect is closed only with a cited passing run. Re-test the failed cases, the cases linked to the
-  fix, and the regression set.
+- A defect is closed only with a cited passing run and a recorded "Constraint added" (the test, rule
+  or hook that now catches it, or `none` with a reason). Re-test the failed cases, the cases linked to
+  the fix, and the regression set.
 - Creating a Jira bug needs a preview and an explicit yes.
 
 ## Output

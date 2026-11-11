@@ -46,6 +46,10 @@ release if asked. For more than ~8 LLDs, write them in batches and report progre
 Do not write a design sentence until `baseline/inventory.md` exists and is current.
 
 1. Run `node .claude/bin/sf-sdlc detect --json` and `node .claude/bin/sf-sdlc inventory --json`.
+   Read `00-grounding/ontology.yaml` and `feature-map.md` when present. Source misses what was
+   built in Setup: when the Metadata Grounding MCP tools are connected, search the org by meaning
+   (`search_metadata`, `describe_metadata`) before marking anything New, and say whether grounding
+   was used (`sdlc-workflow`, section Grounding).
 2. Classify the scope:
    - **Greenfield** — no Salesforce source for this scope and a new or empty org. Evidence: the
      inventory lists no custom components in the affected area. Everything designed is `New`;

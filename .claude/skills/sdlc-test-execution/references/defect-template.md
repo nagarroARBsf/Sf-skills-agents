@@ -10,7 +10,7 @@ developer who was not in the test session can reproduce it.
 | Priority | {set by the PO or QA lead, or —} |
 | Story | US-{nn-mm} ({Jira key}) — AC-{n} |
 | Test cases | TC-US-{nn-mm}-{nnn}, … |
-| Found in | TR-{YYYYMMDD}-{nn} — org role `{qa}` (`{alias}`) — build {DEP-nnn}, commit `{sha}` |
+| Found in | TR-{YYYYMMDD}-{nn} — org role `{qa}` (`{alias}`) — build {DEP-nnn}, commit `{sha}`; or `production` — `06-observe/findings-{YYYYMMDD}.md` |
 | Found by | {agent name / tester name} on {YYYY-MM-DD} |
 | Category | Product defect |
 | Suspected component | `{ApiName}` ({type}) — `{path}:{line}` if identified |
@@ -63,6 +63,11 @@ root cause.
 | Tests added or changed | `{Class.method}` |
 | Review | `specs/{story}/review.md` round {n}: {verdict} |
 | Deployed to test org | DEP-{nnn} on {date} |
+| Constraint added | **Required.** One of: test · Code Analyzer rule · hook or quality gate · spec or checklist update · ontology or feature-map entry · none — {reason}. Plus the reference: `{Class.method}` / rule name in `code-analyzer.yml` / hook / file and section |
+
+**Constraint added** answers "why did this get through, and what now catches it?" Pick the strongest
+check that fits (a test or Code Analyzer rule before an instruction). `none` needs a stated reason
+(for example "one-off data problem, no code path"). A defect cannot be closed with this row empty.
 
 ## 8. Re-test history
 | Date | Test run | Cases re-run | Regression set | Result | New status |
@@ -70,7 +75,8 @@ root cause.
 | {date} | TR-{…} | TC-US-04-02-004: Passed | 12 run, 12 passed | Fix verified | Closed |
 
 A defect is `Closed` only when this table has a row with a passing run for every failed case and
-no failing regression case. No row, no closure.
+no failing regression case, **and** section 7's "Constraint added" is filled (a constraint with its
+reference, or `none` with a reason). No row or no constraint, no closure.
 
 ## 9. Closure
 | Status | Closed by | Role | Date | Passing run cited |

@@ -154,6 +154,7 @@ See `NOTICE` at the repository root.
 | `platform-encryption-configure` | official | Configure Salesforce Shield Platform Encryption — generate deployable encryption settings and encrypted-field metadata, and answer key-model and lifec |
 | `platform-environment-validate` | official | Validate and configure the local Salesforce development environment |
 | `platform-flexipage-generate` | official | Use when users create, generate, modify, or validate Salesforce Lightning pages (FlexiPages) |
+| `platform-headless-360-integrate` | official | Read org state and change Setup through the Headless 360 (H360) MCP tools discover, describe, dispatch_readonly, and dispatch |
 | `platform-lightning-app-coordinate` | official | Build complete Salesforce Lightning Experience applications from natural language descriptions |
 | `platform-lightning-type-widget-coordinate` | official | Orchestrate Apex-backed Lightning Type + HXL widget generation |
 | `platform-list-view-generate` | official | Use this skill when users need to create, generate, or validate Salesforce List View metadata |
@@ -162,6 +163,7 @@ See `NOTICE` at the repository root.
 | `platform-metadata-api-context-get` | official | REQUIRED companion for Salesforce metadata generation — load this schema/API-context skill in the SAME turn as ANY metadata generator (if you load a g |
 | `platform-metadata-deploy` | official | Salesforce DevOps automation using sf CLI v2 |
 | `platform-metadata-discovery-get` | official | Use before creating, changing, or writing code against Salesforce metadata, to find out what already exists in the org with the right tool |
+| `platform-metadata-grounding-get` | official | Find metadata that already exists in a Salesforce org by meaning, when you do not know its exact API name |
 | `platform-metadata-retrieve` | official | ALWAYS USE THIS SKILL to retrieve metadata from an org to your local project with sf project retrieve start |
 | `platform-models-api-configure` | official | Configure (or troubleshoot) an AI coding agent or CLI to route through the Salesforce Models API using a signed OrgJWT. Use this skill when pointing a |
 | `platform-permission-set-generate` | official | Generates correct, deployable Salesforce permission set metadata (PermissionSet XML) with object, field, user, and app permissions |

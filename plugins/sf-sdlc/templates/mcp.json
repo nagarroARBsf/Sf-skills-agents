@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "sf-metadata-experts": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "metadata-experts"
+      ]
+    },
+    "sf-metadata-grounding": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "metadata-grounding"
+      ]
+    },
+    "sf-headless-360": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "headless-360"
+      ]
+    },
+    "sf-data360": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "data360"
+      ]
+    }
+  }
+}

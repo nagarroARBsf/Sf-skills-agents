@@ -5,6 +5,7 @@
 //   session-start   SessionStart              project facts (and, as a plugin, the project instructions)
 //   pre-bash        PreToolUse  Bash          org guard, commit gate, branch guard
 //   pre-write       PreToolUse  Write|Edit    secret and protected-path guard
+//   pre-mcp         PreToolUse  mcp__…sf-*    hosted MCP guard: tools that change the org always ask
 //   post-write      PostToolUse Write|Edit    fast Salesforce source checks, as feedback
 //   post-bash       PostToolUse Bash          audit log
 //   bash-failure    PostToolUseFailure Bash   audit log and failure triage
@@ -19,8 +20,9 @@ const path = require('path');
 const lib = require('./lib');
 const ops = require('./ops');
 const checks = require('./checks');
+const mcp = require('./mcp');
 
-const SAFETY_HOOKS = new Set(['pre-bash', 'pre-write']);
+const SAFETY_HOOKS = new Set(['pre-bash', 'pre-write', 'pre-mcp']);
 
 function readInput() {
   try { return JSON.parse(fs.readFileSync(0, 'utf8') || '{}'); } catch { return {}; }
@@ -296,6 +298,27 @@ function sessionStart(input, root, cfg, mode) {
   process.stdout.write(out.join('\n\n') + '\n');
 }
 
+// ------------------------------------------------------------------ hosted MCP guard
+
+// Headless 360 `dispatch` and Data 360 `execute` can change the org. They always ask, in every hook
+// mode and even when the tool is allow-listed, naming the org and how it is classified.
+function mcpGuard(toolName, cfg, root, lookup) {
+  const t = mcp.parseToolName(toolName);
+  if (!t || !t.writes) return { decision: 'allow' };
+  const target = mcp.mcpOrg(root, cfg);
+  const org = lib.classifyOrg(target, cfg, root, lookup);
+  const risky = org.kind === 'production' || org.kind === 'unknown';
+  return {
+    decision: 'ask',
+    reason: `sf-${t.server} ${t.tool} can change org ${target || '(none)'} (${org.kind}${org.kind === 'unknown' ? ', treated as production' : ''}).${risky ? ' This is a production-class org: confirm only if you named this org and this exact request.' : ''} Check the method, URL and body before approving; read the current state first and re-read after.`,
+  };
+}
+
+function preMcp(input, root, cfg) {
+  const d = mcpGuard(input.tool_name, cfg, root);
+  if (d.decision !== 'allow') preDecision(d.decision, d.reason);
+}
+
 function stop(input, root, cfg) {
   if (!cfg.hooks.strictEvidence || input.stop_hook_active) return;
   const changed = (lib.git(['status', '--porcelain', '--', cfg.paths.specs], root) || '').split('\n')
@@ -312,7 +335,7 @@ function stop(input, root, cfg) {
 }
 
 const HANDLERS = {
-  'session-start': sessionStart, 'pre-bash': preBash, 'pre-write': preWrite, 'post-write': postWrite,
+  'session-start': sessionStart, 'pre-bash': preBash, 'pre-write': preWrite, 'pre-mcp': preMcp, 'post-write': postWrite,
   'post-bash': (input, root, cfg) => { auditEntry(input, root, cfg, 'ok'); }, 'bash-failure': bashFailure, stop,
 };
 
@@ -328,7 +351,7 @@ function main() {
   } catch (err) {
     if (SAFETY_HOOKS.has(name)) {
       const cmd = (input.tool_input && (input.tool_input.command || input.tool_input.file_path)) || '';
-      if (name === 'pre-write' || /\b(sf|sfdx)\b[^|;&]*\b(deploy|delete|data|apex run|package)\b|\bgit\s+push\b/.test(cmd)) {
+      if (name === 'pre-write' || name === 'pre-mcp' || /\b(sf|sfdx)\b[^|;&]*\b(deploy|delete|data|apex run|package)\b|\bgit\s+push\b/.test(cmd)) {
         return preDecision('ask', `The sf-sdlc safety guard failed to run (${err.message}). Confirm this action manually.`);
       }
     }
@@ -338,4 +361,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { orgGuard, kitInvocations, branchGuard, branchMatches, commitGate, guardedLabel, TRIAGE };
+module.exports = { mcpGuard, orgGuard, kitInvocations, branchGuard, branchMatches, commitGate, guardedLabel, TRIAGE };

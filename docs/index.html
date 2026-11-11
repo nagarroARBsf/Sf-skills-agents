@@ -183,6 +183,36 @@ tr:last-child td { border-bottom: 0; }
 .flow .node span { font-size: 13px; color: var(--muted); }
 .flow .node code { font-size: 11.5px; }
 .flow .node:not(:last-child)::after { content: "→"; position: absolute; right: -11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; background: var(--bg); line-height: 1; }
+.badge-req { display: inline-block; vertical-align: middle; font: 600 11px/1 var(--sans); letter-spacing: .02em; text-transform: uppercase; color: var(--warn); border: 1px solid currentColor; border-radius: 999px; padding: 3px 8px; margin-left: 6px; }
+.mcp-figure { margin: 20px 0 8px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.mcp-figure svg { display: block; width: 100%; height: auto; font-family: var(--sans); }
+.mcp-figure figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; max-width: 900px; }
+.mcp-figure .ring { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 10 8; }
+.mcp-figure .ring-fill { fill: var(--accent-soft); opacity: .55; }
+.mcp-figure .ring-title { fill: var(--accent-text); font-size: 15px; font-weight: 700; }
+.mcp-figure .pill rect { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+.mcp-figure .pill text { fill: var(--accent-text); font-size: 14px; font-weight: 600; }
+.mcp-figure .agent-head { fill: var(--text); font-size: 15px; font-weight: 700; }
+.mcp-figure .agent-sub { fill: var(--muted); font-size: 13px; }
+.mcp-figure .agent rect { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+.mcp-figure .agent text { fill: var(--text); font-size: 14.5px; font-weight: 600; }
+.mcp-figure .agent .glyph { fill: var(--accent); }
+.mcp-figure .agent .glyph-t { fill: #fff; font-size: 9.5px; font-weight: 700; }
+.mcp-figure .platform { fill: #0b5cab; }
+.mcp-figure .platform-title { fill: #fff; font-size: 22px; font-weight: 700; }
+.mcp-figure .box rect { fill: #eaf5fe; stroke: none; }
+.mcp-figure .box-t { fill: #032d60; font-size: 16px; font-weight: 700; }
+.mcp-figure .box-t.sm { font-size: 15px; }
+.mcp-figure .box-s { fill: #0b3b6e; font-size: 13.5px; }
+.mcp-figure .logbar { fill: #eaf5fe; }
+.mcp-figure .lbl, .mcp-figure .note { fill: #eaf5fe; font-size: 13.5px; }
+.mcp-figure .note { font-weight: 600; }
+.mcp-figure .flow-line { fill: none; stroke: var(--text); stroke-width: 3; }
+.mcp-figure .inner-line { fill: none; stroke: #eaf5fe; stroke-width: 2; }
+.mcp-figure .mk { fill: var(--text); }
+.mcp-figure .mk-light { fill: #eaf5fe; }
+.mcp-figure .step { fill: var(--text); }
+.mcp-figure .step-t { fill: var(--bg); font-size: 14px; font-weight: 700; }
 .guard-band { margin-top: 10px; border: 1px dashed var(--warn); color: var(--text); border-radius: 12px; padding: 10px 14px; font-size: 14px; background: color-mix(in srgb, var(--proj-soft) 60%, transparent); }
 
 .lifecycle { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
@@ -272,6 +302,7 @@ footer { border-top: 1px solid var(--border); padding-top: 22px; color: var(--mu
     <h4>Configuration</h4>
     <a href="#configure">What you need to provide</a>
     <a href="#config-keys">Project config keys</a>
+    <a href="#hosted-mcp">Salesforce Hosted MCP (required)</a>
     <a href="#user-options">Per-user options</a>
     <a href="#verify">Verify the install</a>
 
@@ -293,18 +324,20 @@ footer { border-top: 1px solid var(--border); padding-top: 22px; color: var(--mu
     <section id="overview" data-tab="start">
       <div class="eyebrow">Getting started</div>
       <h1>Salesforce SDLC plugin for Claude Code</h1>
-      <p class="lead">One plugin that takes a Salesforce project from meeting transcripts to a production release: BRD, Jira stories, architecture, spec-driven build, code review, validated deployment, testing, re-test and release, with guard hooks around every org-changing command.</p>
+      <p class="lead">One plugin that takes a Salesforce project from meeting transcripts to a production release: grounding in your business and org, BRD, Jira stories, architecture, spec-driven build, code review, validated deployment, testing, re-test, release and observation, with Salesforce Hosted MCP Servers for org context and guard hooks around every org-changing command.</p>
       <div class="lifecycle" aria-label="Lifecycle">
-        <span><b>0</b>Setup</span><span><b>1</b>BRD</span><span><b>2</b>Stories</span><span><b>3</b>Architecture</span><span><b>4</b>Spec &amp; plan</span><span><b>5</b>Build</span><span><b>6</b>Review</span><span><b>7</b>Deploy</span><span><b>8</b>Test</span><span><b>9</b>Re-test</span><span><b>10</b>Release</span>
+        <span><b>0</b>Setup</span><span><b>G</b>Ground</span><span><b>1</b>BRD</span><span><b>2</b>Stories</span><span><b>3</b>Architecture</span><span><b>4</b>Spec &amp; plan</span><span><b>5</b>Build</span><span><b>6</b>Review</span><span><b>7</b>Deploy</span><span><b>8</b>Test</span><span><b>9</b>Re-test</span><span><b>10</b>Release</span><span><b>11</b>Observe</span>
       </div>
       <div class="stat-grid">
         <div class="card stat"><b>10</b><span>agents, one per stage</span></div>
         <div class="card stat"><b>22</b><span>slash commands</span></div>
         <div class="card stat"><b>11</b><span>SDLC method skills</span></div>
-        <div class="card stat"><b>174</b><span>Salesforce skills, installed on demand</span></div>
+        <div class="card stat"><b>176</b><span>Salesforce skills, installed on demand</span></div>
         <div class="card stat"><b>7</b><span>hook events guarded</span></div>
+        <div class="card stat"><b>4</b><span>Salesforce Hosted MCP servers, signed in through the sf CLI</span></div>
         <div class="card stat"><b>3 · 2 · 2</b><span>workflows · monitors · output styles</span></div>
       </div>
+      <div class="callout"><p><strong>Hosted MCP Servers are required.</strong> They give the agents just the org context they need. See <a href="#hosted-mcp">how your coding agent connects to them, and which to turn on</a>.</p></div>
       <div class="callout"><p>Every stage writes a <strong>draft</strong> and stops. A person reviews it and fills in its approval record before the next stage starts. Agents never approve their own work.</p></div>
     </section>
 
@@ -360,6 +393,7 @@ claude
           <tr><td>Salesforce CLI <code>sf</code> v2</td><td>Build, test, deploy</td></tr>
           <tr><td><code>sf plugins install code-analyzer</code> + Java 11+</td><td>Code review, <code>analyze</code>, the commit gate</td></tr>
           <tr><td>GitHub CLI <code>gh</code> (optional)</td><td>Pull requests, tags, releases</td></tr>
+          <tr><td><strong>Salesforce Hosted MCP Servers (required)</strong></td><td>How agents see your org: Metadata Grounding and Metadata Experts for every project, plus the servers your project needs. Turned on in the org: Setup → MCP Servers. See <a href="#hosted-mcp">Salesforce Hosted MCP Servers</a></td></tr>
         </tbody>
       </table></div>
       <p class="muted">Business analysts and managers who only produce documents need Claude Code and Node.js only.</p>
@@ -370,6 +404,8 @@ claude
       <h2>Quickstart</h2>
       <div class="steps">
         <div class="card step"><div><h3>Run setup in your Salesforce project</h3><p>Checks tools, writes <code>.claude/sf-sdlc.json</code>, records what already exists and recommends only the skills the project needs.</p><pre><code>/sf-sdlc:setup</code></pre></div></div>
+        <div class="card step"><div><h3>Turn on the Salesforce Hosted MCP Servers</h3><p>Required. In the org: Setup → <strong>MCP Servers</strong> → turn on Metadata Grounding, Metadata Experts and the servers your project needs. Then log in once with the Salesforce CLI and check the connection.</p><pre><code>sf org login web --alias my-dev
+sf-sdlc mcp status</code></pre></div></div>
         <div class="card step"><div><h3>Tell it which orgs are production</h3><p>Open <code>.claude/sf-sdlc.json</code> and list every production alias in <code>orgs.production</code>. This is the one setting you must get right.</p><pre><code>"orgs": { "dev": "orion-dev", "qa": "orion-qa", "uat": "orion-uat", "production": ["orion-prod"] }</code></pre></div></div>
         <div class="card step"><div><h3>Start at the stage you are in</h3><p>Transcripts? Start with the BRD. A story already in Jira? Start with the spec.</p><pre><code>/sf-sdlc:brd docs/sdlc/00-inputs/
 /sf-sdlc:specify US-04-02
@@ -412,7 +448,7 @@ claude
     <!-- ===================== HOW IT FITS ===================== -->
     <section id="how-it-fits" data-tab="plugin">
       <h2>How the pieces work together</h2>
-      <p>A command names an agent; the agent loads its method skills and any Salesforce skills installed in the project; real work on Salesforce goes through the <code>sf-sdlc</code> CLI and the <code>sf</code> CLI. Hooks sit around every tool call.</p>
+      <p>A command names an agent; the agent loads its method skills and any Salesforce skills installed in the project; real work on Salesforce goes through the <code>sf-sdlc</code> CLI and the <code>sf</code> CLI, and org context (what metadata already exists, metadata schemas) comes from Salesforce Hosted MCP Servers. Hooks sit around every tool call.</p>
       <div class="flow">
         <div class="node"><b>Command</b><span>You type <code>/sf-sdlc:review US-04-02</code></span></div>
         <div class="node"><b>Agent</b><span><code>sdlc-code-review-agent</code>, read-only tools</span></div>
@@ -420,7 +456,7 @@ claude
         <div class="node"><b>CLI</b><span><code>sf-sdlc analyze</code>, <code>delta</code> → <code>sf code-analyzer</code></span></div>
         <div class="node"><b>Draft</b><span><code>specs/US-04-02-…/review.md</code> with a verdict, then stop</span></div>
       </div>
-      <div class="guard-band"><strong>Hooks around every step:</strong> <code>SessionStart</code> prints project facts and instructions · <code>PreToolUse</code> runs the production-org, secret, branch and commit guards · <code>PostToolUse</code> runs source checks and writes the audit log · <code>PostToolUseFailure</code> explains deploy failures · <code>Stop</code> checks task evidence. Monitors report when a background deploy or test run changes state.</div>
+      <div class="guard-band"><strong>Hooks around every step:</strong> <code>SessionStart</code> prints project facts and instructions · <code>PreToolUse</code> runs the production-org, secret, branch, commit and hosted-MCP guards · <code>PostToolUse</code> runs source checks and writes the audit log · <code>PostToolUseFailure</code> explains deploy failures · <code>Stop</code> checks task evidence. Monitors report when a background deploy or test run changes state.</div>
     </section>
 
     <!-- ===================== TWO FORMS ===================== -->
@@ -435,6 +471,7 @@ claude
           <tr><td>Hooks</td><td>In <code>settings.json</code></td><td><code>hooks/hooks.json</code></td></tr>
           <tr><td>CLI</td><td><code>node .claude/bin/sf-sdlc</code></td><td><code>sf-sdlc</code> on the PATH</td></tr>
           <tr><td>Project instructions and coding rules</td><td><code>CLAUDE.md</code>, <code>rules/</code></td><td>Printed at session start; rules become the <code>salesforce-coding-rules</code> skill</td></tr>
+          <tr><td>Salesforce Hosted MCP servers</td><td>Project <code>.mcp.json</code>, written by <code>sf-sdlc init</code></td><td><code>.mcp.json</code> in the plugin</td></tr>
           <tr><td>Monitors, themes, Jira MCP, per-user options</td><td>No (plugin-only features)</td><td>Yes</td></tr>
         </tbody>
       </table></div>
@@ -451,7 +488,9 @@ claude
           <tr><td><code>.claude/sf-sdlc.json</code></td><td>Yes</td><td>Org aliases and <strong>which are production</strong>, branch rules, Jira project, coverage target, promotion order, document paths, hook mode</td></tr>
           <tr><td><code>.claude/sf-sdlc.local.json</code></td><td>No</td><td>Personal overrides, same shape; for example your own scratch org</td></tr>
           <tr><td><code>.claude/settings.json</code></td><td>Yes</td><td>Claude Code permissions (allow / ask / deny). Plugin users get a template from <code>templates/project-settings.json</code></td></tr>
-          <tr><td><code>code-analyzer.yml</code></td><td>Yes</td><td>Which Code Analyzer rules run and at what severity</td></tr>
+          <tr><td><code>code-analyzer.yml</code></td><td>Yes</td><td>Which Code Analyzer rules run and at what severity, plus custom rules (ships <code>NoHardcodedSalesforceIds</code>)</td></tr>
+          <tr><td><code>.github/workflows/sf-code-analyzer.yml</code></td><td>Yes</td><td>Code Analyzer on the files changed in each pull request; keep its threshold equal to the local one</td></tr>
+          <tr><td><code>docs/sdlc/00-grounding/</code></td><td>Yes</td><td><code>ontology.yaml</code> (business terms → Salesforce objects) and <code>feature-map.md</code> (components per feature), drafted by setup</td></tr>
           <tr><td><code>.claude/sf-sdlc.skills.lock.json</code></td><td>Yes</td><td>Nothing by hand: records installed skills so <code>skills sync</code> never overwrites your edits</td></tr>
           <tr><td><code>specs/constitution.md</code></td><td>Yes</td><td>Created by <code>/sf-sdlc:constitution</code>: your engineering principles, trigger framework, logging utility</td></tr>
         </tbody>
@@ -470,6 +509,7 @@ claude
                 "testLevel": { "qa": "RunLocalTests", "production": "RunLocalTests" },
                 "validateBeforeDeploy": true, "allowDirectProductionDeploy": false, "useDelta": true },
   "paths":    { "docs": "docs/sdlc", "specs": "specs" },
+  "mcp":      { "servers": ["metadata-experts", "metadata-grounding"], "org": "dev" },
   "hooks":    { "mode": "observe", "auditLog": true }
 }</code></pre></div>
     </section>
@@ -484,10 +524,145 @@ claude
           <tr><td><code>jira.projectKey</code>, <code>jira.fields.*</code></td><td>Where the story agent creates issues, and your custom field IDs (story points, acceptance criteria).</td></tr>
           <tr><td><code>quality.coverageTarget</code>, <code>analyzerSeverityThreshold</code></td><td>Per-class Apex coverage target and the Code Analyzer severity that blocks a commit (1 Critical … 5 Info).</td></tr>
           <tr><td><code>deploy.pipeline</code>, <code>deploy.testLevel</code></td><td>Promotion order and test level per stage. Production may not be <code>NoTestRun</code>.</td></tr>
+          <tr><td><code>mcp.servers</code>, <code>mcp.org</code></td><td>Which Salesforce Hosted MCP Servers the agents may use, and the org (role or alias) they sign in to. Headless 360 and Data 360 are off by default.</td></tr>
           <tr><td><code>hooks.mode</code></td><td><code>observe</code> reports what would be blocked; <code>enforce</code> blocks. Start in observe for a week. The production and secret guards enforce in every mode.</td></tr>
         </tbody>
       </table></div>
       <p class="muted">Every key, with examples: <a href="https://github.com/nagarroARBsf/Sf-skills-agents/blob/main/SETUP.md">SETUP.md</a>.</p>
+    </section>
+
+    <section id="hosted-mcp" data-tab="configure">
+      <h2>Salesforce Hosted MCP Servers <span class="badge-req">Required</span></h2>
+      <p class="lead">Hosted MCP servers are how the agents see your org: what metadata already exists, the exact schema of each type, and live Setup and data. Without them an agent guesses names and duplicates what is already there. Setting them up is a required step, not an extra. <strong>Which</strong> servers you turn on depends on the project; the ones marked <em>Required</em> are needed by every project.</p>
+
+      <figure class="mcp-figure">
+        <svg viewBox="0 0 1180 620" role="img" aria-labelledby="mcpDiagTitle mcpDiagDesc">
+          <title id="mcpDiagTitle">How a coding agent reaches Salesforce Hosted MCP Servers</title>
+          <desc id="mcpDiagDesc">On the left, a ring around the coding agent (Claude Code, Cursor, Codex or GitHub Copilot) holds the project harness: skills, instructions, tools and checks. Step 1: the agent authenticates with OAuth 2.0 through an External Client App, or with the Salesforce CLI login through sf-mcp-proxy. Step 2: it calls tools and prompts on the hosted MCP servers. The External Client App is restricted by permission sets, profiles and IP ranges and authorizes access to the servers. The servers expose MCP tools (Apex, Flows, APIs, prompts), which sharing rules and permissions secure. Every call is logged.</desc>
+          <defs>
+            <marker id="mcpArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+            <marker id="mcpArrowLight" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk-light"/></marker>
+          </defs>
+
+          <!-- Harness ring around the coding agent -->
+          <circle cx="205" cy="315" r="188" class="ring-fill"/>
+          <circle cx="205" cy="315" r="188" class="ring"/>
+          <text x="205" y="112" class="ring-title" text-anchor="middle">Your project harness</text>
+          <g class="pill"><rect x="40" y="150" width="104" height="30" rx="15"/><text x="92" y="170" text-anchor="middle">Skills</text></g>
+          <g class="pill"><rect x="262" y="150" width="128" height="30" rx="15"/><text x="326" y="170" text-anchor="middle">Instructions</text></g>
+          <g class="pill"><rect x="40" y="452" width="104" height="30" rx="15"/><text x="92" y="472" text-anchor="middle">Checks</text></g>
+          <g class="pill"><rect x="272" y="452" width="104" height="30" rx="15"/><text x="324" y="472" text-anchor="middle">Tools</text></g>
+
+          <text x="205" y="212" class="agent-head" text-anchor="middle">Your coding agent</text>
+          <g class="agent"><rect x="105" y="226" width="200" height="38" rx="10"/><circle cx="128" cy="245" r="11" class="glyph"/><text x="128" y="249" class="glyph-t" text-anchor="middle">C</text><text x="148" y="250">Claude Code</text></g>
+          <g class="agent"><rect x="105" y="272" width="200" height="38" rx="10"/><circle cx="128" cy="291" r="11" class="glyph"/><text x="128" y="295" class="glyph-t" text-anchor="middle">Cu</text><text x="148" y="296">Cursor</text></g>
+          <g class="agent"><rect x="105" y="318" width="200" height="38" rx="10"/><circle cx="128" cy="337" r="11" class="glyph"/><text x="128" y="341" class="glyph-t" text-anchor="middle">Cx</text><text x="148" y="342">Codex</text></g>
+          <g class="agent"><rect x="105" y="364" width="200" height="38" rx="10"/><circle cx="128" cy="383" r="11" class="glyph"/><text x="128" y="387" class="glyph-t" text-anchor="middle">GH</text><text x="148" y="388">GitHub Copilot</text></g>
+          <text x="205" y="428" class="agent-sub" text-anchor="middle">MCP client</text>
+
+          <!-- Platform -->
+          <rect x="452" y="30" width="712" height="574" rx="18" class="platform"/>
+          <text x="808" y="68" class="platform-title" text-anchor="middle">Salesforce Platform</text>
+
+          <!-- Steps -->
+          <path d="M392,268 C425,230 435,190 482,182" class="flow-line" marker-end="url(#mcpArrow)"/>
+          <path d="M392,362 C428,400 440,420 482,428" class="flow-line" marker-end="url(#mcpArrow)"/>
+          <circle cx="418" cy="205" r="14" class="step"/><text x="418" y="210" class="step-t" text-anchor="middle">1</text>
+          <circle cx="418" cy="425" r="14" class="step"/><text x="418" y="430" class="step-t" text-anchor="middle">2</text>
+
+          <!-- ECA -->
+          <g class="box"><rect x="484" y="140" width="250" height="84" rx="12"/>
+            <text x="609" y="174" text-anchor="middle" class="box-t">External Client App (ECA)</text>
+            <text x="609" y="198" text-anchor="middle" class="box-s">OAuth 2.0 + PKCE · or sf CLI login</text></g>
+          <text x="609" y="124" text-anchor="middle" class="note">1 · Authenticate</text>
+
+          <!-- Hosted MCP servers -->
+          <g class="box"><rect x="484" y="330" width="250" height="176" rx="12"/>
+            <text x="609" y="360" text-anchor="middle" class="box-t">Hosted MCP Servers</text>
+            <text x="502" y="386" class="box-s">Standard: Metadata Grounding,</text>
+            <text x="502" y="405" class="box-s">Metadata Experts, SObject,</text>
+            <text x="502" y="424" class="box-s">Data 360, Headless 360,</text>
+            <text x="502" y="443" class="box-s">CRM Analytics, Tableau Next,</text>
+            <text x="502" y="462" class="box-s">Content</text>
+            <text x="502" y="490" class="box-s">Custom: your Apex, Flows, APIs</text></g>
+          <text x="609" y="526" text-anchor="middle" class="note">2 · Call tools and prompts</text>
+
+          <path d="M609,226 L609,326" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <text x="620" y="272" class="lbl">Authorizes</text><text x="620" y="290" class="lbl">access to</text>
+
+          <!-- Restrictions -->
+          <text x="760" y="108" class="lbl">Access restricted by</text>
+          <g class="box"><rect x="808" y="126" width="186" height="46" rx="10"/><text x="901" y="155" text-anchor="middle" class="box-t sm">Permission Sets</text></g>
+          <g class="box"><rect x="808" y="192" width="186" height="46" rx="10"/><text x="901" y="221" text-anchor="middle" class="box-t sm">Profiles</text></g>
+          <g class="box"><rect x="808" y="258" width="186" height="46" rx="10"/><text x="901" y="287" text-anchor="middle" class="box-t sm">IP Ranges</text></g>
+          <path d="M736,170 C770,160 780,150 804,149" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <path d="M736,182 C770,195 780,213 804,215" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <path d="M736,194 C765,230 780,278 804,281" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+
+          <g class="box"><rect x="1018" y="84" width="128" height="46" rx="10"/><text x="1082" y="113" text-anchor="middle" class="box-t sm">Sharing Rules</text></g>
+          <path d="M1082,132 L1082,376" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <text x="1092" y="258" class="lbl">Secures</text>
+          <path d="M996,149 C1040,170 1050,300 1060,374" class="inner-line"/>
+          <path d="M996,215 C1030,240 1040,320 1052,374" class="inner-line"/>
+          <path d="M996,281 C1020,300 1030,340 1044,374" class="inner-line"/>
+
+          <!-- MCP tools -->
+          <g class="box"><rect x="972" y="378" width="176" height="104" rx="12"/>
+            <text x="1060" y="410" text-anchor="middle" class="box-t">MCP Tools</text>
+            <text x="1060" y="434" text-anchor="middle" class="box-s">Apex, Flows, APIs,</text>
+            <text x="1060" y="454" text-anchor="middle" class="box-s">Prompts…</text></g>
+          <path d="M736,430 L968,430" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <text x="852" y="420" text-anchor="middle" class="lbl">Exposes</text>
+
+          <!-- Logging -->
+          <rect x="484" y="540" width="664" height="44" rx="10" class="logbar"/>
+          <text x="816" y="568" text-anchor="middle" class="box-t sm">Logging · every call is attributed to a named user</text>
+        </svg>
+        <figcaption>The ring is <strong>your project harness</strong>, the layer this framework provides around any coding agent: <strong>skills</strong> (the sdlc-* method and the Salesforce skills library), <strong>instructions</strong> (<code>CLAUDE.md</code> / <code>AGENTS.md</code>, <code>ontology.yaml</code>, the feature map), <strong>tools</strong> (Salesforce CLI, Hosted MCP Servers, the Apex language server) and <strong>checks</strong> (tests, Code Analyzer rules, hooks and quality gates). The right side follows Salesforce's <a href="https://developer.salesforce.com/blogs/2026/06/how-to-secure-salesforce-hosted-mcp-servers">How to Secure Salesforce Hosted MCP Servers</a>. Agent names are shown as plain labels; this kit's plugin, hooks and commands run in Claude Code, and any MCP client can connect to the same servers.</figcaption>
+      </figure>
+
+      <h3>Which servers your project needs</h3>
+      <p>Standard servers are off by default; an administrator turns each one on. Every tool call runs as the signed-in user, so field-level security, object permissions and sharing rules always apply. Full list: <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/references/reference/servers-reference.html">Standard MCP Servers Reference</a>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Server</th><th>Turn it on when</th><th>How this kit connects</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Metadata Grounding</strong> (Beta) <span class="badge-req">Required</span></td><td>Every project. Agents find existing objects, fields, flows, Apex, LWC and permission sets by meaning before proposing new ones. Read-only. Needs Data 360, API access and Salesforce Catalog; not in scratch orgs or namespaced Developer Edition orgs. <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/references/reference/metadata-grounding.html">Reference</a></td><td><code>sf-metadata-grounding</code> through <code>sf-mcp-proxy</code> (on by default)</td></tr>
+          <tr><td><strong>Metadata Experts</strong> <span class="badge-req">Required</span></td><td>Every project that builds metadata: exact schemas and generation for Flows, Lightning pages, apps, tabs and sites.</td><td><code>sf-metadata-experts</code> through <code>sf-mcp-proxy</code> (on by default)</td></tr>
+          <tr><td><strong>SObject Reads</strong></td><td>Agents need to read records: test data checks, defect triage, data questions. The safest SObject server.</td><td>Direct OAuth through your ECA</td></tr>
+          <tr><td><strong>SObject Mutations / Deletes / All</strong></td><td>Only when agents must create, update or delete records, ideally in sandboxes. Prefer Reads.</td><td>Direct OAuth through your ECA</td></tr>
+          <tr><td><strong>Data 360</strong></td><td>Data Cloud projects: query unified customer data.</td><td><code>sf-data360</code> through <code>sf-mcp-proxy</code> (add to <code>mcp.servers</code>); <code>execute</code> always asks</td></tr>
+          <tr><td><strong>Headless 360</strong> (Beta)</td><td>Setup and configuration work, feature, licence and limit checks, release updates.</td><td><code>sf-headless-360</code> through <code>sf-mcp-proxy</code> (add to <code>mcp.servers</code>); <code>dispatch</code> always asks</td></tr>
+          <tr><td><strong>CRM Analytics</strong> (Beta)</td><td>CRM Analytics projects: apps, dataset schemas, SAQL, dashboard and lens metadata. Read-only; needs a CRM Analytics licence; sandbox and scratch orgs during the Beta. <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/references/reference/crm-analytics-mcp.html">Reference</a></td><td>Direct OAuth through your ECA</td></tr>
+          <tr><td><strong>Tableau Next</strong></td><td>Tableau Next projects: semantic models, KPIs, dashboards.</td><td>Direct OAuth through your ECA</td></tr>
+          <tr><td><strong>Content Read-Only / Write</strong></td><td>Salesforce CMS projects: workspaces, channels, content.</td><td>Direct OAuth through your ECA</td></tr>
+          <tr><td><strong>Custom servers</strong></td><td>Your own Apex, Flows or catalog APIs exposed as tools.</td><td>Direct OAuth through your ECA</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Set them up</h3>
+      <div class="steps">
+        <div class="card step"><div><h3>Turn the servers on in the org</h3><p>Setup → Quick Find <strong>MCP Servers</strong> → <strong>MCP Servers</strong> under API Catalog. Turn on the required servers and the ones your project needs. Allow two minutes.</p></div></div>
+        <div class="card step"><div><h3>Connect the kit's servers with the Salesforce CLI login</h3><p>No client ID or secret: <code>sf-mcp-proxy</code> gets a short-lived token from the org through your CLI login. List the servers in <code>mcp.servers</code> and, if needed, the org in <code>mcp.org</code>.</p><pre><code>sf org login web --alias my-dev
+sf-sdlc mcp status</code></pre></div></div>
+        <div class="card step"><div><h3>Connect the other servers through an External Client App</h3><p>Setup → External Client App Manager → New. Enable OAuth, add the scopes <code>mcp_api</code> and <code>refresh_token</code>, require PKCE, select <em>Issue JSON Web Token (JWT)-based access tokens for named users</em>, and add your client's callback URL (Claude Code: <code>http://localhost:&lt;port&gt;/callback</code>). A new app can take up to 30 minutes to work. Use the server name shown in Setup:</p><pre><code>claude mcp add --transport http --scope project \
+  --client-id &lt;consumer key&gt; --callback-port &lt;port&gt; \
+  sf-crm-analytics https://api.salesforce.com/platform/mcp/v1/&lt;server name&gt;
+# sandbox or scratch org: .../platform/mcp/v1/sandbox/&lt;server name&gt;</code></pre><p>Then <code>/mcp</code> → authenticate in the browser. Cursor, Codex and GitHub Copilot use the same server URL and consumer key.</p></div></div>
+        <div class="card step"><div><h3>Restart and check</h3><p>Restart Claude Code. <code>/mcp</code> lists every server; a kit server that is not enabled or not turned on in the org shows no tools instead of failing to start.</p></div></div>
+      </div>
+
+      <h3>Secure them</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Control</th><th>What to set</th></tr></thead>
+        <tbody>
+          <tr><td>Who can connect</td><td>In the ECA's OAuth Policies, require a custom permission set for pre-authorization and assign it only to approved users. Profiles can restrict access the same way.</td></tr>
+          <tr><td>Where they connect from</td><td>Restrict the ECA to known IP ranges when your MCP client uses stable addresses. Check with the client vendor first; some use more ranges than the allowlist holds.</td></tr>
+          <tr><td>How long access lasts</td><td>Refresh token validity 30 days or less, with refresh token rotation. Turn on single logout so ending a Salesforce session ends the MCP session.</td></tr>
+          <tr><td>Client secret</td><td>Require it only for web-based clients; desktop and CLI clients use PKCE.</td></tr>
+          <tr><td>What tools can reach</td><td>Field-level security, object permissions and sharing rules apply to every call. Start with read-only servers; add write servers per project. In this kit, Headless 360 <code>dispatch</code> and Data 360 <code>execute</code> always ask first, naming the org.</td></tr>
+          <tr><td>What happened</td><td>Every call is logged and attributed to a named user. Review the logs alongside the kit's local audit log.</td></tr>
+        </tbody>
+      </table></div>
     </section>
 
     <section id="user-options" data-tab="configure">
@@ -500,7 +675,7 @@ claude
           <tr><td>Audit log</td><td>on (default) / off</td><td>Turns the local audit log off for you</td></tr>
         </tbody>
       </table></div>
-      <p>Jira: the plugin's <code>.mcp.json</code> connects the Atlassian remote MCP server. Sign in once with <code>/mcp</code>. Without it, the story agent writes a Jira CSV you can import.</p>
+      <p>Jira: the plugin's <code>.mcp.json</code> connects the Atlassian remote MCP server. Sign in once with <code>/mcp</code>. Without it, the story agent writes a Jira CSV you can import. Salesforce: see <a href="#hosted-mcp">Salesforce Hosted MCP Servers</a>.</p>
     </section>
 
     <section id="verify" data-tab="configure">
@@ -508,7 +683,8 @@ claude
 <pre><code>sf-sdlc doctor            # every required line should show ✔
 sf-sdlc config validate
 sf-sdlc org classify      # your production org must report "production"
-sf-sdlc analyze --changed # the official Code Analyzer runs</code></pre>
+sf-sdlc analyze --changed # the official Code Analyzer runs, with your custom rules
+sf-sdlc mcp status        # hosted MCP servers: connected with their tools, or why not</code></pre>
       <p class="muted">Copy-in folder: prefix each with <code>node .claude/bin/</code>. Or run <code>/sf-sdlc:doctor</code>.</p>
     </section>
 
@@ -520,6 +696,7 @@ sf-sdlc analyze --changed # the official Code Analyzer runs</code></pre>
         <thead><tr><th>#</th><th>Stage</th><th>Plugin command</th><th>Copy-in command</th><th>Agent</th><th>Draft it writes</th></tr></thead>
         <tbody>
           <tr><td>0</td><td>Setup</td><td><code>setup</code> <code>doctor</code> <code>skills</code></td><td><code>/sdlc-setup</code></td><td>project scout</td><td>config, baseline, installed skills</td></tr>
+          <tr><td>G</td><td>Ground</td><td><code>setup</code></td><td><code>/sdlc-setup</code></td><td>project scout (every agent reads them)</td><td><code>00-grounding/ontology.yaml</code>, <code>feature-map.md</code>, from the org through Metadata Grounding when connected</td></tr>
           <tr><td>1</td><td>BRD</td><td><code>brd &lt;files&gt;</code></td><td><code>/sdlc-brd</code></td><td>BRD</td><td><code>docs/sdlc/01-brd/BRD.md</code></td></tr>
           <tr><td>2</td><td>Stories</td><td><code>stories</code></td><td><code>/sdlc-stories</code></td><td>Jira story</td><td>backlog, Jira CSV; issues after you say yes</td></tr>
           <tr><td>3</td><td>Architecture</td><td><code>architecture</code> <code>diagram</code></td><td><code>/sdlc-architecture</code></td><td>solution architect</td><td>HLD, LLD per story, ADRs, diagrams marking New / Changed / Unchanged</td></tr>
@@ -530,9 +707,11 @@ sf-sdlc analyze --changed # the official Code Analyzer runs</code></pre>
           <tr><td>8</td><td>Test</td><td><code>test-cases</code> <code>test-run &lt;org&gt;</code></td><td><code>/sdlc-test-run</code></td><td>QA</td><td>test cases, <code>TR-*</code> reports, <code>DEF-nnn</code> defects</td></tr>
           <tr><td>9</td><td>Re-test</td><td><code>retest</code></td><td><code>/sdlc-retest</code></td><td>QA</td><td>defect status with the passing run cited</td></tr>
           <tr><td>10</td><td>Release</td><td><code>release &lt;version&gt;</code></td><td><code>/sdlc-release</code></td><td>release manager</td><td>readiness, release notes, Jira version and GitHub release after yes</td></tr>
+          <tr><td>11</td><td>Observe</td><td><code>test-run</code> <code>specify</code></td><td><code>/sdlc-test-run</code></td><td>QA, planner</td><td><code>06-observe/findings-*.md</code>: each finding becomes a defect or story <strong>and</strong> a constraint (test, Code Analyzer rule, hook)</td></tr>
         </tbody>
       </table></div>
       <p>Traceability runs through one ID chain: <code>BR-04</code> → <code>FR-04.2</code> → <code>US-04-02</code> → <code>LLD-US-04-02</code> → <code>TC-US-04-02-007</code> → <code>TR-…</code> → <code>DEF-012</code> → <code>DEP-005</code> → <code>REL-1.4.0</code>. <code>/sf-sdlc:trace</code> shows it at any time.</p>
+      <div class="callout"><p><strong>Every repeated mistake becomes a constraint.</strong> Instructions and skills are advisory; tests, Code Analyzer rules, hooks and quality gates are deterministic. A defect closes only when its record names the constraint added (or says why none fits), and the reviewer recommends the strongest check that would have caught a finding.</p></div>
     </section>
 
     <section id="walkthrough" data-tab="use">
@@ -564,7 +743,7 @@ sf-sdlc analyze --changed # the official Code Analyzer runs</code></pre>
 
     <section id="skills" data-tab="use">
       <h2>Skills on demand</h2>
-      <p>No Salesforce technical skill is loaded by default, because every loaded skill costs context in every session. The 174 skills sit in <code>skill-library/</code>. Setup reads your project and recommends a small set with the evidence for each; only the ones you confirm are copied into your project's <code>.claude/skills/</code>.</p>
+      <p>No Salesforce technical skill is loaded by default, because every loaded skill costs context in every session. The 176 skills sit in <code>skill-library/</code>. Setup reads your project and recommends a small set with the evidence for each; only the ones you confirm are copied into your project's <code>.claude/skills/</code>.</p>
 <pre><code>sf-sdlc skills recommend                 # evidence-based, from your metadata folders
 sf-sdlc skills recommend --profile admin # starter sets: developer, admin, ba
 sf-sdlc skills install platform-apex-generate platform-apex-test-run
@@ -582,7 +761,8 @@ sf-sdlc skills sync --dry-run            # after an upgrade; never overwrites a 
           <tr><td>Production-org guard</td><td>Classifies the target of every org-changing <code>sf</code> command. Production: denies <code>NoTestRun</code> and direct deploys, asks for everything else. Unknown orgs also ask.</td><td>Policy only; on in every mode</td></tr>
           <tr><td>Secret guard</td><td>Blocks writing or committing auth URLs, private keys, tokens and anything in <code>.sf/</code> or <code>.sfdx/</code></td><td>No</td></tr>
           <tr><td>Branch guard</td><td>Blocks pushes to protected branches; force-pushes always blocked</td><td><code>hooks.mode</code></td></tr>
-          <tr><td>Commit gate</td><td>Runs the official Code Analyzer on the files being committed</td><td><code>hooks.mode</code></td></tr>
+          <tr><td>Commit gate</td><td>Runs the official Code Analyzer (Recommended plus your custom rules) on the files being committed; the CI workflow does the same for pull requests</td><td><code>hooks.mode</code></td></tr>
+          <tr><td>Hosted MCP guard</td><td>Headless 360 <code>dispatch</code> and Data 360 <code>execute</code> can change the org: they always ask, naming the org and its class, even when the tool is allow-listed</td><td>No</td></tr>
           <tr><td>Source check</td><td>After each edit: SOQL/DML in loops, missing sharing, hard-coded IDs, <code>SeeAllData</code></td><td>Advisory</td></tr>
           <tr><td>Audit log</td><td>Who ran which org-affecting command against which org, in <code>.sf-sdlc/audit.jsonl</code></td><td><code>hooks.auditLog</code></td></tr>
           <tr><td>Person-only commands</td><td><code>deploy</code> and <code>release</code> carry <code>disable-model-invocation: true</code></td><td>No</td></tr>
@@ -597,7 +777,7 @@ sf-sdlc skills sync --dry-run            # after an upgrade; never overwrites a 
         <li>Not yet run end to end against a real org or Jira project. Prove deploy, test-run and Jira paths in a sandbox first.</li>
         <li>No behavioural evaluation suite yet; agent quality is unmeasured.</li>
         <li>Monitors and themes are experimental in Claude Code; monitors do not run in headless sessions.</li>
-        <li>No Salesforce MCP server: all Salesforce work goes through the <code>sf</code> CLI.</li>
+        <li>Hosted MCP servers are reached through Salesforce's Beta <code>v1-beta.2</code> route, as Salesforce's own plugin does; it may change. Grounding results can lag recent changes and are never a complete list.</li>
         <li>Source checks are heuristics; the Code Analyzer is the authoritative scan.</li>
       </ul>
       <p class="muted">The full list is in the <a href="https://github.com/nagarroARBsf/Sf-skills-agents#known-limitations">README</a>.</p>
@@ -644,7 +824,15 @@ claude plugin validate plugins/sf-sdlc --strict</code></pre>
     "atlassian": {
       "type": "http",
       "url": "https://mcp.atlassian.com/v2/mcp"
-    }
+    },
+    "sf-metadata-grounding": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/sf-mcp-proxy", "metadata-grounding"]
+    },
+    "sf-metadata-experts": { "...": "same, with metadata-experts" },
+    "sf-headless-360":     { "...": "same, with headless-360 (off unless in mcp.servers)" },
+    "sf-data360":          { "...": "same, with data360 (off unless in mcp.servers)" }
   }
 }</script>
 <script type="text/plain" id="c-agent">---
@@ -704,7 +892,7 @@ trusting them, report what could not be verified, and never touch the code.</scr
 ├── platform-apex-test-run/
 ├── experience-lwc-generate/
 ├── sf-flow/                      # community, Clientell-Ai/salesforce-skills
-└── ... 174 skills, never loaded from here
+└── ... 176 skills, never loaded from here
 
 # copy the ones this project needs into .claude/skills/
 sf-sdlc skills recommend
@@ -729,11 +917,12 @@ sf-sdlc skills install platform-apex-generate platform-apex-test-run</script>
 }</script>
 <script type="text/plain" id="c-runjs">hooks/
 ├── hooks.json   # wires Claude Code events to run.js
-├── run.js       # single dispatcher: session-start | pre-bash | pre-write |
+├── run.js       # single dispatcher: session-start | pre-bash | pre-write | pre-mcp |
 │                #   post-write | post-bash | bash-failure | stop
 ├── lib.js       # config, command parsing, org classification
 ├── ops.js       # Code Analyzer wrapper, inventory, delta
-└── checks.js    # source checks and secret patterns</script>
+├── checks.js    # source checks and secret patterns
+└── mcp.js       # Salesforce Hosted MCP routes, sign-in through the sf CLI, probe</script>
 <script type="text/plain" id="c-monitors">[
   {
     "name": "deploy-watch",
@@ -796,7 +985,10 @@ const scope = await agent(
   deploy validate|quick|report|preview --org <role|alias> [--delta --from <ref>]
   test run|report --org <role|alias> [--tests A,B.method] [--level RunLocalTests]
   diagram render <file>        Mermaid to SVG (needs mermaid-cli)
-  audit [--tail N]             local log of org-affecting commands</script>
+  audit [--tail N]             local log of org-affecting commands
+  mcp status|list [server...]  Salesforce Hosted MCP servers: probe through the sf CLI login
+
+$ sf-mcp-proxy metadata-grounding   # started by Claude Code from .mcp.json; stdio MCP bridge</script>
 <script type="text/plain" id="c-catalog">{
   "id": "base",
   "reason": "Deploy, retrieve, query and scan are needed by every Salesforce DX project",
@@ -824,7 +1016,9 @@ Project-specific values live in `.claude/sf-sdlc.json` ...
 <script type="text/plain" id="c-templates">templates/
 ├── sf-sdlc.example.json       # filled-in example of .claude/sf-sdlc.json
 ├── project-settings.json      # permissions written to your .claude/settings.json by init
-├── code-analyzer.yml          # Code Analyzer v5 rule config
+├── code-analyzer.yml          # Code Analyzer v5 rule config, with the NoHardcodedSalesforceIds rule
+├── code-analyzer-ci.yml       # GitHub Actions gate written to .github/workflows/ by init
+├── mcp.json                   # hosted MCP servers merged into .mcp.json (copy-in folder only)
 └── pull_request_template.md   # PR checklist written to .github/ by init</script>
 <script type="text/plain" id="c-settings">{
   "env": { "SF_AUTOUPDATE_DISABLE": "true", "SF_DISABLE_TELEMETRY": "true" },
@@ -844,7 +1038,18 @@ ignores:
   files:
     - "**/node_modules/**"
     - "**/staticresources/**"
-    - "**/__tests__/**"</script>
+    - "**/__tests__/**"
+
+# Custom rules: not part of "Recommended", so sf-sdlc analyze and CI also select "Custom".
+engines:
+  regex:
+    custom_rules:
+      NoHardcodedSalesforceIds:
+        regex: '/[''"](?<target>(?=[a-zA-Z0-9]{0,14}\d)[a-zA-Z0-9]{15}(?:[A-Z0-5]{3})?)\\?[''"]/g'
+        description: "Detects hardcoded 15 or 18 character Salesforce record IDs"
+        violation_message: "Replace hardcoded ID with Custom Label, Custom Metadata, or Custom Setting"
+        severity: 2
+        file_extensions: [".cls", ".trigger"]</script>
 <script type="text/plain" id="c-installed">.claude/
 ├── sf-sdlc.json
 ├── sf-sdlc.skills.lock.json   # name → source + hash for each installed skill
@@ -854,11 +1059,13 @@ ignores:
     └── experience-lwc-generate/</script>
 <script type="text/plain" id="c-docs">docs/sdlc/
 ├── 00-inputs/                 raw transcripts, notes, emails (never edited)
+├── 00-grounding/              ontology.yaml (business terms → objects), feature-map.md
 ├── 01-brd/BRD.md
 ├── 02-backlog/                backlog.md, jira-import.csv
 ├── 03-architecture/           baseline/, components.json, HLD.md, LLD/, ADR/
 ├── 04-qa/                     test-strategy.md, test-cases/, test-runs/, defects/, rtm.md
-└── 05-release/                deployments/DEP-001.md, REL-1.2.0/</script>
+├── 05-release/                deployments/DEP-001.md, REL-1.2.0/
+└── 06-observe/                findings-YYYYMMDD.md: production findings → defects, stories, constraints</script>
 <script type="text/plain" id="c-specs">specs/
 ├── constitution.md
 └── US-04-02-deal-health-score/
@@ -911,7 +1118,7 @@ ignores:
       use: 'Loaded when Claude writes Apex, tests, LWC or metadata.' },
     { id: 'library', label: 'skill-library/', depth: 1, folder: true, kind: 'gen', code: 'c-library', codeLabel: 'skill-library/',
       title: 'Skill library (never loaded)', path: 'skill-library/',
-      desc: '<p>174 Salesforce technical skills: 156 official ones from forcedotcom/sf-skills and 18 community <code>sf-*</code> skills. They are <strong>not</strong> a plugin component, so Claude never loads them from here and they cost no context.</p>',
+      desc: '<p>176 Salesforce technical skills: 158 official ones from forcedotcom/sf-skills and 18 community <code>sf-*</code> skills. They are <strong>not</strong> a plugin component, so Claude never loads them from here and they cost no context.</p>',
       provide: 'Choose which ones your project gets. Setup recommends a small set with evidence from your metadata folders.',
       use: '<code>/sf-sdlc:skills</code>, or <code>sf-sdlc skills recommend</code> then <code>sf-sdlc skills install &lt;names&gt;</code>. They land in your project\'s <code>.claude/skills/</code>.' },
     { id: 'commands', label: 'commands/', depth: 1, folder: true, kind: 'gen', code: 'c-command', codeLabel: 'commands/deploy.md',
@@ -935,7 +1142,7 @@ ignores:
       provide: 'Nothing.', use: '<code>/sf-sdlc:review US-04-02</code> or <code>/sf-sdlc:review</code> for the current branch.' },
     { id: 'hooks', label: 'hooks/', depth: 1, folder: true, kind: 'gen', code: 'c-runjs', codeLabel: 'hooks/',
       title: 'Hooks', path: 'hooks/',
-      desc: '<p>Plain Node.js (no dependencies) that Claude Code runs at fixed points: session start, before and after each shell command or file write, on failure, and at the end of a turn. This is where the <strong>production-org guard</strong>, <strong>secret guard</strong>, branch guard and commit gate live.</p>',
+      desc: '<p>Plain Node.js (no dependencies) that Claude Code runs at fixed points: session start, before and after each shell command, file write or hosted-MCP tool call, on failure, and at the end of a turn. This is where the <strong>production-org guard</strong>, <strong>secret guard</strong>, branch guard, commit gate and hosted-MCP guard live.</p>',
       provide: '<ul><li><code>orgs.production</code> and <code>git.protectedBranches</code> in your config.</li><li><code>hooks.mode</code>: <code>observe</code> (report only) → <code>enforce</code> after a week.</li></ul>',
       use: 'Nothing to run. Watch the "sf-sdlc guard" status while a command is checked. Denials explain why; do not rephrase a command to get around one.' },
     { id: 'hooks-json', label: 'hooks.json', depth: 2, kind: 'gen', code: 'c-hooks', codeLabel: 'hooks/hooks.json',
@@ -970,8 +1177,8 @@ ignores:
       provide: 'Nothing. They depend on your Claude plan and may be disabled by an administrator. Each has a plain command that does the same job without parallelism.',
       use: 'Ask for it by name, for example "run the sdlc-release-readiness workflow for 1.4.0".' },
     { id: 'bin', label: 'bin/', depth: 1, folder: true, kind: 'gen', code: 'c-cli', codeLabel: 'bin/sf-sdlc',
-      title: 'The sf-sdlc CLI', path: 'bin/sf-sdlc',
-      desc: '<p>A dependency-free Node CLI that does the deterministic work agents should not improvise: tool checks, config, metadata detection, change delta, skill installer, org classification, the official Code Analyzer, validated deploys and test runs. A plugin\'s <code>bin/</code> is added to the PATH, so it is just <code>sf-sdlc</code>.</p>',
+      title: 'The sf-sdlc CLI and the MCP proxy', path: 'bin/sf-sdlc, bin/sf-mcp-proxy',
+      desc: '<p>A dependency-free Node CLI that does the deterministic work agents should not improvise: tool checks, config, metadata detection, change delta, skill installer, org classification, the official Code Analyzer, validated deploys, test runs and hosted-MCP status. A plugin\'s <code>bin/</code> is added to the PATH, so it is just <code>sf-sdlc</code>.</p><p><code>sf-mcp-proxy</code> is the stdio bridge Claude Code starts for each Salesforce Hosted MCP server; it signs in through the <code>sf</code> CLI and never stores or prints a token.</p>',
       provide: 'Node.js 18+. For deploy and test: the <code>sf</code> CLI, authenticated to your orgs.',
       use: '<code>sf-sdlc doctor</code>, <code>sf-sdlc config show</code>, <code>sf-sdlc delta --from main</code>, <code>sf-sdlc analyze --staged</code>. Add <code>--json</code> to any command.' },
     { id: 'catalog', label: 'catalog/', depth: 1, folder: true, kind: 'gen', code: 'c-catalog', codeLabel: 'catalog/detection-rules.json (one rule)',
@@ -984,13 +1191,13 @@ ignores:
       provide: 'Nothing. Put project-specific conventions in your own <code>CLAUDE.md</code> or <code>specs/constitution.md</code>.', use: 'Automatic.' },
     { id: 'templates', label: 'templates/', depth: 1, folder: true, kind: 'gen', code: 'c-templates', codeLabel: 'templates/',
       title: 'Templates', path: 'templates/',
-      desc: '<p>Starting files that <code>sf-sdlc init</code> writes into your project: the config example, Claude Code permissions, Code Analyzer config and a pull request template.</p>',
+      desc: '<p>Starting files that <code>sf-sdlc init</code> writes into your project: the config example, Claude Code permissions, Code Analyzer config with a custom rule, a GitHub Actions Code Analyzer gate and a pull request template.</p>',
       provide: 'Review and adjust the files once they are in your project.', use: '<code>sf-sdlc init</code> (run by <code>/sf-sdlc:setup</code>).' },
     { id: 'mcp', label: '.mcp.json', depth: 1, kind: 'hand', code: 'c-mcp', codeLabel: '.mcp.json',
       title: 'MCP servers', path: '.mcp.json',
-      desc: '<p>Connects the Atlassian remote MCP server so the story, QA and release agents can search and create Jira issues and read Confluence. No Salesforce MCP is included: Salesforce work goes through the <code>sf</code> CLI.</p>',
-      provide: 'Sign in once with <code>/mcp</code>. Set <code>jira.projectKey</code> and field IDs in your config.',
-      use: 'Agents always preview and ask for an explicit yes before creating issues. Without the connection, <code>/sf-sdlc:stories</code> writes a CSV to import.' },
+      desc: '<p>Connects the Atlassian remote MCP server so the story, QA and release agents can search and create Jira issues and read Confluence, and four Salesforce Hosted MCP Servers through <code>bin/sf-mcp-proxy</code>: Metadata Grounding and Metadata Experts (on by default), Headless 360 and Data 360 (opt-in).</p>',
+      provide: '<ul><li>Atlassian: sign in once with <code>/mcp</code>; set <code>jira.projectKey</code> and field IDs.</li><li>Salesforce: turn the servers on in Setup → MCP Servers, log in with <code>sf org login web</code>, choose them in <code>mcp.servers</code>.</li></ul>',
+      use: 'Agents preview and ask before creating Jira issues, and look up existing org metadata before proposing new metadata. <code>sf-sdlc mcp status</code> shows what is connected.' },
     { id: 'readme', label: 'README.md · NOTICE', depth: 1, kind: 'hand',
       title: 'README and NOTICE', path: 'README.md, NOTICE',
       desc: '<p>The plugin README shown in the marketplace, and third-party attribution for the vendored skills (Apache-2.0).</p>',
@@ -1028,9 +1235,17 @@ ignores:
       title: 'Code Analyzer config', path: 'code-analyzer.yml',
       desc: '<p>Which Code Analyzer rules run and how they are weighted. The blocking threshold itself comes from <code>quality.analyzerSeverityThreshold</code>.</p>',
       provide: 'Adjust rules to your standards.', use: '<code>sf-sdlc analyze --changed</code> · <code>/sf-sdlc:analyze</code>.' },
+    { id: 'p-mcp', label: '.mcp.json', depth: 1, kind: 'proj', code: 'c-mcp', codeLabel: '.mcp.json (copy-in folder)',
+      title: 'Project MCP servers', path: '.mcp.json',
+      desc: '<p>With the copy-in folder, <code>sf-sdlc init</code> adds the four <code>sf-*</code> hosted-MCP entries (pointing at <code>.claude/bin/sf-mcp-proxy</code>) without touching servers you already have. Plugin users do not need this file for Salesforce.</p>',
+      provide: 'Nothing secret: the proxy uses your <code>sf</code> CLI login.', use: '<code>sf-sdlc mcp status</code>, then <code>/mcp</code> in Claude Code.' },
+    { id: 'p-ci', label: '.github/workflows/sf-code-analyzer.yml', depth: 1, kind: 'proj', code: 'c-analyzer', codeLabel: 'code-analyzer.yml (read by the workflow)',
+      title: 'Code Analyzer in CI', path: '.github/workflows/sf-code-analyzer.yml',
+      desc: '<p>Runs Salesforce Code Analyzer, including your custom rules, on the files changed in each pull request, so the gate holds no matter which agent or person wrote the code.</p>',
+      provide: 'Keep <code>SEVERITY_THRESHOLD</code> equal to <code>quality.analyzerSeverityThreshold</code>.', use: 'Automatic on pull requests.' },
     { id: 'p-docs', label: 'docs/sdlc/', depth: 1, folder: true, kind: 'proj', code: 'c-docs', codeLabel: 'docs/sdlc/',
       title: 'Lifecycle documents', path: 'docs/sdlc/',
-      desc: '<p>Where the BRD, backlog, architecture, QA and release drafts are written. Each carries an approval record that only a person fills in.</p>',
+      desc: '<p>Where the grounding files, BRD, backlog, architecture, QA, release and observe drafts are written. Each carries an approval record that only a person fills in. <code>00-grounding/ontology.yaml</code> maps your business terms to Salesforce objects; add a term whenever an agent misreads one.</p>',
       provide: 'Drop transcripts and notes into <code>00-inputs/</code>. Change the root with <code>paths.docs</code>.', use: '<code>/sf-sdlc:brd docs/sdlc/00-inputs/</code> · <code>/sf-sdlc:trace</code>.' },
     { id: 'p-specs', label: 'specs/', depth: 1, folder: true, kind: 'proj', code: 'c-specs', codeLabel: 'specs/',
       title: 'Spec-driven development', path: 'specs/',

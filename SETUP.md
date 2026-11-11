@@ -16,6 +16,7 @@ How to install the Salesforce SDLC kit in a project, and every per-project file 
 | sfdx-git-delta — optional | Alternative delta manifests | `sf plugins install sfdx-git-delta` |
 | Lightning Flow Scanner — optional | Flow static analysis | `sf plugins install lightning-flow-scanner` |
 | mermaid-cli — optional | SVG diagrams for Jira and Confluence | `npm install --global @mermaid-js/mermaid-cli` |
+| Salesforce Hosted MCP Servers — optional | Grounding in existing org metadata; Metadata Experts skills | Turned on in the org: Setup → MCP Servers (see 4.5) |
 
 Business analysts and managers who only produce documents (BRD, stories, test design, release
 notes) need Claude Code and Node.js only.
@@ -112,6 +113,8 @@ Validate with `sf-sdlc config validate`.
 | `deploy.allowDirectProductionDeploy` | `false` forces validate-then-quick-deploy for production | `false` |
 | `deploy.useDelta`, `deploy.waitMinutes` | Deploy only changed components; CLI wait time | `true`, `60` |
 | `paths.docs`, `paths.specs` | Where SDLC documents and specs live | `"docs/sdlc"`, `"specs"` |
+| `mcp.servers` | Salesforce Hosted MCP Servers the agents may use: `metadata-grounding`, `metadata-experts`, `headless-360`, `data360` | `["metadata-experts", "metadata-grounding"]` |
+| `mcp.org` | Org role or alias the hosted servers sign in to; empty means the default target org | `"dev"` |
 | `hooks.mode` | `observe` (report what would be blocked), `enforce`, or `off` | `"observe"` |
 | `hooks.auditLog` | Record org-affecting commands in `.sf-sdlc/audit.jsonl` | `true` |
 | `hooks.strictEvidence` | Refuse to end a turn while ticked tasks lack an evidence note | `false` |
@@ -155,10 +158,40 @@ rules:
 
 `sf code-analyzer config` prints the full default configuration to copy from.
 
-### 4.5 `.mcp.json` — only for Jira Server/Data Center or the GitHub MCP server
+The template ships one custom rule, `NoHardcodedSalesforceIds` (regex engine, severity 2, `.cls`
+and `.trigger`). Custom rules are not part of `Recommended`, so `sf-sdlc analyze`, the commit gate
+and the CI workflow also select `Custom`. When an agent repeats a mistake, add a rule with the
+`dx-code-analyzer-custom-rule-create` skill; its script escapes the YAML correctly.
 
-The plugin already connects Atlassian Cloud (sign in once with `/mcp`). Add this file at the
-project root only for these cases. Keep tokens in environment variables, never in the file.
+### 4.5 `.mcp.json` — Salesforce Hosted MCP Servers, and other MCP servers
+
+**Salesforce Hosted MCP Servers.** The plugin registers four servers (`sf-metadata-grounding`,
+`sf-metadata-experts`, `sf-headless-360`, `sf-data360`). For the copy-in folder, `sf-sdlc init`
+adds the same entries to the project's `.mcp.json` without touching other servers. Each entry starts
+`bin/sf-mcp-proxy`, which signs in with your Salesforce CLI login: there is no client ID, secret,
+External Client App or `.env` file to manage.
+
+1. Turn the servers on in the org: Setup → Quick Find **MCP Servers** → **MCP Servers** under API
+   Catalog. Allow two minutes. Metadata Grounding also needs Data 360, API access and Salesforce
+   Catalog, and is not available in scratch orgs.
+2. Log in: `sf org login web --alias <alias>` (add `--instance-url https://<mydomain>.my.salesforce.com`
+   for a My Domain login).
+3. Choose servers and org in `.claude/sf-sdlc.json` (`mcp.servers`, `mcp.org`); personal overrides go
+   in `sf-sdlc.local.json`. Headless 360 and Data 360 are off by default because they can change the
+   org; their write tools always ask first.
+4. Check with `sf-sdlc mcp status`, then restart Claude Code. `/mcp` lists the servers; one that is
+   not enabled or not turned on in the org shows no tools.
+
+The copy-in `settings.json` pre-approves the four project servers (`enabledMcpjsonServers`) and
+denies `sf api request rest /ide/auth` to Claude, because that command prints a token.
+
+If you connect a hosted server without the proxy (another tool, or `claude mcp add --transport http`
+with an External Client App using PKCE and the `mcp_api` and `refresh_token` scopes), keep the
+consumer secret out of files and use your own server name so it does not clash with `sf-*`.
+
+**Other MCP servers.** The plugin already connects Atlassian Cloud (sign in once with `/mcp`). Add
+entries like these only for Jira Server/Data Center or the GitHub MCP server. Keep tokens in
+environment variables, never in the file.
 
 ```json
 {
@@ -178,7 +211,7 @@ project root only for these cases. Keep tokens in environment variables, never i
 }
 ```
 
-The copy-in folder has no bundled MCP server; add the Atlassian entry
+The copy-in folder has no bundled Atlassian server; add the Atlassian entry
 (`"type": "http", "url": "https://mcp.atlassian.com/v2/mcp"`) here if you want Jira creation.
 
 ### 4.6 Other files
@@ -190,6 +223,8 @@ The copy-in folder has no bundled MCP server; add the Atlassian entry
 | `specs/constitution.md` | Yes | Created by `/sdd-constitution`: your engineering principles, trigger framework, logging utility |
 | `sfdx-project.json` | Yes | Read for API version and package directories; nothing kit-specific to add |
 | `.github/pull_request_template.md` | Yes | Created by `init`; adapt the checklist |
+| `.github/workflows/sf-code-analyzer.yml` | Yes | Created by `init` in a Salesforce DX project: Code Analyzer on the files changed in a pull request. Keep `SEVERITY_THRESHOLD` equal to `quality.analyzerSeverityThreshold` |
+| `docs/sdlc/00-grounding/ontology.yaml`, `feature-map.md` | Yes | Drafted by setup: business terms mapped to Salesforce objects, and the components behind each feature. Add a term whenever an agent misreads one |
 | `.sf-sdlc/` | No | Local state: audit log, tracked jobs, test-run results, caches |
 
 ### 4.7 Per-user plugin options
@@ -203,7 +238,7 @@ Set with `/plugin configure sf-sdlc@nagarro-sf`.
 
 Environment variables: `SF_SDLC_HOOK_MODE` (same values), `SF_SDLC_ANALYZER_DISABLE=1` (skip the
 commit scan). `SF_SDLC_DISABLE_ORG_GUARD=1` turns the production guard off and should not be set
-outside a controlled CI job.
+outside a controlled CI job. `SF_TARGET_ORG` also chooses the org for the hosted MCP servers.
 
 ## 5. Verify the installation
 
@@ -211,7 +246,8 @@ outside a controlled CI job.
 sf-sdlc doctor            # every required line should show ✔
 sf-sdlc config validate
 sf-sdlc org classify      # confirm your production org reports "production"
-sf-sdlc analyze --changed # the official Code Analyzer runs
+sf-sdlc analyze --changed # the official Code Analyzer runs (Recommended rules plus your custom rules)
+sf-sdlc mcp status        # each enabled hosted MCP server: connected with its tools, or why not
 ```
 
 (Copy-in folder: prefix each with `node .claude/bin/`.)

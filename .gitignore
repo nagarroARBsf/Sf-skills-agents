@@ -1,3 +1,8 @@
+# Local credentials — never commit (.env.sample is the template)
+.env
+.env.*
+!.env.sample
+
 # Salesforce CLI local state (org auth, config) — never commit
 .sf/
 .sfdx/

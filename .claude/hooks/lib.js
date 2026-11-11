@@ -40,6 +40,7 @@ const DEFAULTS = {
     validateBeforeDeploy: true, allowDirectProductionDeploy: false, useDelta: true, waitMinutes: 60,
   },
   paths: { docs: 'docs/sdlc', specs: 'specs' },
+  mcp: { servers: ['metadata-experts', 'metadata-grounding'], org: '' },
   hooks: { mode: 'observe', auditLog: true, strictEvidence: false },
 };
 
@@ -106,6 +107,10 @@ function validateConfig(cfg) {
   if (![1, 2, 3, 4, 5].includes(sev)) errors.push('quality.analyzerSeverityThreshold must be 1 to 5');
   if (cfg.jira.enabled && !cfg.jira.projectKey) errors.push('jira.enabled is true but jira.projectKey is empty');
   if (!cfg.project.code) warnings.push('project.code is empty; document references and epic prefixes will lack it');
+  const known = Object.keys(require('./mcp').HOSTED_SERVERS); // lazy: mcp.js requires this file
+  if (!Array.isArray(cfg.mcp.servers)) errors.push('mcp.servers must be an array of hosted MCP server names');
+  else for (const n of cfg.mcp.servers) if (!known.includes(n)) errors.push(`mcp.servers: unknown server "${n}" (known: ${known.join(', ')})`);
+  if (typeof cfg.mcp.org !== 'string') errors.push('mcp.org must be an org role or alias (a string)');
   for (const role of cfg.deploy.pipeline || []) {
     if (role !== 'production' && !cfg.orgs[role]) warnings.push(`orgs.${role} has no alias but "${role}" is in deploy.pipeline`);
   }

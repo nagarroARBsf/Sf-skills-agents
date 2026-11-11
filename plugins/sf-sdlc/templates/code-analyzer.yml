@@ -18,3 +18,20 @@ rules:
       severity: 2
     ApexSharingViolations:
       severity: 2
+
+# Custom rules. Every repeated mistake should end up as a deterministic check: add more with the
+# dx-code-analyzer-custom-rule-create skill (its script escapes the YAML; do not hand-edit regexes).
+engines:
+  regex:
+    custom_rules:
+      NoHardcodedSalesforceIds:
+        regex: '/[''"](?<target>(?=[a-zA-Z0-9]{0,14}\d)[a-zA-Z0-9]{15}(?:[A-Z0-5]{3})?)\\?[''"]/g'
+        description: "Detects hardcoded 15 or 18 character Salesforce record IDs"
+        violation_message: "Replace hardcoded ID with Custom Label, Custom Metadata, or Custom Setting"
+        severity: 2
+        tags:
+          - "Custom"
+          - "Security"
+        file_extensions:
+          - ".cls"
+          - ".trigger"

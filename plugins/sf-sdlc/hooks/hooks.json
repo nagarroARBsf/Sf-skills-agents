@@ -33,6 +33,16 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*sf-(headless-360|data360)__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.js\" pre-mcp",
+            "timeout": 60
+          }
+        ]
       }
     ],
     "PostToolUse": [

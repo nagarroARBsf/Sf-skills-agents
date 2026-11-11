@@ -70,7 +70,7 @@
       "name": "sdlc-workflow",
       "location": "skills",
       "source": "nagarro",
-      "description": "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release. Defines the shared artifact folder layout, the traceability ID scheme "
+      "description": "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder layout, the gr"
     },
     {
       "name": "agentforce-architecture-analyze",
@@ -853,6 +853,12 @@
       "description": "Use when users create, generate, modify, or validate Salesforce Lightning pages (FlexiPages). Trigger on RecordPage, AppPage, HomePage, Lightning pages, adding components to a page, page customization (e.g. 'customize the record page'), or .flexipage-meta.xml files (regions, components, deployment e"
     },
     {
+      "name": "platform-headless-360-integrate",
+      "location": "skill-library",
+      "source": "official",
+      "description": "Read org state and change Setup through the Headless 360 (H360) MCP tools discover, describe, dispatch_readonly, and dispatch. Use when H360 tools are present and the answer is org state no skill or sf command reads: Setup settings, feature or license access, org-specific caps, health checks, releas"
+    },
+    {
       "name": "platform-lightning-app-coordinate",
       "location": "skill-library",
       "source": "official",
@@ -899,6 +905,12 @@
       "location": "skill-library",
       "source": "official",
       "description": "Use before creating, changing, or writing code against Salesforce metadata, to find out what already exists in the org with the right tool. Routes each question to metadata grounding, scoped SOQL with sf data query, sf sobject list or describe, sf org list metadata, source retrieval, or local files,"
+    },
+    {
+      "name": "platform-metadata-grounding-get",
+      "location": "skill-library",
+      "source": "official",
+      "description": "Find metadata that already exists in a Salesforce org by meaning, when you do not know its exact API name. Use to find objects, fields, flows, Apex classes, picklist values, permission sets, validation rules, record types, and sharing rules by what they store or do. Use before creating metadata to c"
     },
     {
       "name": "platform-metadata-retrieve",

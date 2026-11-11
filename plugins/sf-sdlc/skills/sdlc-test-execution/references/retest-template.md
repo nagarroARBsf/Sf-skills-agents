@@ -52,8 +52,9 @@ Coverage of the classes changed by the fix against `quality.coverageTarget` = {n
 | DEF-004 | 0 of 2 | 0 | Still failing: `{message}` | Reopened |
 
 Rules applied:
-- `Closed` only when every failed case of the defect passes in this run and no regression case
-  fails. The defect file's re-test history gets a row citing this run.
+- `Closed` only when every failed case of the defect passes in this run, no regression case
+  fails, and the defect's "Constraint added" is filled. The defect file's re-test history gets a
+  row citing this run. Passing but no constraint → stays `Ready for re-test` ("constraint missing").
 - Still failing → `Reopened`, new evidence appended to the defect file.
 - A regression case fails → the original defect stays open; a new defect is logged below.
 - A case that could not be executed → the defect stays `Ready for re-test`; say why.

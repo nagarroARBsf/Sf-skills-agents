@@ -3,17 +3,66 @@
     "github": {
       "type": "stdio",
       "command": "docker",
-      "args": ["exec", "-i", "mcp-github", "mcp-github"]
+      "args": [
+        "exec",
+        "-i",
+        "mcp-github",
+        "mcp-github"
+      ]
     },
     "jira": {
       "type": "stdio",
       "command": "docker",
-      "args": ["exec", "-i", "mcp-jira", "mcp-atlassian"]
+      "args": [
+        "exec",
+        "-i",
+        "mcp-jira",
+        "mcp-atlassian"
+      ]
     },
     "tavily": {
       "type": "stdio",
       "command": "docker",
-      "args": ["exec", "-i", "mcp-tavily", "python", "-m", "mcp_server_tavily"]
+      "args": [
+        "exec",
+        "-i",
+        "mcp-tavily",
+        "python",
+        "-m",
+        "mcp_server_tavily"
+      ]
+    },
+    "sf-metadata-experts": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "metadata-experts"
+      ]
+    },
+    "sf-metadata-grounding": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "metadata-grounding"
+      ]
+    },
+    "sf-headless-360": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "headless-360"
+      ]
+    },
+    "sf-data360": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "data360"
+      ]
     }
   }
 }

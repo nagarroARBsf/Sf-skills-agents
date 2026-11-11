@@ -69,7 +69,7 @@ Work through the passes in order, using
 | # | Pass | Core question |
 |---|---|---|
 | 1 | Correctness vs spec | Does each AC and each plan requirement have code that satisfies it and a test that proves it? Anything built that nobody asked for? |
-| 2 | Security | Sharing keyword, CRUD/FLS and user mode, SOQL/SOSL injection, secrets and hard-coded IDs, `@AuraEnabled` exposure, XSS in LWC/Aura/Visualforce, guest-user and Experience Cloud access |
+| 2 | Security | Sharing keyword, CRUD/FLS and user mode (fields queried versus fields the permission set grants), SOQL/SOSL injection, secrets and hard-coded IDs, `@AuraEnabled` exposure, XSS in LWC/Aura/Visualforce, guest-user and Experience Cloud access |
 | 3 | Governor limits and bulk safety | SOQL/DML/callouts in loops, selective queries, heap and CPU, async limits, recursion, mixed DML, row locking |
 | 4 | Automation interplay | Order of execution; trigger plus flow plus validation rule on the same object and event; re-entry |
 | 5 | Tests | Real assertions; negative, bulk and `System.runAs` cases; no `SeeAllData`; coverage of changed classes against `quality.coverageTarget` |
@@ -110,6 +110,14 @@ Rules:
 - One finding per root cause; list the other occurrences in it.
 - Do not report style that the project's formatter or linter already enforces.
 - Praise is not a finding. Leave it out.
+
+**Make repeated mistakes a constraint.** When a finding repeats one already seen in this change, in
+an earlier `review.md` or in a `DEF-nnn`, add to its fix direction the strongest deterministic
+check that would catch it next time, in this order: a test (for example a minimum-access
+`System.runAs` test for a permission gap); a Code Analyzer custom rule written with the
+`dx-code-analyzer-custom-rule-create` skill and added to `code-analyzer.yml`; a hook or quality
+gate. A new instruction in a rule or skill is the weakest option; recommend it only when nothing
+deterministic fits. List these under **Constraints to add** in the report.
 
 ## 5. Verdict
 

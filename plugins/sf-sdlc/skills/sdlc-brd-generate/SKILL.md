@@ -98,6 +98,9 @@ Fill the template. Requirement statements:
 Record decisions and action items in Appendix E (`DEC-nn`, `ACT-nn`).
 
 ### 7. Salesforce lens
+- When `00-grounding/ontology.yaml` exists, map business terms through it in the Salesforce
+  outline; when `feature-map.md` exists, mark outline items that extend an existing feature. A
+  term the ontology lacks or contradicts becomes an open question and a proposed ontology entry.
 - Run the feasibility checklist
   (`${CLAUDE_PLUGIN_ROOT}/skills/sdlc-workflow/references/salesforce-feasibility-checklist.md`). A hit becomes a
   risk, assumption or open question, worded for a business reader.

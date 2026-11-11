@@ -132,6 +132,7 @@ platform-dsar-policy-manage
 platform-encryption-configure
 platform-environment-validate
 platform-flexipage-generate
+platform-headless-360-integrate
 platform-lightning-app-coordinate
 platform-lightning-type-widget-coordinate
 platform-list-view-generate
@@ -140,6 +141,7 @@ platform-mcp-tool-widget-coordinate
 platform-metadata-api-context-get
 platform-metadata-deploy
 platform-metadata-discovery-get
+platform-metadata-grounding-get
 platform-metadata-retrieve
 platform-models-api-configure
 platform-permission-set-generate

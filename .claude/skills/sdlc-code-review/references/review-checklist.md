@@ -37,6 +37,13 @@ skipped, not ticked.
       read directly), and the data returned to the user is limited to what they may see.
 - [ ] New fields have FLS granted in a permission set in the same change; otherwise user-mode
       code fails for everyone except administrators.
+- [ ] **Query fields versus granted access.** List every object and field read in user mode
+      (`WITH USER_MODE`, `AccessLevel.USER_MODE`, `stripInaccessible`, `Schema` describe checks)
+      and every field the LWC or flow reads, and compare with the read/edit access the feature's
+      permission set(s) grant (the `*.permissionset-meta.xml` in the change or in the baseline).
+      A field that is queried but not granted fails for every non-admin user while tests run as
+      an admin pass and the scan is clean: Major, Confirmed when both files were read. The fix
+      direction names the permission set and field, and the minimum-access test that proves it.
 
 **Injection**
 - [ ] No dynamic SOQL or SOSL built by concatenating input. Bind variables
@@ -130,6 +137,9 @@ skipped, not ticked.
 - [ ] Positive, negative (expects the exception and asserts its type or message), boundary,
       bulk (`quality.bulkTestSize`, at least 200 records) and permission (`System.runAs` with a
       user holding only the intended permission sets) cases exist for changed logic.
+- [ ] A **minimum-access** test exists for user-mode code: `System.runAs` a user created with a
+      minimal profile and *only* the feature's permission set(s), exercising the read and write
+      paths. Tests that run only as the admin test user hide missing FLS.
 - [ ] `Test.startTest()` / `Test.stopTest()` wrap the action; asynchronous work is asserted
       after `stopTest`.
 - [ ] No `@IsTest(SeeAllData=true)` unless a recorded constitution exception covers the class.

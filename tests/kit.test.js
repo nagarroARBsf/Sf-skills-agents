@@ -12,6 +12,7 @@ const lib = require(path.join(KIT, 'hooks', 'lib.js'));
 const ops = require(path.join(KIT, 'hooks', 'ops.js'));
 const checks = require(path.join(KIT, 'hooks', 'checks.js'));
 const hooks = require(path.join(KIT, 'hooks', 'run.js'));
+const mcp = require(path.join(KIT, 'hooks', 'mcp.js'));
 
 const cfg = (over = {}) => lib.merge(lib.DEFAULTS, over);
 const ORGS = [
@@ -165,6 +166,9 @@ test('config validation', () => {
   assert.ok(!v({ hooks: { mode: 'loud' } }).ok);
   assert.ok(!v({ quality: { coverageTarget: 50 } }).ok);
   assert.ok(!v({ jira: { enabled: true, projectKey: '' } }).ok);
+  assert.ok(v({ mcp: { servers: ['metadata-grounding', 'headless-360', 'data360'] } }).ok);
+  assert.ok(!v({ mcp: { servers: ['metadata-grounding', 'sobject-all'] } }).ok);
+  assert.ok(!v({ mcp: { servers: 'metadata-grounding' } }).ok);
 });
 
 test('catalog and detection rules are consistent', () => {
@@ -207,10 +211,19 @@ test('CLI: init, skills install/sync/remove in a temp project', () => {
     const r = spawnSync('node', [path.join(KIT, 'bin', 'sf-sdlc'), ...a, '--json'], { cwd: dir, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: dir } });
     return { status: r.status, json: JSON.parse(r.stdout) };
   };
-  assert.ok(cli('init').json.created.includes('.claude/sf-sdlc.json'));
+  const created = cli('init').json.created;
+  assert.ok(created.includes('.claude/sf-sdlc.json'));
+  assert.ok(created.includes('.github/workflows/sf-code-analyzer.yml'));
+  assert.ok(created.some((c) => c.startsWith('.mcp.json')));
+  const servers = JSON.parse(fs.readFileSync(path.join(dir, '.mcp.json'), 'utf8')).mcpServers;
+  assert.deepStrictEqual(Object.keys(servers).sort(), ['sf-data360', 'sf-headless-360', 'sf-metadata-experts', 'sf-metadata-grounding']);
+  assert.match(fs.readFileSync(path.join(dir, 'code-analyzer.yml'), 'utf8'), /NoHardcodedSalesforceIds/);
+  assert.ok(cli('init').json.skipped.some((c) => c.startsWith('.mcp.json')), 'a second init keeps .mcp.json');
   assert.ok(cli('config', 'validate').json.ok);
   const rec = cli('skills', 'recommend').json;
   assert.ok(rec.toInstall.includes('platform-apex-generate'));
+  assert.ok(rec.toInstall.includes('platform-metadata-grounding-get'), 'grounding is recommended while metadata-grounding is enabled');
+  assert.ok(!rec.toInstall.includes('platform-headless-360-integrate'), 'headless-360 is opt-in');
   assert.ok(!rec.toInstall.some((s) => s.startsWith('omnistudio-')));
   assert.strictEqual(cli('skills', 'install', 'platform-soql-query').json.results[0].result, 'installed');
   assert.strictEqual(cli('skills', 'list').json.installed[0].state, 'ok');
@@ -219,5 +232,62 @@ test('CLI: init, skills install/sync/remove in a temp project', () => {
   assert.match(cli('skills', 'remove', 'platform-soql-query').json.results[0].result, /locally modified/);
   assert.strictEqual(cli('inventory').json.counts.ApexClass, 1);
   assert.strictEqual(cli('skills', 'recommend', '--profile', 'ba').json.toInstall.length, 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('hosted MCP: routes, tool names, replies and config', () => {
+  assert.strictEqual(mcp.serverUrl('metadata-grounding', {}), 'https://api.salesforce.com/platform/mcp/v1-beta.2/platform/metadata-grounding');
+  assert.strictEqual(mcp.serverUrl('data360', {}), 'https://api.salesforce.com/platform/mcp/v1-beta.2/data/data360');
+  assert.throws(() => mcp.serverUrl('metadata-grounding', { SF_SDLC_MCP_HOST: 'evil.example.com' }), /salesforce\.com/);
+  assert.throws(() => mcp.serverUrl('nope', {}), /unknown/);
+  assert.deepStrictEqual(mcp.parseToolName('mcp__sf-headless-360__dispatch'), { server: 'headless-360', tool: 'dispatch', writes: true });
+  assert.deepStrictEqual(mcp.parseToolName('mcp__plugin_sf-sdlc_sf-headless-360__dispatch_readonly'), { server: 'headless-360', tool: 'dispatch_readonly', writes: false });
+  assert.strictEqual(mcp.parseToolName('mcp__plugin_sf-sdlc_sf-data360__execute').writes, true);
+  assert.strictEqual(mcp.parseToolName('mcp__sf-metadata-grounding__search_metadata').writes, false);
+  assert.strictEqual(mcp.parseToolName('mcp__jira__jira_search'), null);
+  assert.strictEqual(mcp.parseToolName('mcp__sf-unknown__x'), null);
+  assert.deepStrictEqual(mcp.parseRpcBody('application/json', '{"jsonrpc":"2.0","id":1,"result":{}}'), [{ jsonrpc: '2.0', id: 1, result: {} }]);
+  assert.deepStrictEqual(mcp.parseRpcBody('text/event-stream', 'event: message\ndata: {"id":2}\n\n: ping\n\ndata: {"id":3}\n\n').map((m) => m.id), [2, 3]);
+  assert.strictEqual(mcp.classifyStatus(404, `{"message":"Server 'metadata-grounding' exists but is not active."}`), 'inactive');
+  assert.strictEqual(mcp.classifyStatus(401, ''), 'auth');
+  assert.strictEqual(mcp.classifyStatus(202, ''), 'ok');
+  assert.strictEqual(mcp.classifyStatus(500, ''), 'unreachable');
+  assert.deepStrictEqual(mcp.enabledServers(cfg()), ['metadata-experts', 'metadata-grounding']);
+  assert.deepStrictEqual(mcp.enabledServers(cfg({ mcp: { servers: ['headless-360', 'bogus'] } })), ['headless-360']);
+  const c = cfg({ orgs: { dev: 'my-dev' }, mcp: { org: 'dev' } });
+  assert.strictEqual(mcp.mcpOrg(os.tmpdir(), c, {}), 'my-dev');
+  assert.strictEqual(mcp.mcpOrg(os.tmpdir(), c, { SF_TARGET_ORG: 'other' }), 'other');
+});
+
+test('hosted MCP guard: org-changing tools always ask', () => {
+  const g = (tool, c) => hooks.mcpGuard(tool, c, os.tmpdir(), lookup);
+  const ask = g('mcp__sf-headless-360__dispatch', cfg({ mcp: { org: 'prod' } }));
+  assert.strictEqual(ask.decision, 'ask');
+  assert.match(ask.reason, /prod \(production\)/);
+  const uat = g('mcp__plugin_sf-sdlc_sf-data360__execute', cfg({ mcp: { org: 'uat' } }));
+  assert.strictEqual(uat.decision, 'ask');
+  assert.doesNotMatch(uat.reason, /production-class/);
+  assert.match(g('mcp__sf-headless-360__dispatch', cfg({ mcp: { org: 'ghost' } })).reason, /unknown, treated as production/);
+  assert.strictEqual(g('mcp__sf-headless-360__dispatch_readonly', cfg({ mcp: { org: 'prod' } })).decision, 'allow');
+  assert.strictEqual(g('mcp__sf-metadata-grounding__search_metadata', cfg()).decision, 'allow');
+});
+
+test('sf-mcp-proxy answers the handshake with no tools when its server is not enabled', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-mcp-'));
+  fs.mkdirSync(path.join(dir, '.claude'));
+  fs.writeFileSync(path.join(dir, '.claude', 'sf-sdlc.json'), JSON.stringify({ mcp: { servers: [] } }));
+  const input = [
+    { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 't', version: '1' } } },
+    { jsonrpc: '2.0', method: 'notifications/initialized' },
+    { jsonrpc: '2.0', id: 2, method: 'tools/list' },
+    { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'x' } },
+  ].map((m) => JSON.stringify(m)).join('\n') + '\n';
+  const r = spawnSync('node', [path.join(KIT, 'bin', 'sf-mcp-proxy'), 'metadata-grounding'], { cwd: dir, input, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: dir }, timeout: 20000 });
+  const replies = r.stdout.trim().split('\n').map((l) => JSON.parse(l));
+  assert.strictEqual(replies.length, 3);
+  assert.match(replies[0].result.serverInfo.name, /inactive/);
+  assert.deepStrictEqual(replies[1].result.tools, []);
+  assert.strictEqual(replies[2].error.code, -32601);
+  assert.match(r.stderr, /not listed in mcp\.servers/);
   fs.rmSync(dir, { recursive: true, force: true });
 });

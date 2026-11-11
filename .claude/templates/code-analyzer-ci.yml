@@ -1,0 +1,75 @@
+# Salesforce Code Analyzer quality gate for pull requests. Written by `sf-sdlc init`
+# (from the sf-sdlc kit); adapt the branches, paths and threshold to your project.
+#
+# The threshold should match quality.analyzerSeverityThreshold in .claude/sf-sdlc.json
+# (1 = Critical ... 5 = Info), so CI blocks exactly what the local commit gate blocks.
+# Rules, severities and custom rules come from code-analyzer.yml at the project root.
+
+name: Salesforce Code Analyzer
+
+on:
+  pull_request:
+    paths:
+      - '**/*.cls'
+      - '**/*.trigger'
+      - '**/lwc/**'
+      - '**/aura/**'
+      - '**/*.flow-meta.xml'
+      - '**/*.page'
+      - '**/*.component'
+      - 'code-analyzer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  code-analyzer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SEVERITY_THRESHOLD: '2'
+      SF_DISABLE_TELEMETRY: 'true'
+      SF_AUTOUPDATE_DISABLE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install the Salesforce CLI and Code Analyzer
+        run: |
+          npm install --global @salesforce/cli
+          sf plugins install code-analyzer
+
+      - name: Files changed in this pull request
+        id: changed
+        run: |
+          git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" \
+            | grep -E '\.(cls|trigger|js|html|page|component|xml)$' > changed.txt || true
+          echo "count=$(wc -l < changed.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Run Code Analyzer on the changed files
+        if: steps.changed.outputs.count != '0'
+        run: |
+          args=()
+          while IFS= read -r f; do args+=(--target "$f"); done < changed.txt
+          sf code-analyzer run --rule-selector Recommended --rule-selector Custom \
+            --config-file code-analyzer.yml "${args[@]}" \
+            --severity-threshold "$SEVERITY_THRESHOLD" \
+            --output-file code-analyzer-results.html --output-file code-analyzer-results.json
+
+      - name: Keep the report
+        if: always() && steps.changed.outputs.count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-analyzer-results
+          path: code-analyzer-results.*
+          retention-days: 30

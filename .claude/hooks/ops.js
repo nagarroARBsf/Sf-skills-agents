@@ -30,6 +30,8 @@ function analyze(root, cfg, targets, opts = {}) {
   const selector = opts.ruleSelector || cfg.quality.analyzerRuleSelector || 'Recommended';
   const outFile = path.join(os.tmpdir(), `sf-sdlc-analyzer-${process.pid}-${Date.now()}.json`);
   const args = ['code-analyzer', 'run', '--rule-selector', selector, '--severity-threshold', String(threshold), '--output-file', outFile];
+  // Custom rules in code-analyzer.yml are not part of "Recommended"; select them too unless the caller chose rules explicitly.
+  if (!opts.ruleSelector && !/(^|[:,(])Custom($|[:,)])/.test(selector)) args.push('--rule-selector', 'Custom');
   for (const extra of opts.outputFiles || []) args.push('--output-file', extra);
   for (const cfgName of ['code-analyzer.yml', 'code-analyzer.yaml']) {
     if (fs.existsSync(path.join(root, cfgName))) { args.push('--config-file', cfgName); break; }

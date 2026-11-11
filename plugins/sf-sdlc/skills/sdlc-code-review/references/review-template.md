@@ -66,6 +66,14 @@ Ordered by severity, then by file. Every row cites a line that was read.
 Severity: Blocker · Major · Minor · Note. Confidence: Confirmed · Likely · Needs verification.
 A Blocker is never "Needs verification".
 
+### Constraints to add
+For findings that repeat an earlier one (this change, a previous review, a `DEF-nnn`): the
+deterministic check that would catch it next time. Omit the table when there are none.
+
+| Finding | Seen before in | Constraint (test · Code Analyzer rule · hook or gate · instruction) | Where |
+|---|---|---|---|
+| R-02 | `DEF-007` | Code Analyzer rule: Apex classes without a sharing keyword | `code-analyzer.yml` |
+
 ## 6. Questions for the author
 Concerns that could not be tied to a line or verified from the repository. They are not findings
 and do not affect the verdict until answered.

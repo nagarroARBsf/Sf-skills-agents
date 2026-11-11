@@ -16,6 +16,7 @@
       "Bash(node .claude/bin/sf-sdlc analyze*)",
       "Bash(node .claude/bin/sf-sdlc check*)",
       "Bash(node .claude/bin/sf-sdlc audit*)",
+      "Bash(node .claude/bin/sf-sdlc mcp*)",
       "Bash(sf org list*)",
       "Bash(sf config get*)",
       "Bash(sf code-analyzer *)",
@@ -43,23 +44,28 @@
       "Bash(sf package uninstall*)",
       "Bash(git push*)",
       "Bash(gh pr merge*)",
-      "Bash(gh release create*)"
+      "Bash(gh release create*)",
+      "mcp__sf-headless-360__dispatch",
+      "mcp__sf-data360__execute"
     ],
     "deny": [
       "Read(./.sf/**)",
       "Read(./.sfdx/**)",
       "Read(./**/server.key)",
       "Bash(sf org display*--verbose*)",
-      "Bash(sf org auth*)"
+      "Bash(sf org auth*)",
+      "Bash(sf api request rest /ide/auth*)"
     ]
   },
+  "enabledMcpjsonServers": ["sf-metadata-experts", "sf-metadata-grounding", "sf-headless-360", "sf-data360"],
   "hooks": {
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" session-start", "timeout": 60 } ] }
     ],
     "PreToolUse": [
       { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-bash", "timeout": 900, "statusMessage": "sf-sdlc guard" } ] },
-      { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-write", "timeout": 30 } ] }
+      { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-write", "timeout": 30 } ] },
+      { "matcher": "mcp__.*sf-(headless-360|data360)__.*", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-mcp", "timeout": 60 } ] }
     ],
     "PostToolUse": [
       { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" post-write", "timeout": 30 } ] },

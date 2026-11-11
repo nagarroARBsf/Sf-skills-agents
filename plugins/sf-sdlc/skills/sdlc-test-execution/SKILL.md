@@ -141,6 +141,10 @@ existing issue with the label or summary prefix `DEF-nnn`. Show the exact payloa
 `US-nn-mm`, `jira.labels`, link to the story's issue) and ask for an explicit yes. Record the
 returned key in the defect file. Without Jira, the defect file is the record.
 
+Production findings from the Observe stage (`sdlc-workflow`, section Observe) that are defects
+use the same template with `Found in: production` and a link to the findings file. Every defect,
+wherever found, ends with a "Constraint added" in its Fix section before it can close.
+
 ## Re-test mode
 
 A fix is not verified because someone says it is fixed.
@@ -157,12 +161,16 @@ A fix is not verified because someone says it is fixed.
 3. **Run and record** as a new test run (`TR-…`, type Re-test), using
    [references/retest-template.md](references/retest-template.md).
 4. **Update each defect**:
-   - all its failed cases now pass and no regression case fails → `Closed`, citing the `TR-…`
-     and the passing test names;
+   - all its failed cases now pass, no regression case fails, **and** "Constraint added" in the
+     defect's Fix section is filled → `Closed`, citing the `TR-…` and the passing test names.
+     If the run passes but the constraint is empty, leave the defect `Ready for re-test`, say
+     "passing, constraint missing" and ask the developer for the test, rule, hook or reason. When
+     the constraint is a new test, it must be in the passing run;
    - still failing → `Reopened`, with the new evidence appended;
    - a regression case fails → the original defect stays open and a new `DEF-nnn` is logged
      for the regression, linked to the fix.
-   **Never close a defect without a passing run cited in its file.** Never delete a defect.
+   **Never close a defect without a passing run cited in its file and its constraint recorded.**
+   Never delete a defect.
 5. Update test-case status, the RTM, and (after preview and explicit yes) the Jira bug's
    status using the transition names in `jira.transitions`.
 
@@ -173,7 +181,7 @@ Judge against `test-strategy.md`; where it sets none, use these and say that def
 - every changed Apex class and trigger at or above `quality.coverageTarget`; org-wide coverage
   at or above `quality.orgCoverageMinimum` from a `RunLocalTests` run;
 - no `Blocked` or `Not run` P1 or P2 case without a recorded decision;
-- every closed defect cites its passing re-test.
+- every closed defect cites its passing re-test and its constraint added.
 
 State "met" or "not met" per criterion with the evidence file. The QA lead signs the approval
 record; the agent does not.

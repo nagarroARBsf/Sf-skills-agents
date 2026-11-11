@@ -32,6 +32,17 @@ unless the user explicitly says so ("go through to tasks").
   integrations, security changes.
 - Skip for trivial changes: typo, label, single field help text, formatting. Say "trivial change,
   skipping spec" and proceed.
+- **Right-size it.** A small bug fix or a one-file change gets a *short spec*: the goal, the ACs
+  and how each will be verified, plus section 7 only if a decision is involved — a few lines, no
+  empty template sections. The full spec is for features that span several metadata types or
+  several sessions. Either way, keep it to about a page.
+- **Record decisions, not a description of the code**: sharing, which automation owns each field,
+  volume and limits, integration timing (spec section 7). These are the decisions code cannot show.
+- **Check it, don't trust it.** A spec is advice to the agent. Every requirement and AC becomes a
+  test (plan §7), and the reviewer compares the spec with the code, so an unimplemented
+  requirement fails a test and is flagged in review.
+- The spec is **spec-anchored**: keep it current as the feature changes, so the next session and
+  the next person read decisions, not chat history.
 
 ## Files
 
@@ -69,8 +80,10 @@ that must use `SeeAllData=true`) are recorded in the constitution with their rea
 2. Create the feature folder and write `spec.md` from
    [references/spec-template.md](references/spec-template.md).
 3. The spec is **what and why only**: scenarios, functional requirements, business rules, data
-   (business terms), acceptance scenarios, success criteria, out of scope. No class names, no
-   field API names, no flow names.
+   (business terms), the decisions the code can't show, acceptance scenarios, success criteria,
+   out of scope. No class names, no field API names, no flow names. Use the business terms from
+   `00-grounding/ontology.yaml` when it exists; a term it lacks becomes a clarification and a
+   proposed ontology entry.
 4. Copy story ACs verbatim as the acceptance scenarios and keep their `AC-n` numbers.
 5. Mark unknowns `[NEEDS CLARIFICATION: question]`. At most 5; make reasonable defaults for the
    rest and list them under Assumptions.
@@ -89,12 +102,15 @@ does not apply keeps its heading and says why.
 1. Refuse to plan while `[NEEDS CLARIFICATION]` markers remain, unless the user accepts the risk
    (record it in the plan).
 2. **Discovery first.** Read the constitution, the spec, the LLD
-   (`docs/sdlc/03-architecture/LLD/<story>.md`) if it exists, and every file the ticket names or
+   (`docs/sdlc/03-architecture/LLD/<story>.md`) if it exists, the grounding files
+   (`docs/sdlc/00-grounding/ontology.yaml`, `feature-map.md`) when present, and every file the ticket names or
    implies, in full. Trace dependencies in both directions: who calls the code and what it
    depends on. Every `@AuraEnabled` method is public API: search for all consumers (LWC, Aura,
    flows, FlexiPages, tests) before planning a signature change. Use
    `node .claude/bin/sf-sdlc inventory --json` for what exists and, when code is already on the
-   branch, `node .claude/bin/sf-sdlc delta --json`.
+   branch, `node .claude/bin/sf-sdlc delta --json`. Before planning new metadata, check the org for
+   something that already does the job: the Metadata Grounding MCP tools when connected
+   (`sdlc-workflow`, section Grounding), otherwise local source; say which in §4.
 3. Write `plan.md` for a mixed audience (plain English first, Salesforce terms explained on
    first use, bullets and tables rather than prose), with these sections:
 
@@ -146,6 +162,8 @@ Write `tasks.md` from [references/tasks-template.md](references/tasks-template.m
   the changed metadata against the developer's own org, `node .claude/bin/sf-sdlc analyze --changed`
   — then tick `[x]` and append a one-line note with the evidence (file paths, command, result).
   A task without evidence is not ticked.
+- When the change adds, renames or removes components, update the feature's section in
+  `docs/sdlc/00-grounding/feature-map.md` (if the project keeps one) in the same change.
 - Stop and ask when the plan turns out wrong; update the plan (with a "Changed during
   implementation" note) before continuing. Never silently diverge from the spec.
 - Deploy only to the developer's own org (`orgs.dev`, a scratch org or a developer sandbox).

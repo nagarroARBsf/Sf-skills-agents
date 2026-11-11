@@ -4,15 +4,16 @@ A ready-made Claude Code environment for Salesforce delivery teams: developers, 
 and managers. It takes work from raw meeting transcripts to a production release, with Salesforce
 practice built into every step.
 
-**BRD → Jira stories → architecture and plan → development → code verification → deployment →
-QA testing → re-test → release.**
+**Ground → BRD → Jira stories → architecture and plan → development → code verification →
+deployment → QA testing → re-test → release → observe.**
 
 | What you get | |
 |---|---|
 | 10 agents | BRD, Jira stories, solution architect, planner, developer, code reviewer, QA, deployment, release manager, project scout |
 | 22 commands | One per lifecycle step, each stopping for human review |
 | 11 SDLC skills | The method, templates and checklists behind each step |
-| 174 Salesforce skills | A library; setup installs only the ones your project needs |
+| 176 Salesforce skills | A library; setup installs only the ones your project needs |
+| Hosted MCP servers | Salesforce's Metadata Grounding and Metadata Experts servers (Headless 360 and Data 360 optional), signed in through your `sf` CLI login: no client ID, secret or token to store |
 | Guard hooks | Production-org guard, secret guard, branch guard, commit gate, write-time source checks, failure triage, audit log |
 | `sf-sdlc` CLI | Tool checks, config, skill installer, official Salesforce Code Analyzer, change delta, validated deploys, test runs |
 | Plugin extras | 3 workflows, 2 monitors, 2 output styles, 2 themes, Atlassian (Jira) connection |
@@ -47,24 +48,25 @@ plugins/sf-sdlc/
 │   └── sdlc-code-review/
 │       ├── SKILL.md             frontmatter (name, when to trigger) + the method
 │       └── references/          templates and checklists, loaded only when needed
-├── skill-library/               174 Salesforce skills, never loaded from here; installed per project
+├── skill-library/               176 Salesforce skills, never loaded from here; installed per project
 ├── commands/                    22 slash commands: /sf-sdlc:brd, /sf-sdlc:plan, /sf-sdlc:deploy …
 │   └── deploy.md
 ├── agents/                      10 subagents, one per lifecycle stage
 │   └── sdlc-code-review-agent.md
 ├── hooks/
 │   ├── hooks.json               wires Claude Code events to run.js
-│   └── run.js, lib.js, ops.js, checks.js   production-org, secret, branch and commit guards
+│   └── run.js, lib.js, ops.js, checks.js, mcp.js   org, secret, branch, commit and hosted-MCP guards
 ├── monitors/
 │   └── monitors.json            deploy-watch, test-watch: report when a background job finishes
 ├── output-styles/               Salesforce Delivery Lead (plain English), Salesforce Engineer (terse)
 ├── themes/                      SF SDLC Dark, SF SDLC Light
 ├── workflows/                   parallel review, story fan-out, release readiness
 ├── bin/sf-sdlc                  the kit's CLI, on the PATH inside Claude Code
+├── bin/sf-mcp-proxy             stdio bridge to Salesforce Hosted MCP Servers through the sf CLI login
 ├── catalog/                     skill catalog and the detection rules setup uses to recommend skills
 ├── context/                     project instructions printed at session start
 ├── templates/                   files `sf-sdlc init` writes into your project
-├── .mcp.json                    Atlassian remote MCP server (Jira, Confluence)
+├── .mcp.json                    Atlassian remote MCP (Jira, Confluence) and the four sf-* hosted servers
 ├── README.md
 └── NOTICE
 ```
@@ -82,7 +84,7 @@ plugins/sf-sdlc/
 | `themes/` | Terminal colours | Nothing (experimental) | `/theme` |
 | `workflows/` | Several agents in parallel, then combined | Nothing; depends on your Claude plan | "run the sdlc-release-readiness workflow for 1.4.0" |
 | `bin/sf-sdlc` | Deterministic work: doctor, config, delta, skills, Code Analyzer, deploy, test | Node.js 18+; `sf` CLI for org work | `sf-sdlc doctor`, `sf-sdlc analyze --staged`, `sf-sdlc delta --from main` |
-| `.mcp.json` | Jira and Confluence through Atlassian's remote MCP | Sign in once with `/mcp`; `jira.*` keys in config | Stories, bugs, fix versions; always previewed, created only after a yes |
+| `.mcp.json` | Jira and Confluence through Atlassian's remote MCP; Salesforce Hosted MCP Servers through `bin/sf-mcp-proxy` | Atlassian: sign in once with `/mcp`. Salesforce: turn the servers on in Setup → MCP Servers, `sf org login web`, `mcp.*` keys in config | Agents find existing org metadata before proposing new metadata; `sf-sdlc mcp status` shows what is connected |
 
 Example: a command (`commands/deploy.md`) hands off to an agent and can only be started by a person.
 
@@ -158,11 +160,12 @@ Every key: [SETUP.md](SETUP.md#41-claudesf-sdlcjson--the-main-project-config-com
 
 ```mermaid
 flowchart LR
-    S["0 Setup"] --> B["1 BRD"] --> J["2 Stories"] --> A["3 Architecture"]
+    S["0 Setup"] --> G["G Ground"] --> B["1 BRD"] --> J["2 Stories"] --> A["3 Architecture"]
     A --> P["4 Spec and plan"] --> D["5 Build"] --> R["6 Review"]
-    R --> V["7 Deploy"] --> Q["8 Test"] --> T["9 Re-test"] --> L["10 Release"]
+    R --> V["7 Deploy"] --> Q["8 Test"] --> T["9 Re-test"] --> L["10 Release"] --> O["11 Observe"]
     Q -. "defect" .-> D
     R -. "changes required" .-> D
+    O -. "new spec + new constraint" .-> G
 ```
 
 Every step writes a draft and stops. A person reviews it and fills in its approval record before the
@@ -171,6 +174,7 @@ next step starts. Agents never approve their own work.
 | # | Step | Who usually runs it | Command | Agent | Output |
 |---|---|---|---|---|---|
 | 0 | Set up the project | Tech lead | `/sf-sdlc:setup`, `/sf-sdlc:doctor`, `/sf-sdlc:skills` | project scout | `.claude/sf-sdlc.json`, installed skills, baseline inventory |
+| G | Ground the agents in the business and the org | Tech lead, BA | `/sf-sdlc:setup` (drafts them) | project scout | `docs/sdlc/00-grounding/ontology.yaml` (business terms → objects), `feature-map.md` (components per feature) |
 | 1 | Requirements from transcripts | Business analyst | `/sf-sdlc:brd <files>` | BRD | `docs/sdlc/01-brd/BRD.md` |
 | 2 | Epics and stories | Product owner | `/sf-sdlc:stories` | Jira story | `docs/sdlc/02-backlog/`, Jira issues after you say yes |
 | 3 | Architecture and diagrams | Architect | `/sf-sdlc:architecture`, `/sf-sdlc:diagram` | solution architect | HLD, per-story LLD, ADRs, diagrams marking New / Changed / Unchanged |
@@ -181,6 +185,7 @@ next step starts. Agents never approve their own work.
 | 8 | QA testing | QA | `/sf-sdlc:test-cases`, `/sf-sdlc:test-run <org>` | QA | Test cases, `TR-*` run reports, `DEF-nnn` defects |
 | 9 | Re-test | QA | `/sf-sdlc:retest` | QA | Updated defect and test status, with the passing run cited |
 | 10 | Release | Release manager | `/sf-sdlc:release <version>` | release manager | Readiness report, release notes, Jira version and GitHub release after you say yes |
+| 11 | Observe | QA, developer | `/sf-sdlc:test-run`, `/sf-sdlc:specify` | QA, planner | `docs/sdlc/06-observe/findings-*.md`: each finding becomes a defect or story **and** a constraint (test, Code Analyzer rule, hook) |
 | — | Status at any time | Anyone | `/sf-sdlc:trace` | — | Where things stand, what is blocked, traceability matrix |
 
 Traceability runs through one ID chain:
@@ -223,10 +228,35 @@ CSV you can import.
 | Source check | After each edit, flags SOQL or DML in loops, missing sharing, hard-coded IDs, `SeeAllData`, API version drift | Advisory only |
 | Permission rules | Deploys, deletions, data changes, pushes and releases always prompt, even if a hook cannot run | `.claude/settings.json` |
 | Audit log | Records who ran which org-affecting command against which org | `hooks.auditLog` |
+| Hosted MCP guard | Headless 360 `dispatch` and Data 360 `execute` can change the org: they always ask, naming the org and its class, even when the tool is allow-listed. Grounding and Metadata Experts are read-only | No |
 | Person-only commands | `deploy` and `release` cannot be started by Claude on its own | No |
 
 New installs start in `observe` mode: advisory guards report what they would block. Switch
 `hooks.mode` to `enforce` once the team has seen them.
+
+## Salesforce Hosted MCP servers
+
+Salesforce hosts MCP servers that give an agent just the org context it needs. The kit connects
+to them through `bin/sf-mcp-proxy`, a small Node.js bridge that asks the org for a short-lived
+token with your existing Salesforce CLI login (`sf api request rest /ide/auth`). Nothing secret
+is stored in the project or printed.
+
+| Server (`mcp.servers`) | Default | What it gives the agents |
+|---|---|---|
+| `metadata-grounding` | on | Find objects, fields, flows, classes and permissions that already exist, by meaning. Needs Data 360, API access and Salesforce Catalog; not in scratch orgs; read-only |
+| `metadata-experts` | on | Metadata type schemas and generation for Flows, FlexiPages, apps, tabs and sites (lets the five upstream skills that need it work) |
+| `headless-360` | off | Live Setup state, settings, limits and org operations. `dispatch` changes the org and always asks |
+| `data360` | off | Data 360 recipes and operations. `execute` always asks |
+
+1. In the org: Setup → Quick Find **MCP Servers** (under API Catalog) → turn on the servers you want.
+   Allow two minutes.
+2. Log in once: `sf org login web --alias <alias>`. Set `mcp.org` (a role or alias) if it is not
+   the default org.
+3. Check: `sf-sdlc mcp status` lists each server with its tools, or the reason it is not
+   connected. Restart Claude Code after changing servers.
+
+A server that is not enabled, has no login or is switched off in the org shows up with no tools
+instead of a startup error.
 
 ## Skills: only what the project needs
 
@@ -248,6 +278,7 @@ never overwrites a skill you edited. Starter sets: `--profile developer`, `admin
 | `sf-sdlc` CLI | `node .claude/bin/sf-sdlc` | `sf-sdlc` on the PATH |
 | Output styles, workflows | Yes | Yes |
 | Project instructions and coding rules | `CLAUDE.md`, `rules/` | Injected at session start; rules as the `salesforce-coding-rules` skill |
+| Salesforce Hosted MCP servers | Project `.mcp.json`, written by `sf-sdlc init` | Yes, `.mcp.json` |
 | Monitors, themes, Jira connection, per-user options | No (plugin-only features of Claude Code) | Yes |
 
 ## Known limitations
@@ -262,10 +293,16 @@ never overwrites a skill you edited. Starter sets: `--profile developer`, `admin
   format moves. Monitors do not run in headless (`claude -p`) sessions.
 - **Workflows depend on your Claude plan and provider** and can be disabled by an administrator.
   Each has a plain command that does the same job without parallelism.
-- **No Salesforce MCP server is included.** All Salesforce work goes through the `sf` CLI. The
-  official `automation-flow-generate`, `platform-flexipage-generate` and three related library
-  skills expect Salesforce's Metadata Experts MCP tool and will not work without it; setup
-  recommends the CLI-only `sf-flow` skill for Flows instead.
+- **Hosted MCP servers are reached through a Beta route.** The proxy uses the same
+  `/ide/auth` sign-in and `v1-beta.2` route as Salesforce's own Claude Code plugin; it has been
+  run against one production-class org (Metadata Experts, Headless 360 and Data 360 connected;
+  Metadata Grounding not yet turned on there). Salesforce may change the route. Grounding results
+  can lag recent changes and are never a complete list. Setup still recommends the CLI-only
+  `sf-flow` skill for Flows; the Metadata Experts skills work when that server is enabled.
+- **`platform-headless-360-integrate`** refers to a version-selection helper that ships only in
+  Salesforce's own plugin; read the API version from `/services/data/` instead. The upstream
+  `platform-capability-search` and `platform-lsp-integrate` skills are not vendored because they
+  drive that plugin's scripts.
 - **Source checks are heuristics.** They catch common mistakes quickly and can be wrong in both
   directions. The Code Analyzer is the authoritative scan.
 - **Org classification relies on the CLI's org list and your config.** List every production alias

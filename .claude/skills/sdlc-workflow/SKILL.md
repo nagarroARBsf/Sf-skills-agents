@@ -1,6 +1,6 @@
 ---
 name: sdlc-workflow
-description: "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release. Defines the shared artifact folder layout, the traceability ID scheme (BR/FR/EPIC/US/LLD/TC/TR/DEF/DEP/REL), the approval record every artifact carries, hand-off contracts between the SDLC agents, the requirements traceability matrix and the Salesforce feasibility checklist. TRIGGER when: user asks where to start, what comes next, what is blocked, how artifacts link together, wants to run the lifecycle end to end, asks for a traceability matrix or status across requirements, design, tests and releases, or another sdlc-* skill needs the shared conventions. DO NOT TRIGGER when: the user asks for one specific artifact or action (use the matching sdlc-* skill directly)."
+description: "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder layout, the grounding files (ontology, feature map), the traceability ID scheme (BR/FR/EPIC/US/LLD/TC/TR/DEF/DEP/REL), the approval record every artifact carries, hand-off contracts between the SDLC agents, the requirements traceability matrix and the Salesforce feasibility checklist. TRIGGER when: user asks where to start, what comes next, what is blocked, how artifacts link together, wants to run the lifecycle end to end, asks for a traceability matrix or status across requirements, design, tests and releases, or another sdlc-* skill needs the shared conventions. DO NOT TRIGGER when: the user asks for one specific artifact or action (use the matching sdlc-* skill directly)."
 metadata:
   version: "2.0"
   author: "Nagarro Salesforce CoE"
@@ -14,7 +14,8 @@ run in separate sessions, by different people, without shared memory.
 ```mermaid
 flowchart LR
     IN["Transcripts, notes, emails"] --> BRD
-    SETUP["0 Setup<br/>sdlc-project-scout-agent"] --> BRD["1 BRD<br/>sdlc-brd-agent"]
+    SETUP["0 Setup<br/>sdlc-project-scout-agent"] --> GR["G Ground<br/>ontology, feature map"]
+    GR --> BRD["1 BRD<br/>sdlc-brd-agent"]
     BRD -->|"sponsor sign-off"| JIRA["2 Epics and stories<br/>sdlc-jira-story-agent"]
     JIRA -->|"PO approval"| ARCH["3 HLD, LLD, diagrams<br/>sdlc-solution-architect-agent"]
     ARCH -->|"tech-lead review"| PLAN["4 Spec, plan, tasks<br/>sdlc-plan-agent"]
@@ -28,11 +29,14 @@ flowchart LR
     DEP --> QA
     QA -->|"defect DEF-nnn"| DEV
     QA -->|"exit criteria met"| REL["10 Release<br/>sdlc-release-agent"]
+    REL --> OBS["11 Observe<br/>logs, traces, findings"]
+    OBS -->|"new spec or DEF + constraint"| GR
 ```
 
 | # | Stage | Agent | Commands | Skill | Reads | Writes | Human gate |
 |---|---|---|---|---|---|---|---|
 | 0 | Setup | `sdlc-project-scout-agent` | `/sdlc-setup`, `/sdlc-doctor`, `/sdlc-skills` | `sdlc-project-setup` | repository, org metadata | `.claude/sf-sdlc.json`, installed skills, `03-architecture/baseline/inventory.md` | Lead confirms config and skill set |
+| G | Ground | `sdlc-project-scout-agent` (drafts); every agent reads | `/sdlc-setup` | `sdlc-project-setup`, this skill | baseline, source, org metadata (grounding MCP when connected) | `00-grounding/ontology.yaml`, `00-grounding/feature-map.md` | Lead confirms the terms |
 | 1 | Requirements | `sdlc-brd-agent` | `/sdlc-brd` | `sdlc-brd-generate` | `00-inputs/*` | `01-brd/BRD.md` | Sponsor sign-off |
 | 2 | Backlog | `sdlc-jira-story-agent` | `/sdlc-stories` | `sdlc-jira-story-generate` | BRD | `02-backlog/backlog.md`, `jira-import.csv`, Jira issues | PO approval; explicit yes before Jira writes |
 | 3 | Design | `sdlc-solution-architect-agent` | `/sdlc-architecture`, `/sdlc-diagram` | `sdlc-solution-architecture-generate`, `sdlc-architecture-diagram` | BRD, backlog, baseline | `03-architecture/HLD.md`, `LLD/`, `ADR/`, `components.json` | Tech-lead review |
@@ -43,6 +47,7 @@ flowchart LR
 | 8 | Deployment | `sdlc-deployment-agent` | `/sdlc-deploy` | `sdlc-deploy-release` | review verdict, source, config | `05-release/deployments/DEP-nnn.md` | Named org and explicit yes; production always |
 | 9 | Test execution, defects, re-test | `sdlc-qa-test-agent` | `/sdlc-test-run`, `/sdlc-retest` | `sdlc-test-execution` | test cases, deployed org | `04-qa/test-runs/TR-*.md`, `04-qa/defects/DEF-nnn.md` | QA lead sign-off on exit criteria |
 | 10 | Release | `sdlc-release-agent` | `/sdlc-release` | `sdlc-deploy-release` | everything above | `05-release/REL-<version>/readiness.md`, `release-notes.md` | Go/no-go by the release owner |
+| 11 | Observe | `sdlc-qa-test-agent` (defects), `sdlc-plan-agent` (new specs) | `/sdlc-test-run`, `/sdd-specify` | this skill, `sdlc-test-execution` | debug logs, traces, user reports | `06-observe/findings-<YYYYMMDD>.md`, `DEF-nnn`, new stories | Lead triages each finding |
 | — | Status | any | `/sdlc-trace` | this skill | all artifacts | `04-qa/rtm.md` | — |
 
 Paths in the Writes column are relative to `paths.docs` (default `docs/sdlc`). Stage 7 can start
@@ -69,6 +74,9 @@ Roots come from `paths.docs` and `paths.specs`; the defaults are shown.
 ```text
 docs/sdlc/
 ├── 00-inputs/                 raw transcripts, notes, emails (as supplied, never edited)
+├── 00-grounding/
+│   ├── ontology.yaml          business terms -> Salesforce objects; read before naming anything
+│   └── feature-map.md         per feature: Apex, LWC, flows, permission sets, tests
 ├── 01-brd/BRD.md
 ├── 02-backlog/
 │   ├── backlog.md             epics, stories, dependency graph, release slicing, Jira keys
@@ -86,11 +94,13 @@ docs/sdlc/
 │   ├── test-runs/TR-20260115-01.md
 │   ├── defects/DEF-001.md
 │   └── rtm.md
-└── 05-release/
-    ├── deployments/DEP-001.md
-    └── REL-1.2.0/
-        ├── readiness.md
-        └── release-notes.md
+├── 05-release/
+│   ├── deployments/DEP-001.md
+│   └── REL-1.2.0/
+│       ├── readiness.md
+│       └── release-notes.md
+└── 06-observe/
+    └── findings-20260301.md   production findings -> new stories or DEF-nnn, each with its constraint
 specs/
 ├── constitution.md
 └── US-04-02-deal-health-score/
@@ -98,6 +108,35 @@ specs/
 ```
 
 If the project already uses different folders, follow the project and say so in the output.
+
+## Grounding
+
+An agent starts every session without knowing what the business means by "customer" or what
+already exists in the org. Two small files, kept under `00-grounding/`, close that gap:
+
+- **`ontology.yaml`** maps business terms to Salesforce objects and fields. Terms whose meaning
+  depends on context say so (`meaning: context_dependent`), list how to `resolve` each context and
+  what to `never_assume`. Template: [references/ontology-template.yaml](references/ontology-template.yaml).
+- **`feature-map.md`** lists, per business feature, the Apex, LWC, flows, permission sets and tests
+  behind it, so an agent changing a feature finds all of its parts. Template:
+  [references/feature-map-template.md](references/feature-map-template.md).
+
+Setup drafts both (`sdlc-project-setup`, step 6). Then every agent:
+
+1. **Reads them first when present**, before naming an object, field or component. A requirement
+   that uses a term missing from the ontology gets an open question, not a guess.
+2. **Looks up before proposing new metadata.** When the Metadata Grounding MCP tools
+   (`search_metadata`, `describe_metadata`, `query_metadata`) are connected, search the org by
+   meaning for something that already does the job; the installed `platform-metadata-grounding-get`
+   skill explains how. Otherwise search the local source and, on a non-production org the user
+   names, use scoped SOQL. Say which was used. Grounding is read-only, ranked and can lag recent
+   changes: it can show that something exists, never that it does not.
+3. **Proposes, never silently writes, an ontology entry** when a term was misread or is missing:
+   show the entry in the output and let a person add it. Developers update `feature-map.md` in the
+   same change when a story adds or removes components.
+
+`node .claude/bin/sf-sdlc mcp status` reports which hosted MCP servers the project has turned on
+and whether each is reachable.
 
 ## Traceability IDs
 
@@ -121,7 +160,7 @@ Use these IDs exactly. They are the glue between artifacts; downstream agents pa
 | `LLD-US-nn-mm` | Low-level design for a story | `LLD/` | `LLD-US-04-02` |
 | `TC-US-nn-mm-nnn` | Test case for a story | `04-qa/test-cases/` | `TC-US-04-02-007` |
 | `TR-<YYYYMMDD>-<nn>` | Test run: one execution cycle against one org | `04-qa/test-runs/` | `TR-20260115-01` |
-| `DEF-nnn` | Defect found in a test run or review | `04-qa/defects/` | `DEF-012` |
+| `DEF-nnn` | Defect found in a test run, review or production (Observe) | `04-qa/defects/` | `DEF-012` |
 | `DEP-nnn` | Deployment (validation or deploy) to one org | `05-release/deployments/` | `DEP-007` |
 | `REL-<version>` | Release; version as the project numbers it | `05-release/` | `REL-1.2.0` |
 
@@ -186,6 +225,27 @@ When asked to "run the whole SDLC":
 5. Loops are normal: review `Changes required` returns to stage 5; a failed test run opens
    `DEF-nnn`, returns to stage 5, then `/sdlc-retest`. Never skip the re-test.
 6. Finish with the RTM, the open `Q-nn` and `DEF-nnn` items, and the release readiness verdict.
+7. After release, Observe (below) feeds the next loop. It is never started unasked.
+
+## Observe and feed the loop
+
+After a release (and during hypercare), read what production shows instead of waiting for tickets:
+debug logs and governor-limit failures (installed `platform-apex-logs-debug`), platform and agent
+traces (`platform-tracing-configure`, `platform-tracing-agentforce-configure` if installed), and
+findings reported by users. Read only; any change to logging or tracing in an org needs the named
+org and an explicit yes.
+
+Record the session in `06-observe/findings-<YYYYMMDD>.md`: one row per finding with the evidence
+(log line, trace ID, user report) and two answers:
+
+| Question | Becomes |
+|---|---|
+| What should we build or fix next? | A defect `DEF-nnn` (`Found in: production`) or a new story / `/sdd-specify` request |
+| Why did this get through? | A **constraint**: the strongest one that fits, in this order — a test, a Code Analyzer rule (`dx-code-analyzer-custom-rule-create`), a hook or quality gate, a spec or checklist update, an ontology or feature-map entry. Instructions alone are the weakest option. |
+
+No new ID: a finding is a `DEF` or a story, and its constraint is recorded in the defect's
+"Constraint added" field (`sdlc-test-execution`). The same question applies to every defect found
+in verification or review: each repeated mistake should leave a deterministic check behind.
 
 Run each stage in its own agent so its context stays small. Pass file paths, not file contents,
 between stages.
