@@ -7,3 +7,6 @@ __pycache__/
 # sf-sdlc local state (audit log, job tracking, caches)
 .sf-sdlc/
 .claude/sf-sdlc.local.json
+
+# Generated static site (scripts/build-site.py)
+site/
