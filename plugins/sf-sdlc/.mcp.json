@@ -35,6 +35,13 @@
         "${CLAUDE_PLUGIN_ROOT}/bin/sf-mcp-proxy",
         "data360"
       ]
+    },
+    "atlassian-token": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/bin/sf-atlassian-mcp"
+      ]
     }
   }
 }

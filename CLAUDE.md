@@ -13,7 +13,7 @@ forms:
 - `plugins/sf-sdlc/` — the Claude Code plugin, **generated** from `.claude/` (marketplace `nagarro-sf`).
 
 Almost every tracked file is payload. The repo-owned code is: `.claude/hooks/*.js`,
-`.claude/bin/sf-sdlc`, `.claude/bin/sf-mcp-proxy`, `.claude/workflows/*.js`, `scripts/*`, `tests/kit.test.js`, and the
+`.claude/bin/sf-sdlc`, `.claude/bin/sf-mcp-proxy`, `.claude/bin/sf-atlassian-mcp`, `.claude/workflows/*.js`, `scripts/*`, `tests/kit.test.js`, and the
 hand-written plugin files listed under "Claude Code plugin". Work here is editing kit content,
 the Node tooling, or the generator.
 
@@ -70,7 +70,8 @@ specific) and do not edit or delete those folders. `build-claude-plugin.py` only
 | `CLAUDE.md` + rules without `paths:` | `context/project-instructions.md` | Printed by the SessionStart hook; must stay under 10,000 characters |
 | `skill-library/**` | `skill-library/**` | Verbatim; never loaded |
 | `hooks/*.js` + `settings.json` `hooks` | `hooks/*.js`, `hooks/hooks.json` | `$CLAUDE_PROJECT_DIR/.claude/` → `${CLAUDE_PLUGIN_ROOT}/` |
-| `settings.json` minus `hooks` | `templates/project-settings.json` | Written into customer projects by `sf-sdlc init` |
+| `settings.json` minus `hooks` | `templates/project-settings.json` | Merged into customer projects by `sf-sdlc init`, which also adds `enabledPlugins` and `extraKnownMarketplaces` (from `metadata.marketplace` in `plugin.json`) |
+| `CLAUDE.md` + `rules/*.md` | `templates/project/rules/` | `CLAUDE.md` becomes the always-on rule `sf-sdlc-kit.md`; CLI and command names rewritten, `.claude/rules/` kept. `sf-sdlc init` copies them into a plugin user's `.claude/rules/` (hash-locked; edited files are kept) and the SessionStart hook then stops printing `context/` |
 | `bin/`, `catalog/`, `templates/`, `output-styles/`, `workflows/` | same | Copied; text rewritten |
 
 Body rewrites (`PATH_REWRITES` in the build script): `node .claude/bin/sf-sdlc` → `sf-sdlc`;
@@ -111,8 +112,10 @@ They are `rmtree`d on every build. Two files inside `.claude/` are also generate
 `.claude/hooks/run.js <hook>` is the single dispatcher (`session-start`, `pre-bash`, `pre-write`,
 `pre-mcp`, `post-write`, `post-bash`, `bash-failure`, `stop`); `lib.js` holds config, command parsing
 and org classification; `ops.js` the Code Analyzer wrapper, inventory and delta; `checks.js` the
-source checks and secret patterns; `mcp.js` the Salesforce Hosted MCP routes, JWT minting and probe.
-`.claude/bin/sf-sdlc` is the CLI over the same modules; `.claude/bin/sf-mcp-proxy <server>` is the
+source checks and secret patterns; `mcp.js` the Salesforce Hosted MCP routes, JWT minting, probe and the no-tools handshake; `envfile.js` the
+project `.env` (template, parse, names-only status — never values).
+`.claude/bin/sf-sdlc` is the CLI over the same modules; `.claude/bin/sf-atlassian-mcp` starts the
+community `mcp-atlassian` server with `.env` tokens (or serves no tools); `.claude/bin/sf-mcp-proxy <server>` is the
 stdio MCP bridge Claude Code starts (registered in the plugin's `.mcp.json` and, for the copy-in
 folder, in the project `.mcp.json` that `sf-sdlc init` merges from `templates/mcp.json`).
 
@@ -127,12 +130,14 @@ Rules that must hold when changing them:
   The proxy (not a hook) talks to `api.salesforce.com` with a JWT from `sf api request rest
   /ide/auth`; it must never print or store that JWT. Hosted MCP tools that can change an org
   (`WRITE_TOOLS` in `mcp.js`) always get `ask` from `pre-mcp`.
+- `.env` values are never printed, logged or returned: `sf-sdlc env status` reports names only, and
+  `permissions.deny` blocks `Read(./.env)`. Tokens reach only the child process that needs them.
 - Add a test in `tests/kit.test.js` for any new guard decision or check.
 
 ## Claude Code plugin
 
 Hand-written, never touched by the generator: `plugins/sf-sdlc/.claude-plugin/plugin.json`
-(including `userConfig`), `.mcp.json` (Atlassian remote server and the four `sf-*` hosted-MCP proxies), `monitors/monitors.json`,
+(including `userConfig` and `metadata.marketplace`, which `init` writes into project settings), `.mcp.json` (Atlassian remote server, `atlassian-token`, and the four `sf-*` hosted-MCP proxies), `monitors/monitors.json`,
 `themes/*.json`, `README.md`, `NOTICE`. Monitors and themes are experimental in Claude Code.
 A plugin `settings.json` is deliberately not shipped: it honours only `agent` and
 `subagentStatusLine`. Bump `version` in `plugin.json` when releasing, or installed copies will not

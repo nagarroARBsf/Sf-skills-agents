@@ -10,6 +10,9 @@ const { spawnSync } = require('child_process');
 
 const KIT_ROOT = path.resolve(__dirname, '..'); // .claude/ in a project, or the plugin root
 const IS_PLUGIN = fs.existsSync(path.join(KIT_ROOT, '.claude-plugin', 'plugin.json'));
+// The kit's always-on instructions as a project rule (plugin users get it from `sf-sdlc init`). When it
+// exists, the SessionStart hook stops printing the same text.
+const KIT_RULE_FILE = 'sf-sdlc-kit.md';
 
 const DEFAULTS = {
   project: { name: '', code: '', client: '' },
@@ -127,7 +130,7 @@ function hookMode(cfg) {
 
 function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, {
-    encoding: 'utf8', cwd: opts.cwd, timeout: opts.timeout || 120000,
+    encoding: 'utf8', cwd: opts.cwd, timeout: opts.timeout || 120000, input: opts.input,
     maxBuffer: 64 * 1024 * 1024, shell: process.platform === 'win32',
     env: { ...process.env, SF_AUTOUPDATE_DISABLE: 'true', SF_SKIP_NEW_VERSION_CHECK: 'true', ...(opts.env || {}) },
   });
@@ -359,7 +362,7 @@ function hashDir(dir) {
 }
 
 module.exports = {
-  KIT_ROOT, IS_PLUGIN, DEFAULTS, TEST_LEVELS,
+  KIT_ROOT, IS_PLUGIN, KIT_RULE_FILE, DEFAULTS, TEST_LEVELS,
   merge, readJson, projectDir, configPaths, loadConfig, validateConfig, hookMode,
   run, has, sfJson, git, stateDir, appendJsonl,
   splitCommands, stripPrefix, flagValue, sfInvocations, gitInvocations,

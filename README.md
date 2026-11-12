@@ -131,10 +131,12 @@ your-salesforce-project/
 ├── .claude/
 │   ├── sf-sdlc.json               org aliases (which are production), branches, Jira, coverage, pipeline   commit
 │   ├── sf-sdlc.local.json         personal overrides, e.g. your scratch org                                 do not commit
-│   ├── settings.json              Claude Code permissions: allow / ask / deny                              commit
+│   ├── settings.json              permissions, .env read-deny, plugin on at project scope                  commit
+│   ├── rules/                     coding rules and sf-sdlc-kit.md (plugins cannot ship rules)              commit
 │   ├── sf-sdlc.skills.lock.json   installed skills and their hashes                                       commit
 │   └── skills/                    only the Salesforce skills this project needs                            commit
 ├── code-analyzer.yml              Code Analyzer rules                                                      commit
+├── .env                           Jira, Confluence, GitHub tokens you fill in your editor                  never commit
 ├── docs/sdlc/                     BRD, backlog, architecture, QA and release drafts
 ├── specs/                         constitution.md and one folder per story: spec, plan, tasks, review
 └── .sf-sdlc/                      audit log, tracked jobs, caches                                          ignored
@@ -293,6 +295,12 @@ never overwrites a skill you edited. Starter sets: `--profile developer`, `admin
   format moves. Monitors do not run in headless (`claude -p`) sessions.
 - **Workflows depend on your Claude plan and provider** and can be disabled by an administrator.
   Each has a plain command that does the same job without parallelism.
+- **The token-based Jira/Confluence server (`atlassian-token`) has not been run against a real Jira.**
+  It starts the community `mcp-atlassian` server, which is not part of this kit and is fetched by
+  `uvx` (or Docker) when it starts; it is unpinned unless you set `ATLASSIAN_MCP_PACKAGE` or
+  `ATLASSIAN_MCP_IMAGE` in `.env`. `sf-sdlc env gh-login` has been unit-tested only.
+- **Setup's environment help gives install commands; it does not install for you unasked**, and the
+  commands per operating system were written from the tools' documentation, not run on every system.
 - **Hosted MCP servers are reached through a Beta route.** The proxy uses the same
   `/ide/auth` sign-in and `v1-beta.2` route as Salesforce's own Claude Code plugin; it has been
   run against one production-class org (Metadata Experts, Headless 360 and Data 360 connected;

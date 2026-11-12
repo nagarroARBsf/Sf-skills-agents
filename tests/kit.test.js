@@ -216,7 +216,10 @@ test('CLI: init, skills install/sync/remove in a temp project', () => {
   assert.ok(created.includes('.github/workflows/sf-code-analyzer.yml'));
   assert.ok(created.some((c) => c.startsWith('.mcp.json')));
   const servers = JSON.parse(fs.readFileSync(path.join(dir, '.mcp.json'), 'utf8')).mcpServers;
-  assert.deepStrictEqual(Object.keys(servers).sort(), ['sf-data360', 'sf-headless-360', 'sf-metadata-experts', 'sf-metadata-grounding']);
+  assert.deepStrictEqual(Object.keys(servers).sort(), ['atlassian-token', 'sf-data360', 'sf-headless-360', 'sf-metadata-experts', 'sf-metadata-grounding']);
+  assert.ok(created.some((c) => c.startsWith('.env (created')), 'init creates the .env template');
+  assert.ok(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8').split('\n').includes('.env'), '.env is git-ignored');
+  assert.ok(!fs.existsSync(path.join(dir, '.claude', 'rules')), 'the copy-in folder already holds its rules; init does not write them');
   assert.match(fs.readFileSync(path.join(dir, 'code-analyzer.yml'), 'utf8'), /NoHardcodedSalesforceIds/);
   assert.ok(cli('init').json.skipped.some((c) => c.startsWith('.mcp.json')), 'a second init keeps .mcp.json');
   assert.ok(cli('config', 'validate').json.ok);
@@ -231,8 +234,90 @@ test('CLI: init, skills install/sync/remove in a temp project', () => {
   assert.strictEqual(cli('skills', 'list').json.installed[0].state, 'modified');
   assert.match(cli('skills', 'remove', 'platform-soql-query').json.results[0].result, /locally modified/);
   assert.strictEqual(cli('inventory').json.counts.ApexClass, 1);
-  assert.strictEqual(cli('skills', 'recommend', '--profile', 'ba').json.toInstall.length, 0);
+  const core = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'detection-rules.json'), 'utf8')).rules.find((r) => r.id === 'core').skills;
+  assert.deepStrictEqual(cli('skills', 'recommend', '--profile', 'ba').json.recommended.map((s) => s.name).sort(), [...core].sort(), 'a business analyst gets the core set only');
+  assert.ok(core.every((s) => rec.recommended.some((r) => r.name === s)), 'every project gets the core set');
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('.env: names only, never values; template is appended, never rewritten', () => {
+  const envfile = require(path.join(KIT, 'hooks', 'envfile.js'));
+  assert.deepStrictEqual(envfile.parse('# c\nexport A=1\nB="two words"\nC=x # note\nbad line\nD=\n'), { A: '1', B: 'two words', C: 'x', D: '' });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-env-'));
+  assert.strictEqual(envfile.status(dir).exists, false);
+  fs.writeFileSync(path.join(dir, '.env'), 'JIRA_URL=https://acme.atlassian.net\nJIRA_USERNAME=me@acme.com\nJIRA_API_TOKEN=s3cr3t-token\nOTHER=keep\n');
+  const st = envfile.status(dir);
+  assert.strictEqual(st.groups.jira.state, 'configured');
+  assert.strictEqual(st.groups.confluence.state, 'empty');
+  assert.strictEqual(st.gitignored, false);
+  assert.doesNotMatch(JSON.stringify(st), /s3cr3t|acme/, 'status never carries values');
+  const r = envfile.ensure(dir);
+  assert.strictEqual(r.result, 'appended');
+  assert.ok(r.added.includes('GITHUB_TOKEN') && !r.added.includes('JIRA_URL'));
+  const after = envfile.read(dir);
+  assert.strictEqual(after.JIRA_API_TOKEN, 's3cr3t-token');
+  assert.strictEqual(after.OTHER, 'keep');
+  assert.strictEqual(envfile.ensure(dir).result, 'kept');
+  assert.strictEqual(envfile.childEnv(dir, ['JIRA_API_TOKEN', 'GITHUB_TOKEN'], {}).JIRA_API_TOKEN, 's3cr3t-token');
+  assert.strictEqual(envfile.childEnv(dir, ['JIRA_API_TOKEN', 'GITHUB_TOKEN'], {}).GITHUB_TOKEN, undefined, 'empty values are not passed on');
+  const cli = spawnSync('node', [path.join(KIT, 'bin', 'sf-sdlc'), 'env', 'status'], { cwd: dir, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: dir } });
+  assert.match(cli.stdout, /Jira.*configured/);
+  assert.match(cli.stdout, /NOT git-ignored/);
+  assert.doesNotMatch(cli.stdout + cli.stderr, /s3cr3t|acme/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('sf-atlassian-mcp: runs only with a complete token, never fails the handshake', () => {
+  const { plan } = require(path.join(KIT, 'bin', 'sf-atlassian-mcp'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-atl-'));
+  assert.match(plan(dir, () => true).reason, /no \.env/);
+  fs.writeFileSync(path.join(dir, '.env'), 'JIRA_URL=https://acme.atlassian.net\nJIRA_USERNAME=me\nJIRA_API_TOKEN=\n');
+  assert.match(plan(dir, () => true).reason, /no complete Jira or Confluence token/);
+  fs.writeFileSync(path.join(dir, '.env'), 'JIRA_URL=https://acme.atlassian.net\nJIRA_USERNAME=me\nJIRA_API_TOKEN=t\nATLASSIAN_MCP_PACKAGE=mcp-atlassian==1.0.0\n');
+  assert.deepStrictEqual(plan(dir, (c) => c === 'uvx'), { on: ['jira'], cmd: 'uvx', args: ['mcp-atlassian==1.0.0'] });
+  const docker = plan(dir, (c) => c === 'docker');
+  assert.strictEqual(docker.cmd, 'docker');
+  assert.ok(docker.args.includes('JIRA_API_TOKEN') && !docker.args.some((a) => a.includes('=t')), 'docker gets key names, not values, on its command line');
+  assert.match(plan(dir, () => false).reason, /neither uv/);
+  fs.rmSync(path.join(dir, '.env'));
+  const input = [{ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, { jsonrpc: '2.0', id: 2, method: 'tools/list' }].map((m) => JSON.stringify(m)).join('\n') + '\n';
+  const r = spawnSync('node', [path.join(KIT, 'bin', 'sf-atlassian-mcp')], { cwd: dir, input, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: dir }, timeout: 20000 });
+  const replies = r.stdout.trim().split('\n').map((l) => JSON.parse(l));
+  assert.match(replies[0].result.serverInfo.name, /atlassian-token \(inactive\)/);
+  assert.deepStrictEqual(replies[1].result.tools, []);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('plugin init: project-scope plugin, .env read-deny, rules as project files, edits kept', () => {
+  const PLUGIN = path.join(__dirname, '..', 'plugins', 'sf-sdlc');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-plugin-'));
+  fs.mkdirSync(path.join(dir, '.claude'));
+  fs.writeFileSync(path.join(dir, '.claude', 'settings.json'), JSON.stringify({ model: 'opus', permissions: { allow: ['Bash(npm test)'] } }));
+  const cli = (...a) => JSON.parse(spawnSync('node', [path.join(PLUGIN, 'bin', 'sf-sdlc'), ...a, '--json'], { cwd: dir, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: dir } }).stdout);
+  const first = cli('init');
+  assert.ok(first.created.some((c) => c.startsWith('.claude/settings.json (merged')));
+  const s = JSON.parse(fs.readFileSync(path.join(dir, '.claude', 'settings.json'), 'utf8'));
+  assert.strictEqual(s.model, 'opus', 'existing keys are kept');
+  assert.ok(s.permissions.allow.includes('Bash(npm test)') && s.permissions.allow.includes('Bash(sf-sdlc doctor*)'));
+  assert.ok(s.permissions.deny.includes('Read(./.env)'));
+  assert.strictEqual(s.enabledPlugins['sf-sdlc@nagarro-sf'], true);
+  assert.strictEqual(s.extraKnownMarketplaces['nagarro-sf'].source.source, 'github');
+  assert.strictEqual(s.hooks, undefined, 'the plugin supplies the hooks; the project must not run them twice');
+  const kitRule = path.join(dir, '.claude', 'rules', lib.KIT_RULE_FILE);
+  assert.match(fs.readFileSync(kitRule, 'utf8'), /\/sf-sdlc:setup/);
+  assert.match(fs.readFileSync(path.join(dir, '.claude', 'rules', 'salesforce-apex.md'), 'utf8'), /^---\n(.+\n)*paths:\n {2}- "\*\*\/\*\.cls"/);
+  const second = cli('init');
+  assert.ok(second.skipped.includes('.claude/settings.json (already up to date)'));
+  assert.ok(second.skipped.includes(`.claude/rules/${lib.KIT_RULE_FILE} (up to date)`));
+  fs.appendFileSync(kitRule, '\nTeam note.\n');
+  assert.ok(cli('init').skipped.includes(`.claude/rules/${lib.KIT_RULE_FILE} (locally modified; not overwritten)`));
+  // SessionStart stops printing the kit instructions once the project holds them as a rule.
+  const hook = (d) => spawnSync(process.execPath, [path.join(PLUGIN, 'hooks', 'run.js'), 'session-start'], { input: JSON.stringify({ cwd: d }), encoding: 'utf8', env: { PATH: path.dirname(process.execPath), CLAUDE_PROJECT_DIR: d } }).stdout;
+  assert.doesNotMatch(hook(dir), /# Salesforce project — AI delivery kit/);
+  const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-bare-'));
+  assert.match(hook(bare), /# Salesforce project — AI delivery kit/);
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.rmSync(bare, { recursive: true, force: true });
 });
 
 test('hosted MCP: routes, tool names, replies and config', () => {

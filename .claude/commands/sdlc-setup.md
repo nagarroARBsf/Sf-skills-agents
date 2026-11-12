@@ -1,13 +1,18 @@
 ---
-description: Set this project up for the Salesforce SDLC kit — tooling check, config, baseline and skill selection
-argument-hint: "[optional: developer | admin | ba, or what to redo: config | skills | baseline]"
+description: Set this project up for the Salesforce SDLC kit — environment, connections (Salesforce, Jira, GitHub), .env, config, code baseline and skills
+argument-hint: "[optional: developer | admin | ba, or what to redo: environment | connections | config | skills | baseline]"
 ---
 Use the **sdlc-project-scout-agent** subagent to set up this project.
 
 Scope from the user: $ARGUMENTS
 
-The agent follows the `sdlc-project-setup` skill: `node .claude/bin/sf-sdlc doctor`, `detect` and
-`init`; fills `.claude/sf-sdlc.json` from what it detects and asks only for what it cannot detect
-(production org aliases, Jira project key, promotion order, branch model); recommends skills with
-the evidence for each and installs them after the user confirms; records the existing-state baseline
-for projects that already have metadata. Stop after the report.
+The agent follows the `sdlc-project-setup` skill. It asks who is running setup (developer, admin, or
+business analyst / manager) and speaks to match. It runs `node .claude/bin/sf-sdlc doctor` and offers
+the install command for each missing tool; runs `init` (project settings with the plugin on at project
+scope, coding rules in `.claude/rules/`, `.gitignore`, and a git-ignored `.env` template); helps
+connect the Salesforce org (`sf org login web`), the hosted MCP servers, Jira/Confluence (browser
+sign-in, or API tokens the person fills into `.env` in their editor) and GitHub; explores the code with
+`detect`; fills `.claude/sf-sdlc.json` from what it detects and asks only for what it cannot detect;
+installs the core skills plus the ones the project needs after the user confirms; records the
+baseline for projects that already have metadata. It never asks for or reads a credential. Stop after
+the report.
