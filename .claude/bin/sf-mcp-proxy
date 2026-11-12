@@ -25,10 +25,8 @@ function replyError(line, code, message) {
 }
 
 // Answer the handshake with no tools. Used when the server cannot or should not run.
-function serveEmpty(reason) {
-  log(`${reason} — serving no tools`);
-  readline.createInterface({ input: process.stdin }).on('line', (line) => { if (line.trim()) inactiveReply(line, reason); });
-}
+const serveEmpty = (reason) => mcp.serveNoTools(`sf-${name}`, reason, log);
+const inactiveReply = (line, reason) => mcp.noToolsReply(line, `sf-${name}`, reason, send);
 
 async function forward(state, line) {
   const headers = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' };
@@ -123,16 +121,6 @@ async function main() {
     if (isInit) ready = run();
     else (ready || Promise.resolve()).then(run);
   });
-}
-
-function inactiveReply(line, reason) {
-  let m;
-  try { m = JSON.parse(line); } catch { return replyError(line, -32700, 'Parse error'); }
-  if (!m || m.id === undefined || m.id === null) return;
-  if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2025-06-18', capabilities: { tools: {} }, serverInfo: { name: `sf-${name} (inactive)`, version: '1.0.0' }, instructions: `Inactive: ${reason}` } });
-  else if (m.method === 'tools/list') send({ jsonrpc: '2.0', id: m.id, result: { tools: [] } });
-  else if (m.method === 'ping') send({ jsonrpc: '2.0', id: m.id, result: {} });
-  else send({ jsonrpc: '2.0', id: m.id, error: { code: -32601, message: `sf-${name} is inactive: ${reason}` } });
 }
 
 main().catch((e) => { log(String(e && e.message || e)); process.exit(1); });

@@ -16,10 +16,14 @@ How to install the Salesforce SDLC kit in a project, and every per-project file 
 | sfdx-git-delta — optional | Alternative delta manifests | `sf plugins install sfdx-git-delta` |
 | Lightning Flow Scanner — optional | Flow static analysis | `sf plugins install lightning-flow-scanner` |
 | mermaid-cli — optional | SVG diagrams for Jira and Confluence | `npm install --global @mermaid-js/mermaid-cli` |
+| uv or Docker — optional | Only for Jira/Confluence with an API token in `.env` (the `atlassian-token` server) | https://docs.astral.sh/uv/ |
 | Salesforce Hosted MCP Servers — optional | Grounding in existing org metadata; Metadata Experts skills | Turned on in the org: Setup → MCP Servers (see 4.5) |
 
 Business analysts and managers who only produce documents (BRD, stories, test design, release
-notes) need Claude Code and Node.js only.
+notes) need Claude Code, Node.js and git only. You do not have to install anything by hand first:
+`/sf-sdlc:setup` checks each tool, explains what it is for and offers the install command for your
+operating system (step-by-step instructions are in
+`.claude/skills/sdlc-project-setup/references/environment-setup.md`).
 
 ## 2. Install
 
@@ -38,6 +42,26 @@ and the CLI is `sf-sdlc` inside Claude Code's shell. Then, in your Salesforce pr
 ```text
 /sf-sdlc:setup
 ```
+
+Setup follows Claude Code's documented practice for team plugins: the plugin's commands, agents,
+hooks, CLI and MCP servers stay in the plugin, and setup writes the project's own files — the plugin
+turned on at **project scope** in `.claude/settings.json` (`enabledPlugins` and
+`extraKnownMarketplaces`), the coding rules in `.claude/rules/`, the configuration, the skills and a
+git-ignored `.env`. Commit them (not `.env`). A teammate who clones the project trusts the folder and
+installs the plugin once:
+
+```bash
+claude plugin install sf-sdlc@nagarro-sf --scope project
+```
+
+| Part | Where it lives | Committed |
+|---|---|---|
+| Commands, agents, hooks, `sf-sdlc` CLI, output styles, workflows, MCP server definitions, skill library | The plugin | n/a |
+| Plugin on for the team, kit permissions, `.env` read-deny | `.claude/settings.json` | Yes |
+| Coding rules and kit instructions (`sf-sdlc-kit.md`) | `.claude/rules/` | Yes |
+| Configuration; installed skills and lock file | `.claude/sf-sdlc.json`; `.claude/skills/`, `.claude/sf-sdlc.skills.lock.json` | Yes |
+| Personal overrides | `.claude/sf-sdlc.local.json`, `.claude/settings.local.json` | No |
+| Jira, Confluence, GitHub tokens | `.env` | **Never** |
 
 ### Option B — copy the `.claude/` folder
 
@@ -71,15 +95,21 @@ A private repository works the same way; each user needs git read access to it.
 
 `/sdlc-setup` (plugin: `/sf-sdlc:setup`) runs these, which you can also run yourself:
 
+It first asks who is running it (developer, admin, or business analyst / manager) and explains each
+step to match: commands for technical people, one plain-language step at a time for everyone else.
+
 | Step | Command | Result |
 |---|---|---|
-| Check tooling | `sf-sdlc doctor` | A list of what is missing, each with the fix |
-| Create config | `sf-sdlc init` | `.claude/sf-sdlc.json`, `.gitignore` entries, `code-analyzer.yml`, a pull request template |
-| Inspect the project | `sf-sdlc detect`, `sf-sdlc inventory` | What metadata exists today |
-| Choose skills | `sf-sdlc skills recommend` | Recommended skills with the evidence for each |
+| Check the environment | `sf-sdlc doctor` | What is missing, each with the install command; installed only after you say yes |
+| Create project files | `sf-sdlc init` | `.claude/sf-sdlc.json`, `.gitignore` entries, a `.env` template, `code-analyzer.yml`, a pull request template; plugin users also get `.claude/settings.json` (plugin on at project scope) and `.claude/rules/` |
+| Connect | `sf org login web`, Setup → MCP Servers, `/mcp` → `atlassian` or `.env` tokens, `gh auth login` | Salesforce org, hosted MCP servers, Jira/Confluence, GitHub (each optional) |
+| Check credentials | `sf-sdlc env status` | Which `.env` groups are filled — names only, never values |
+| Explore the code | `sf-sdlc detect`, `sf-sdlc inventory` | What metadata and conventions exist today |
+| Choose skills | `sf-sdlc skills recommend` | The core set plus recommended skills, with the evidence for each |
 | Install skills | `sf-sdlc skills install <names>` | Copies into `.claude/skills/`, recorded in a lock file |
 
-Setup never overwrites an existing file.
+Setup never overwrites a file you changed. Re-running `sf-sdlc init` after a plugin upgrade updates
+the rule files nobody edited and reports the ones that were edited.
 
 ## 4. Per-project configuration files
 
@@ -132,7 +162,10 @@ Same shape as the main file; any key here wins. Typical use: your own developmen
 
 ### 4.3 `.claude/settings.json` — Claude Code permissions and environment (commit it)
 
-Plugin installs get it from `sf-sdlc init`; the copy-in folder ships it (with the hooks).
+Plugin installs get it from `sf-sdlc init`, which merges the kit's permissions into an existing
+file (lists are merged, existing keys kept), adds a read-deny on `.env`, and turns the plugin on at
+project scope. It never adds a `hooks` block: the plugin runs the hooks. The copy-in folder ships the
+file with the hooks.
 
 | Block | What to change | Example |
 |---|---|---|
@@ -140,7 +173,7 @@ Plugin installs get it from `sf-sdlc init`; the copy-in folder ships it (with th
 | `permissions.ask` | Commands that always prompt, even when a hook cannot run | add `"Bash(sf project deploy validate*)"` |
 | `permissions.deny` | Credential files and commands that print tokens | add `"Read(./config/*.key)"` |
 | `env` | Environment for every command | `"SF_DISABLE_TELEMETRY": "true"` |
-| `enabledPlugins`, `extraKnownMarketplaces` | Add these so teammates who clone the project get the plugin | see section 2 |
+| `enabledPlugins`, `extraKnownMarketplaces` | Written by `init` so teammates who clone the project get the plugin | see section 2 |
 
 ### 4.4 `code-analyzer.yml` — Salesforce Code Analyzer rules (commit it)
 
@@ -189,9 +222,17 @@ If you connect a hosted server without the proxy (another tool, or `claude mcp a
 with an External Client App using PKCE and the `mcp_api` and `refresh_token` scopes), keep the
 consumer secret out of files and use your own server name so it does not clash with `sf-*`.
 
-**Other MCP servers.** The plugin already connects Atlassian Cloud (sign in once with `/mcp`). Add
-entries like these only for Jira Server/Data Center or the GitHub MCP server. Keep tokens in
-environment variables, never in the file.
+**Jira and Confluence.** Two servers are registered; use one.
+
+- `atlassian` (plugin only): Atlassian's remote server. Sign in once through `/mcp` in the browser;
+  nothing is stored in the project. Recommended.
+- `atlassian-token` (plugin and copy-in): `bin/sf-atlassian-mcp` starts the community
+  `mcp-atlassian` server (with `uvx`, or Docker) using the `JIRA_*` and `CONFLUENCE_*` values in
+  `.env` (see 4.6). While those are empty it shows as an empty server. Set
+  `ATLASSIAN_MCP_PACKAGE=mcp-atlassian==<version>` in `.env` to pin the server version.
+
+**Other MCP servers.** Add entries like these only for Jira Server/Data Center or the GitHub MCP
+server. Keep tokens in environment variables, never in the file.
 
 ```json
 {
@@ -211,15 +252,31 @@ environment variables, never in the file.
 }
 ```
 
-The copy-in folder has no bundled Atlassian server; add the Atlassian entry
-(`"type": "http", "url": "https://mcp.atlassian.com/v2/mcp"`) here if you want Jira creation.
+The copy-in folder has no bundled Atlassian remote server; use `atlassian-token`, or add the
+Atlassian entry (`"type": "http", "url": "https://mcp.atlassian.com/v2/mcp"`) here.
 
-### 4.6 Other files
+### 4.6 `.env` — your tokens (never commit it)
+
+Created by `sf-sdlc init` (or `sf-sdlc env init`) from a template, added to `.gitignore`, and denied
+to Claude's Read tool. Fill it **in your editor**; never paste a token into the chat. Salesforce
+needs nothing here: the `sf` CLI keeps its own login.
+
+| Keys | Used by | Where to get it |
+|---|---|---|
+| `JIRA_URL`, `JIRA_USERNAME`, `JIRA_API_TOKEN` | the `atlassian-token` MCP server | https://id.atlassian.com/manage-profile/security/api-tokens; URL `https://<site>.atlassian.net`, username = your Atlassian e-mail |
+| `CONFLUENCE_URL`, `CONFLUENCE_USERNAME`, `CONFLUENCE_API_TOKEN` | the `atlassian-token` MCP server | Same token; URL `https://<site>.atlassian.net/wiki` |
+| `READ_ONLY_MODE`, `ATLASSIAN_MCP_PACKAGE`, `ATLASSIAN_MCP_IMAGE` | optional, the same server | `true` disables create/update tools; pin the version or image |
+| `GITHUB_TOKEN` | `sf-sdlc env gh-login`, which signs the `gh` CLI in once | A fine-grained token for this repository (Contents and Pull requests: read and write). Or skip it and run `gh auth login` |
+
+`sf-sdlc env status` shows which groups are configured, partial or empty — never the values. Restart
+Claude Code after editing `.env` so MCP servers read it.
+
+### 4.7 Other files
 
 | File | Committed | What to change |
 |---|---|---|
 | `.claude/skills/` and `.claude/sf-sdlc.skills.lock.json` | Yes | Managed by `sf-sdlc skills`. Edit a skill freely; `sync` will not overwrite it |
-| `.claude/CLAUDE.md`, `.claude/rules/*.md` (copy-in folder only) | Yes | Project instructions and file-scoped coding rules; add your own conventions |
+| `.claude/rules/*.md` | Yes | File-scoped coding rules, and (plugin users) `sf-sdlc-kit.md`, the kit instructions. Written by `init` for plugin users; edit freely — an edited file is never overwritten. Copy-in folder: also `.claude/CLAUDE.md` |
 | `specs/constitution.md` | Yes | Created by `/sdd-constitution`: your engineering principles, trigger framework, logging utility |
 | `sfdx-project.json` | Yes | Read for API version and package directories; nothing kit-specific to add |
 | `.github/pull_request_template.md` | Yes | Created by `init`; adapt the checklist |
@@ -227,7 +284,7 @@ The copy-in folder has no bundled Atlassian server; add the Atlassian entry
 | `docs/sdlc/00-grounding/ontology.yaml`, `feature-map.md` | Yes | Drafted by setup: business terms mapped to Salesforce objects, and the components behind each feature. Add a term whenever an agent misreads one |
 | `.sf-sdlc/` | No | Local state: audit log, tracked jobs, test-run results, caches |
 
-### 4.7 Per-user plugin options
+### 4.8 Per-user plugin options
 
 Set with `/plugin configure sf-sdlc@nagarro-sf`.
 
@@ -248,6 +305,7 @@ sf-sdlc config validate
 sf-sdlc org classify      # confirm your production org reports "production"
 sf-sdlc analyze --changed # the official Code Analyzer runs (Recommended rules plus your custom rules)
 sf-sdlc mcp status        # each enabled hosted MCP server: connected with its tools, or why not
+sf-sdlc env status        # which .env credential groups are filled (names only)
 ```
 
 (Copy-in folder: prefix each with `node .claude/bin/`.)

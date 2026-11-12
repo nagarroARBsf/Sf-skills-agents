@@ -17,6 +17,7 @@
       "Bash(node .claude/bin/sf-sdlc check*)",
       "Bash(node .claude/bin/sf-sdlc audit*)",
       "Bash(node .claude/bin/sf-sdlc mcp*)",
+      "Bash(node .claude/bin/sf-sdlc env status*)",
       "Bash(sf org list*)",
       "Bash(sf config get*)",
       "Bash(sf code-analyzer *)",
@@ -52,12 +53,14 @@
       "Read(./.sf/**)",
       "Read(./.sfdx/**)",
       "Read(./**/server.key)",
+      "Read(./.env)",
+      "Read(./**/.env)",
       "Bash(sf org display*--verbose*)",
       "Bash(sf org auth*)",
       "Bash(sf api request rest /ide/auth*)"
     ]
   },
-  "enabledMcpjsonServers": ["sf-metadata-experts", "sf-metadata-grounding", "sf-headless-360", "sf-data360"],
+  "enabledMcpjsonServers": ["sf-metadata-experts", "sf-metadata-grounding", "sf-headless-360", "sf-data360", "atlassian-token"],
   "hooks": {
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" session-start", "timeout": 60 } ] }

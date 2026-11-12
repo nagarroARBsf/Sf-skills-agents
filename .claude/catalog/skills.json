@@ -40,7 +40,7 @@
       "name": "sdlc-project-setup",
       "location": "skills",
       "source": "nagarro",
-      "description": "Set a Salesforce project up for the SDLC kit: check tooling with doctor, detect what the project and org contain, create and fill the project configuration (.claude/sf-sdlc.json) from detection first and questions only for what cannot be detected (production org aliases, Jira project, promotion orde"
+      "description": "Set a Salesforce project up for the SDLC kit, for technical and non-technical users: check the environment and offer installs (Node.js, git, Salesforce CLI, Code Analyzer, Java, gh, uv), connect the Salesforce org, hosted MCP servers, Jira/Confluence (browser sign-in or API token in .env) and GitHub"
     },
     {
       "name": "sdlc-qa-test-case-generate",

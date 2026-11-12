@@ -5,7 +5,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const lib = require('../hooks/lib');
+const envfile = require('../hooks/envfile');
 const ops = require('../hooks/ops');
 const checks = require('../hooks/checks');
 const mcp = require('../hooks/mcp');
@@ -60,7 +62,21 @@ function doctor() {
   add('sfdx-git-delta (delta manifests)', Boolean(sgd), sgd || 'not installed — sf-sdlc delta uses its built-in git mapping', 'sf plugins install sfdx-git-delta', false);
   const lfs = plug(/^lightning-flow-scanner\s+\S+/m);
   add('Lightning Flow Scanner', Boolean(lfs), lfs || 'not installed', 'sf plugins install lightning-flow-scanner', false);
-  add('gh CLI (pull requests, releases)', lib.has('gh'), '', 'Install GitHub CLI and run `gh auth login`.', false);
+  const gh = lib.has('gh');
+  add('gh CLI (pull requests, releases)', gh, '', 'Install GitHub CLI (https://cli.github.com) and run `gh auth login`.', false);
+  if (gh) add('gh signed in', lib.run('gh', ['auth', 'status'], { timeout: 30000 }).status === 0, '', 'Run `gh auth login` (browser), or put GITHUB_TOKEN in .env and run `sf-sdlc env gh-login`.', false);
+  const est = envfile.status(root);
+  const groups = Object.entries(est.groups).map(([n, g]) => `${n}: ${g.state}`).join(', ');
+  add('.env credentials (Jira, Confluence, GitHub tokens)', est.exists && est.gitignored, est.exists ? `${est.gitignored ? 'git-ignored' : 'NOT git-ignored'}; ${groups}` : 'no .env (only needed for token-based Jira/Confluence or GitHub)', est.exists ? 'Run `sf-sdlc init` to git-ignore .env.' : 'Run `sf-sdlc env init`, then fill the values in your editor.', false);
+  const tokenJira = ['jira', 'confluence'].some((g) => est.groups[g].state === 'configured');
+  if (tokenJira) add('uv or Docker (runs the token-based Jira/Confluence MCP server)', lib.has('uvx') || lib.has('docker'), lib.has('uvx') ? 'uvx' : lib.has('docker') ? 'docker' : 'neither found', 'Install uv: https://docs.astral.sh/uv/getting-started/installation/ (or Docker), then restart Claude Code.', false);
+  if (lib.IS_PLUGIN) {
+    const ps = lib.readJson(path.join(root, '.claude', 'settings.json')) || {};
+    const on = Object.entries(ps.enabledPlugins || {}).some(([k, v]) => k.startsWith('sf-sdlc@') && v === true);
+    add('sf-sdlc plugin enabled for this project (project scope)', on, on ? 'teammates get it from .claude/settings.json' : 'enabled for you only', 'Run `sf-sdlc init` (writes enabledPlugins to .claude/settings.json), then commit it.', false);
+    const rulesDir = path.join(root, '.claude', 'rules');
+    add('kit rules in .claude/rules/', fs.existsSync(path.join(rulesDir, lib.KIT_RULE_FILE)), '', 'Run `sf-sdlc init` to install the kit rules as project files.', false);
+  }
   add('mermaid-cli (SVG diagrams for Jira/Confluence)', lib.has('mmdc'), '', 'npm install --global @mermaid-js/mermaid-cli', false);
   const proj = lib.sfdxProject(root);
   add('sfdx-project.json', Boolean(proj), proj ? `packages: ${lib.packageDirs(root, cfg).join(', ')}; API ${lib.apiVersion(root, cfg) || 'unset'}` : 'not a Salesforce DX project', 'Create the project with `sf project generate`, or run from the project root.', false);
@@ -111,7 +127,7 @@ function init() {
 
   const gi = path.join(root, '.gitignore');
   const cur = fs.existsSync(gi) ? fs.readFileSync(gi, 'utf8') : '';
-  const want = ['.sf/', '.sfdx/', '.sf-sdlc/', '.claude/sf-sdlc.local.json', '.claude/settings.local.json'].filter((l) => !cur.split('\n').map((s) => s.trim()).includes(l));
+  const want = ['.sf/', '.sfdx/', '.sf-sdlc/', '.env', '.claude/sf-sdlc.local.json', '.claude/settings.local.json'].filter((l) => !cur.split('\n').map((s) => s.trim()).includes(l));
   if (want.length) { fs.writeFileSync(gi, cur + (cur && !cur.endsWith('\n') ? '\n' : '') + '# sf-sdlc: CLI auth, local state and personal overrides\n' + want.join('\n') + '\n'); done.push('.gitignore (+' + want.join(', ') + ')'); }
 
   const tpl = path.join(lib.KIT_ROOT, 'templates');
@@ -129,9 +145,117 @@ function init() {
   }
   if (!lib.IS_PLUGIN) mergeMcpServers(done, skipped);
   copyIfMissing('pull_request_template.md', '.github/pull_request_template.md');
-  if (lib.IS_PLUGIN) copyIfMissing('project-settings.json', '.claude/settings.json');
-  out({ ok: true, created: done, skipped, next: 'Edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run `sf-sdlc doctor` and `sf-sdlc skills recommend`.' },
-    () => `${done.map((d) => 'created  ' + d).concat(skipped.map((s) => 'kept     ' + s)).join('\n')}\n\nNext: edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run \`sf-sdlc doctor\` and \`sf-sdlc skills recommend\`.`);
+  if (lib.IS_PLUGIN) {
+    mergeProjectSettings(done, skipped);
+    const files = syncProjectFiles();
+    for (const f of files) {
+      if (f.result === 'created') done.push(f.path);
+      else (f.result === 'updated' ? done : skipped).push(`${f.path} (${f.result})`);
+    }
+  }
+  const env = envfile.ensure(root);
+  if (env.result === 'kept') skipped.push('.env (exists; values untouched)');
+  else done.push(`.env (${env.result}${env.added ? ': ' + env.added.join(', ') : ''}; fill the values in your editor)`);
+  out({ ok: true, created: done, skipped, next: 'Fill .env in your editor if you use Jira/Confluence/GitHub tokens, edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run `sf-sdlc doctor` and `sf-sdlc skills recommend`. Restart Claude Code so new settings, rules and MCP servers load.' },
+    () => `${done.map((d) => 'created  ' + d).concat(skipped.map((s) => 'kept     ' + s)).join('\n')}\n\nNext: fill .env in your editor if you use Jira/Confluence/GitHub tokens, edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run \`sf-sdlc doctor\` and \`sf-sdlc skills recommend\`. Restart Claude Code so new settings, rules and MCP servers load.`);
+}
+
+// Plugin users: the project's shared .claude/settings.json gets the kit's permissions and turns the
+// plugin on at project scope (the documented way to give a whole team a plugin). Lists are merged,
+// existing keys are never changed.
+function mergeProjectSettings(done, skipped) {
+  const tpl = lib.readJson(path.join(lib.KIT_ROOT, 'templates', 'project-settings.json'));
+  if (!tpl) return;
+  const file = path.join(root, '.claude', 'settings.json');
+  const exists = fs.existsSync(file);
+  const cur = exists ? lib.readJson(file) : {};
+  if (!cur) { skipped.push('.claude/settings.json (not valid JSON; merge templates/project-settings.json by hand)'); return; }
+  const before = JSON.stringify(cur);
+  cur.env = { ...(tpl.env || {}), ...(cur.env || {}) };
+  cur.permissions = cur.permissions || {};
+  for (const k of ['allow', 'ask', 'deny']) {
+    const list = cur.permissions[k] || [];
+    for (const r of (tpl.permissions && tpl.permissions[k]) || []) if (!list.includes(r)) list.push(r);
+    if (list.length) cur.permissions[k] = list;
+  }
+  for (const k of Object.keys(tpl)) if (!['env', 'permissions'].includes(k) && cur[k] === undefined) cur[k] = tpl[k];
+  const manifest = lib.readJson(path.join(lib.KIT_ROOT, '.claude-plugin', 'plugin.json')) || {};
+  const market = manifest.metadata && manifest.metadata.marketplace;
+  if (market && market.name) {
+    const id = `${manifest.name}@${market.name}`;
+    cur.enabledPlugins = cur.enabledPlugins || {};
+    if (cur.enabledPlugins[id] === undefined) cur.enabledPlugins[id] = true;
+    if (market.source) {
+      cur.extraKnownMarketplaces = cur.extraKnownMarketplaces || {};
+      if (!cur.extraKnownMarketplaces[market.name]) cur.extraKnownMarketplaces[market.name] = { source: market.source };
+    }
+  }
+  if (JSON.stringify(cur) === before) { skipped.push('.claude/settings.json (already up to date)'); return; }
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(cur, null, 2) + '\n');
+  done.push(`.claude/settings.json (${exists ? 'merged' : 'created'}: kit permissions, .env read-deny, plugin enabled at project scope)`);
+}
+
+// Plugin users: the kit's rules become project files in .claude/rules/ — Claude Code loads them by
+// path (plugins cannot ship rules or CLAUDE.md). Tracked in the lock file by content hash, so a later
+// init updates untouched files and never overwrites a file the team edited or wrote itself.
+function syncProjectFiles() {
+  const src = path.join(lib.KIT_ROOT, 'templates', 'project');
+  const res = [];
+  if (!fs.existsSync(src)) return res;
+  const lock = readLock();
+  lock.files = lock.files || {};
+  const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
+  const walkFiles = (d, rel = '') => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walkFiles(path.join(d, e.name), path.join(rel, e.name)) : [path.join(rel, e.name)]);
+  for (const rel of walkFiles(src)) {
+    const key = rel.split(path.sep).join('/');
+    const dest = path.join(root, '.claude', rel);
+    const shown = `.claude/${key}`;
+    const kit = fs.readFileSync(path.join(src, rel), 'utf8');
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, kit);
+      lock.files[key] = sha(kit);
+      res.push({ path: shown, result: 'created' });
+      continue;
+    }
+    const cur = fs.readFileSync(dest, 'utf8');
+    if (!lock.files[key]) { res.push({ path: shown, result: cur === kit ? 'exists, identical' : 'exists, not managed by sf-sdlc' }); continue; }
+    if (sha(cur) !== lock.files[key]) { res.push({ path: shown, result: 'locally modified; not overwritten' }); continue; }
+    if (cur === kit) { res.push({ path: shown, result: 'up to date' }); continue; }
+    fs.writeFileSync(dest, kit);
+    lock.files[key] = sha(kit);
+    res.push({ path: shown, result: 'updated' });
+  }
+  writeLock(lock);
+  return res;
+}
+
+// ------------------------------------------------------------------ env
+
+function envCmd() {
+  const sub = pos[1] || 'status';
+  if (sub === 'init') {
+    const r = envfile.ensure(root);
+    return out(r, `.env ${r.result}${r.added ? ': ' + r.added.join(', ') : ''}. Fill the values in your editor, never in the chat.`);
+  }
+  if (sub === 'status') {
+    const st = envfile.status(root);
+    return out(st, () => `.env: ${st.exists ? 'present' : 'missing (run `sf-sdlc env init`)'}${st.exists && !st.gitignored ? ' — NOT git-ignored: run `sf-sdlc init`' : ''}\n` +
+      Object.values(st.groups).map((g) => `${g.state === 'configured' ? '✔' : g.state === 'partial' ? '!' : '•'} ${g.label}: ${g.state}` +
+        (g.state === 'partial' ? ` (missing: ${Object.entries(g.keys).filter(([, v]) => !v).map(([k]) => k).join(', ')})` : '')).join('\n') +
+      '\n\nValues are never shown. Restart Claude Code after changing .env so MCP servers pick it up.');
+  }
+  if (sub === 'gh-login') {
+    if (!lib.has('gh')) fail('the gh CLI is not installed. Install it from https://cli.github.com, then run this again (or run `gh auth login`).');
+    const token = (envfile.read(root) || {}).GITHUB_TOKEN;
+    if (!token) fail('GITHUB_TOKEN is empty in .env. Fill it in your editor, or run `gh auth login` to sign in through the browser.');
+    const r = lib.run('gh', ['auth', 'login', '--with-token'], { cwd: root, input: token + '\n', timeout: 60000 });
+    if (r.status !== 0) fail(`gh auth login failed: ${(r.stderr || '').replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '***').trim().slice(0, 300)}`);
+    const s = lib.run('gh', ['auth', 'status'], { cwd: root, timeout: 30000 });
+    return out({ ok: true }, `gh is signed in.${s.status === 0 ? '' : ' (gh auth status did not confirm; run it yourself to check.)'} You may now delete GITHUB_TOKEN from .env; gh keeps its own login.`);
+  }
+  fail('usage: sf-sdlc env status|init|gh-login');
 }
 
 // The copy-in folder registers the hosted MCP servers in the project's .mcp.json (the plugin ships
@@ -236,7 +360,8 @@ function recommend() {
   for (const rule of rules.rules) {
     const w = rule.when || {};
     let evidence = null;
-    if (profile) { if ((w.profiles || []).includes(profile)) evidence = `profile "${profile}"`; }
+    if (w.core) evidence = 'core set (every project)';
+    else if (profile) { if ((w.profiles || []).includes(profile)) evidence = `profile "${profile}"`; }
     else if (w.always && d.isSfdxProject) evidence = 'Salesforce DX project';
     else if (w.greenfield && d.greenfield) evidence = 'empty project (greenfield starter set)';
     else if (w.folders && w.folders.some((f) => d.folders.includes(f))) evidence = `metadata folder(s): ${w.folders.filter((f) => d.folders.includes(f)).join(', ')}`;
@@ -555,7 +680,9 @@ function audit() {
 const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
 
   doctor                       check tools, plugins, config and org setup
-  init                         create .claude/sf-sdlc.json, .gitignore entries, code-analyzer.yml
+  init                         create .claude/sf-sdlc.json, .gitignore entries, code-analyzer.yml, .env template;
+                               plugin users also get project settings (plugin on at project scope) and .claude/rules/
+  env status|init|gh-login     .env credentials: which are set (never values), create the template, sign gh in
   config show|validate         show the merged configuration, or validate it
   detect                       what this project contains (metadata folders, counts, tooling)
   inventory                    existing-state inventory of the source tree, by metadata type
@@ -615,6 +742,7 @@ function main() {
     case 'diagram': return diagram();
     case 'audit': return audit();
     case 'mcp': return mcpCmd().catch((e) => fail(String(e && e.message || e)));
+    case 'env': return envCmd();
     default: process.stdout.write(HELP); process.exit(pos[0] && pos[0] !== 'help' ? 1 : 0);
   }
 }

@@ -20,6 +20,8 @@ What is generated:
       hooks/                <- .claude/hooks/*.js + hooks.json built from .claude/settings.json
       bin/, catalog/, output-styles/, workflows/           (copied)
       templates/            <- .claude/templates/ + project-settings.json (settings.json without hooks)
+                               + project/rules/ (CLAUDE.md as an always-on rule, and the rules), which
+                               `sf-sdlc init` copies into a plugin user's .claude/rules/
 
 Hand-written plugin files are left alone: .claude-plugin/plugin.json, .mcp.json, monitors/, themes/,
 README.md, NOTICE. Standard library only.
@@ -301,6 +303,42 @@ def gen_copies(out: Path, entries: list[dict]) -> None:
     (out / "templates" / "project-settings.json").write_text(text + "\n", encoding="utf-8")
 
 
+PROJECT_NOTE = (
+    "<!-- Installed by `sf-sdlc init` from the sf-sdlc plugin (generated from .claude/{src}). "
+    "Re-running init updates this file while it is unchanged; once you edit it, it is yours and is kept. -->"
+)
+KIT_RULE_FILE = "sf-sdlc-kit.md"  # keep in step with KIT_RULE_FILE in .claude/hooks/lib.js
+# Kit paths that exist only inside the plugin: a project file cannot reach them (no ${CLAUDE_PLUGIN_ROOT}).
+PLUGIN_ONLY_PATHS = (".claude/skills/sdlc-", ".claude/skill-library/", ".claude/catalog/", ".claude/templates/")
+
+
+def rewrite_project(body: str) -> str:
+    """For files copied into a project: CLI and command names only; .claude/rules/ stays where it is."""
+    body = body.replace("node .claude/bin/sf-sdlc", "sf-sdlc").replace("`.claude/bin/sf-sdlc`", "`sf-sdlc`")
+    return _CMD_RE.sub(lambda m: f"/{PLUGIN_NAME}:{plugin_command(m.group(1))}", body)
+
+
+def gen_project_files(out: Path, warnings: list[str]) -> None:
+    """templates/project/rules/: what `sf-sdlc init` copies into a plugin user's .claude/rules/.
+
+    Plugins cannot ship CLAUDE.md or path-scoped rules, so the kit instructions become an always-on
+    project rule (no paths:) and every rule keeps its paths: frontmatter.
+    """
+    dest = out / "templates" / "project" / "rules"
+    claude_md = (SRC / "CLAUDE.md").read_text(encoding="utf-8")
+    sources = [("CLAUDE.md", claude_md)] + [(f"rules/{p.name}", p.read_text(encoding="utf-8")) for p in sorted((SRC / "rules").glob("*.md"))]
+    for name, text in sources:
+        for p in PLUGIN_ONLY_PATHS:
+            if p in text:
+                warnings.append(f".claude/{name} names {p}, which a project rule cannot reach; reword it")
+    parts = [PROJECT_NOTE.format(src="CLAUDE.md"), "", rewrite_project(claude_md).rstrip(), ""]
+    sp.write(dest / KIT_RULE_FILE, "\n".join(parts))
+    for src, meta, body in rules():
+        text = src.read_text(encoding="utf-8")
+        fm = text[: len(text) - len(body)]
+        sp.write(dest / src.name, fm + PROJECT_NOTE.format(src=f"rules/{src.name}") + "\n" + rewrite_project(body))
+
+
 # --------------------------------------------------------------------------- driver
 
 def build(out: Path) -> tuple[list[str], list[dict]]:
@@ -313,6 +351,7 @@ def build(out: Path) -> tuple[list[str], list[dict]]:
     gen_commands(out)
     gen_hooks(out)
     gen_copies(out, entries)
+    gen_project_files(out, warnings)
     return warnings, entries
 
 

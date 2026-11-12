@@ -139,8 +139,25 @@ async function probe(name, root, cfg, org) {
   return result;
 }
 
+// Reply to one JSON-RPC line as a server with no tools: Claude Code then shows an empty, named server
+// with the reason, instead of a startup error. Used by bin/sf-mcp-proxy and bin/sf-atlassian-mcp.
+function noToolsReply(line, label, reason, send = (m) => process.stdout.write(JSON.stringify(m) + '\n')) {
+  let m;
+  try { m = JSON.parse(line); } catch { send({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }); return; }
+  if (!m || m.id === undefined || m.id === null) return;
+  if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: (m.params && m.params.protocolVersion) || '2025-06-18', capabilities: { tools: {} }, serverInfo: { name: `${label} (inactive)`, version: '1.0.0' }, instructions: `Inactive: ${reason}` } });
+  else if (m.method === 'tools/list') send({ jsonrpc: '2.0', id: m.id, result: { tools: [] } });
+  else if (m.method === 'ping') send({ jsonrpc: '2.0', id: m.id, result: {} });
+  else send({ jsonrpc: '2.0', id: m.id, error: { code: -32601, message: `${label} is inactive: ${reason}` } });
+}
+
+function serveNoTools(label, reason, log) {
+  log(`${reason} — serving no tools`);
+  require('readline').createInterface({ input: process.stdin }).on('line', (line) => { if (line.trim()) noToolsReply(line, label, reason); });
+}
+
 module.exports = {
   MCP_API_VERSION, HOSTED_SERVERS, WRITE_TOOLS,
   serverUrl, enabledServers, mcpOrg, parseRpcBody, classifyStatus, parseToolName,
-  mintJwt, rpc, probe, recordHealth, readHealth,
+  mintJwt, rpc, probe, recordHealth, readHealth, noToolsReply, serveNoTools,
 };

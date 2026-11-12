@@ -261,7 +261,9 @@ function bashFailure(input, root, cfg) {
 function sessionStart(input, root, cfg, mode) {
   process.env.SF_SDLC_ORGLIST_TIMEOUT = '20000'; // never hold up session start on a slow CLI
   const out = [];
-  if (lib.IS_PLUGIN) {
+  // Plugin users whose project already holds the kit rules (sf-sdlc init) get them from .claude/rules/;
+  // printing them again would duplicate the context.
+  if (lib.IS_PLUGIN && !fs.existsSync(path.join(root, '.claude', 'rules', lib.KIT_RULE_FILE))) {
     const file = path.join(lib.KIT_ROOT, 'context', 'project-instructions.md');
     if (fs.existsSync(file)) {
       out.push(fs.readFileSync(file, 'utf8').replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, lib.KIT_ROOT).replace(/^<!-- Generated from .*\n/m, '').trim());

@@ -17,6 +17,7 @@
       "Bash(sf-sdlc check*)",
       "Bash(sf-sdlc audit*)",
       "Bash(sf-sdlc mcp*)",
+      "Bash(sf-sdlc env status*)",
       "Bash(sf org list*)",
       "Bash(sf config get*)",
       "Bash(sf code-analyzer *)",
@@ -52,6 +53,8 @@
       "Read(./.sf/**)",
       "Read(./.sfdx/**)",
       "Read(./**/server.key)",
+      "Read(./.env)",
+      "Read(./**/.env)",
       "Bash(sf org display*--verbose*)",
       "Bash(sf org auth*)",
       "Bash(sf api request rest /ide/auth*)"
@@ -61,6 +64,7 @@
     "sf-metadata-experts",
     "sf-metadata-grounding",
     "sf-headless-360",
-    "sf-data360"
+    "sf-data360",
+    "atlassian-token"
   ]
 }

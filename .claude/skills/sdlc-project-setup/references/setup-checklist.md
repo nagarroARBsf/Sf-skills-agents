@@ -10,17 +10,34 @@ on a requirements-only project) are marked "n/a" with the reason.
   - Salesforce Code Analyzer plugin → `/sdlc-analyze`, the commit gate and review tool results
   - sfdx-git-delta → `sf sgd source delta`; the kit's own `delta` still works
   - Lightning Flow Scanner → flow rules in analysis
-  - `gh` → pull requests and GitHub releases
+  - `gh` (and `gh` signed in) → pull requests and GitHub releases
+  - uv or Docker → the token-based Jira/Confluence server (only when `.env` holds a Jira token)
   - mermaid-cli → SVG rendering of diagrams for Jira and Confluence
   - default target org → commands that rely on it; roles in the config still work
-- [ ] Nothing was installed without the user asking.
+- [ ] Nothing was installed without the user saying yes.
+- [ ] A non-technical person was told, in plain words, what each skipped tool would have enabled.
 
 ## Project files (`node .claude/bin/sf-sdlc init --json`)
 - [ ] `.claude/sf-sdlc.json` exists and is valid JSON.
-- [ ] `.gitignore` covers `.sf/`, `.sfdx/`, `.sf-sdlc/`, `.claude/sf-sdlc.local.json`,
+- [ ] `.gitignore` covers `.sf/`, `.sfdx/`, `.sf-sdlc/`, `.env`, `.claude/sf-sdlc.local.json`,
       `.claude/settings.local.json`.
+- [ ] `.env` exists (template), is git-ignored, and `.claude/settings.json` denies `Read(./.env)`.
+- [ ] Plugin users: `.claude/settings.json` turns the plugin on at project scope
+      (`enabledPlugins`, `extraKnownMarketplaces`) and has no `hooks` block (the plugin runs them);
+      `.claude/rules/` holds `sf-sdlc-kit.md` and the coding rules; edited rule files were kept.
 - [ ] `code-analyzer.yml` exists for a Salesforce DX project (created, or the project's own kept).
 - [ ] No existing file was overwritten.
+
+## Connections ([environment-setup.md](environment-setup.md))
+- [ ] Salesforce: every org the project uses is signed in (`sf org list`) and classified; production
+      aliases came from a person.
+- [ ] Hosted MCP: `node .claude/bin/sf-sdlc mcp status` result reported; servers that are off are
+      reported with the Setup step that turns them on.
+- [ ] Jira/Confluence: Option A (browser sign-in) or Option B (`.env` token) chosen, or skipped with
+      the reason; when connected, one read-only call succeeded.
+- [ ] GitHub: `gh auth status` passes, or skipped with the reason.
+- [ ] `node .claude/bin/sf-sdlc env status` shows each group configured, partial (missing keys named)
+      or empty. No credential was asked for, read, printed or written by Claude.
 
 ## Configuration (`node .claude/bin/sf-sdlc config validate --json`)
 - [ ] No errors. Every warning is reported with the key to change.
@@ -56,7 +73,8 @@ on a requirements-only project) are marked "n/a" with the reason.
 - [ ] Every installed technical skill has a stated reason: detection evidence, an org-only
       feature, or planned work.
 - [ ] The user confirmed the list before installation.
-- [ ] Business-analyst or manager projects have no technical skills installed.
+- [ ] The core set is installed (or its absence explained); business-analyst or manager projects
+      have nothing beyond it.
 - [ ] The skill listing budget check in `doctor` passes; otherwise removals were proposed.
 - [ ] No skill is in state `modified` because of this setup; pre-existing modified skills were
       reported and left alone.
@@ -74,6 +92,9 @@ on a requirements-only project) are marked "n/a" with the reason.
 ## Hand-over
 - [ ] The report lists: detected facts, configuration with the source of each value, unset keys
       with owners, skills and reasons, failed checks with fixes, baseline, next step.
-- [ ] The user was told what to commit: `.claude/sf-sdlc.json`, `.claude/skills/`,
-      `.claude/sf-sdlc.skills.lock.json`, `.gitignore`, `code-analyzer.yml`, the baseline.
+- [ ] The user was told what to commit: `.claude/settings.json`, `.claude/rules/`,
+      `.claude/sf-sdlc.json`, `.claude/skills/`, `.claude/sf-sdlc.skills.lock.json`, `.gitignore`,
+      `code-analyzer.yml`, the baseline — and never `.env`.
+- [ ] The user was told to restart Claude Code, and how teammates get the plugin
+      (`claude plugin install sf-sdlc@nagarro-sf --scope project`).
 - [ ] Nothing was committed, pushed, deployed or retrieved by the setup itself.

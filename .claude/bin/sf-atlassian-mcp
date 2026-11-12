@@ -1,0 +1,54 @@
+#!/usr/bin/env node
+'use strict';
+// sf-atlassian-mcp — starts the community Jira/Confluence MCP server (sooperset/mcp-atlassian) with the
+// API tokens from the project's .env, for teams that use tokens instead of the browser sign-in of the
+// Atlassian remote MCP server. Node.js standard library only (Node 18+).
+//
+//   node .claude/bin/sf-atlassian-mcp
+//
+// Runs `uvx mcp-atlassian` when uv is installed, otherwise the Docker image. When .env has no Jira or
+// Confluence token, or neither runner exists, it still answers the MCP handshake with no tools and
+// the reason, so Claude Code shows an empty server instead of a startup error.
+// The tokens go to the child process environment only; they are never printed or logged.
+//
+// Optional .env keys: ATLASSIAN_MCP_PACKAGE (uvx package spec, default "mcp-atlassian"; pin a version
+// with "mcp-atlassian==<version>"), ATLASSIAN_MCP_IMAGE (Docker image, default
+// "ghcr.io/sooperset/mcp-atlassian:latest"), READ_ONLY_MODE=true (no create/update tools).
+
+const { spawn } = require('child_process');
+const lib = require('../hooks/lib');
+const mcp = require('../hooks/mcp');
+const envfile = require('../hooks/envfile');
+
+const LABEL = 'atlassian-token';
+const log = (m) => process.stderr.write(`[sf-atlassian-mcp] ${m}\n`);
+const KEYS = ['JIRA_URL', 'JIRA_USERNAME', 'JIRA_API_TOKEN', 'CONFLUENCE_URL', 'CONFLUENCE_USERNAME', 'CONFLUENCE_API_TOKEN', 'READ_ONLY_MODE'];
+
+function plan(root, has = lib.has) {
+  const st = envfile.status(root);
+  const on = ['jira', 'confluence'].filter((g) => st.groups[g].state === 'configured');
+  if (!st.exists) return { reason: 'no .env in the project (run `sf-sdlc env init`, fill the Jira values, restart Claude Code)' };
+  if (!on.length) return { reason: 'no complete Jira or Confluence token in .env (URL, username and API token); the "atlassian" server with browser sign-in still works' };
+  const vals = envfile.read(root) || {};
+  if (has('uvx')) return { on, cmd: 'uvx', args: [vals.ATLASSIAN_MCP_PACKAGE || 'mcp-atlassian'] };
+  if (has('docker')) {
+    const pass = KEYS.filter((k) => vals[k]).flatMap((k) => ['-e', k]);
+    return { on, cmd: 'docker', args: ['run', '-i', '--rm', ...pass, vals.ATLASSIAN_MCP_IMAGE || 'ghcr.io/sooperset/mcp-atlassian:latest'] };
+  }
+  return { reason: 'neither uv (uvx) nor Docker is installed; install uv (https://docs.astral.sh/uv/) and restart Claude Code' };
+}
+
+function main() {
+  if (Number(process.versions.node.split('.')[0]) < 18) return mcp.serveNoTools(LABEL, 'Node.js 18 or later is required', log);
+  const root = lib.projectDir();
+  const p = plan(root);
+  if (!p.cmd) return mcp.serveNoTools(LABEL, p.reason, log);
+  log(`starting ${p.cmd} ${p.args[p.args.length - 1]} for ${p.on.join(' and ')}`);
+  const child = spawn(p.cmd, p.args, { stdio: 'inherit', env: envfile.childEnv(root, KEYS), cwd: root });
+  child.on('error', (e) => { log(`could not start ${p.cmd}: ${e.message}`); process.exit(1); });
+  child.on('exit', (code, signal) => process.exit(signal ? 1 : code || 0));
+  for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => child.kill(s));
+}
+
+if (require.main === module) main();
+module.exports = { plan };
