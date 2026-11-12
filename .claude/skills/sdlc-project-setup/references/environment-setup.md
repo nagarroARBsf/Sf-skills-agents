@@ -1,7 +1,8 @@
 # Environment and connections
 
-Used by setup steps 2 and 4. Each tool and connection says who needs it, how to install or connect
-it, and how to check it. Offer the command; run an install or sign-in only after the person says yes.
+Used by setup sections 4 and 5. `node .claude/bin/sf-sdlc setup` checks all of this and prints the
+link or command for whatever is missing; this file is the detail behind it. Run an install or sign-in
+only after the person says yes (one yes can cover all of them).
 Never ask for a password, token or key in the chat.
 
 ## Speak to the person running setup
@@ -45,10 +46,26 @@ Signs the CLI in through the browser; no password is stored in the project.
 
 ### 2. Salesforce hosted MCP servers
 
-Metadata Experts and Metadata Grounding (on by default in `mcp.servers`), optionally Headless 360 and
-Data 360. They use the CLI login above; nothing else is stored.
+They use the CLI login above; nothing else is stored. State the defaults and offer the rest; do not
+ask the person to choose from scratch.
 
-1. Open Setup in the org: `sf org open --target-org <alias> --path /lightning/setup/SetupOneHome/home`.
+| Server (`mcp.servers` name) | Default | What it gives Claude | Can change the org |
+|---|---|---|---|
+| `metadata-experts` | on | Metadata type schemas and generation guidance | no |
+| `metadata-grounding` | on | Find existing org metadata by meaning (needs Data 360 and Salesforce Catalog; not in scratch orgs) | no |
+| `sobject-reads` | off | Read records and object schema: describe, SOQL, search | no |
+| `sobject-all` | off | Read, create, update and delete records | yes — every change asks first |
+| `headless-360` | off | Live Setup state and org REST/Connect operations | yes — every change asks first |
+| `data360` | off | Data 360 recipes and operations | yes — every change asks first |
+
+Turn one on or off for the project with `node .claude/bin/sf-sdlc mcp enable <name>` /
+`mcp disable <name>`. A server that is not in this table is not supported by the kit; do not add it by
+guessing a URL. In `/mcp`, a Salesforce server that shows "no tools" is simply not switched on in the
+org (or not in `mcp.servers`) — that is expected.
+
+1. Give the person the Setup link from the checklist (the org's address followed by
+   `/lightning/setup/SetupOneHome/home`), or open it for them:
+   `sf org open --target-org <alias> --path /lightning/setup/SetupOneHome/home`.
 2. In Setup, type **MCP** in Quick Find, open **MCP Servers** (API Catalog), and turn on the servers
    listed in `mcp.servers`. Metadata Grounding also needs Data 360, API access and Salesforce Catalog,
    and is not available in scratch orgs.
@@ -67,7 +84,9 @@ Claude Code keeps the login; nothing goes into the project.
 **Option B — API token in `.env`.** For teams whose Atlassian policy blocks the remote server, or that
 need a service account. Needs uv or Docker.
 1. Create an API token at https://id.atlassian.com/manage-profile/security/api-tokens.
-2. Open `.env` in the editor (setup created it) and fill `JIRA_URL` (`https://<site>.atlassian.net`),
+2. The address and e-mail are not secrets: Claude writes them with
+   `node .claude/bin/sf-sdlc env set JIRA_URL=https://<site>.atlassian.net JIRA_USERNAME=<e-mail>`.
+   The person types only the token, in their editor. In full: open `.env` (setup created it) and fill `JIRA_URL` (`https://<site>.atlassian.net`),
    `JIRA_USERNAME` (the Atlassian e-mail) and `JIRA_API_TOKEN`; for Confluence the same three
    `CONFLUENCE_*` keys (URL `https://<site>.atlassian.net/wiki`). Optional: `READ_ONLY_MODE=true`.
 3. Run `node .claude/bin/sf-sdlc env status` — it shows which groups are configured, never values.
@@ -80,7 +99,8 @@ project key, issue type names, field IDs). Never create or change an issue durin
 
 ### 4. GitHub
 
-1. **Browser (recommended):** `gh auth login`, choose GitHub.com, HTTPS, and sign in in the browser.
+1. **Browser (recommended):** `gh auth login --web --git-protocol https`; a browser window opens and the
+   person signs in.
 2. **Token:** create a fine-grained personal access token for this repository (Contents and Pull
    requests: read and write), put it in `.env` as `GITHUB_TOKEN`, then run
    `node .claude/bin/sf-sdlc env gh-login`. gh keeps its own login afterwards; the value can be

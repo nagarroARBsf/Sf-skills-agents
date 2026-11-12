@@ -10,18 +10,33 @@ deployment → testing → re-test → release.
 
 ## Install
 
-```text
-/plugin install sf-sdlc --marketplace nagarroARBsf/Sf-skills-agents
+In a terminal, inside your Salesforce project folder (this works everywhere, including when Claude
+Code runs in VS Code or the desktop app, where the `/plugin` command is not available):
+
+```bash
+claude plugin marketplace add nagarroARBsf/Sf-skills-agents
+claude plugin install sf-sdlc@nagarro-sf --scope project
 ```
 
-or `/plugin marketplace add nagarroARBsf/Sf-skills-agents` then `/plugin install sf-sdlc@nagarro-sf`.
+Then open Claude Code in that folder — or, if it was already open, run `/reload-plugins` so the new
+commands and skills load — and run:
+
+```text
+/sf-sdlc:setup
+```
+
+In the terminal version of Claude Code you can type `/plugin marketplace add nagarroARBsf/Sf-skills-agents`
+and `/plugin install sf-sdlc@nagarro-sf` instead; in VS Code, `/plugins` opens the same thing as a
+dialog. The repository is private: each person needs read access to it on GitHub and a working git
+sign-in (`gh auth login`, or an SSH key).
+
 To try a local checkout: `claude --plugin-dir plugins/sf-sdlc`.
 
-Then, in your Salesforce project, run `/sf-sdlc:setup`. For technical and non-technical users alike
-it checks your tools (and offers the install command for each missing one), helps you connect the
-Salesforce org, the hosted MCP servers, Jira/Confluence and GitHub, creates a git-ignored `.env` for
-the tokens you fill in your editor, explores the code, writes `.claude/sf-sdlc.json`, and installs
-the core skills plus the ones the project needs.
+`/sf-sdlc:setup` does the work first and asks afterwards: it creates the project files (and a git
+repository if there is none), explores the code, installs the core skills plus the ones the code
+needs, checks every tool and connection, and shows a checklist — done, what Claude can do when you
+say yes, and what only you can do, with the link for each. It then asks only what it could not detect
+(which org, whether you use Jira). `/sf-sdlc:doctor` shows the checklist again at any time.
 
 Setup turns the plugin on at **project scope** in `.claude/settings.json` and copies the coding rules
 into `.claude/rules/` (plugins cannot ship rules). Commit those; teammates install the plugin once

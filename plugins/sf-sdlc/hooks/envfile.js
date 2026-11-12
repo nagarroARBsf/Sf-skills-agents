@@ -106,4 +106,23 @@ function childEnv(root, keys, base = process.env) {
   return env;
 }
 
-module.exports = { GROUPS, TEMPLATE, parse, read, status, ensure, childEnv, isIgnored, envPath };
+// Keys Claude may write for the person: addresses and user names only. Tokens, passwords and keys are
+// never accepted here — the person types those into .env in their editor.
+const PLAIN_KEYS = ['JIRA_URL', 'JIRA_USERNAME', 'CONFLUENCE_URL', 'CONFLUENCE_USERNAME', 'READ_ONLY_MODE'];
+
+function setPlain(root, key, value) {
+  if (!PLAIN_KEYS.includes(key)) throw new Error(`"${key}" cannot be set from the command line: only ${PLAIN_KEYS.join(', ')}. Type secrets (tokens, passwords) into .env in your editor.`);
+  const v = String(value).trim();
+  if (!v || /[\r\n]/.test(v)) throw new Error(`${key} needs a one-line value`);
+  ensure(root);
+  const file = envPath(root);
+  const lines = fs.readFileSync(file, 'utf8').split('\n');
+  const i = lines.findIndex((l) => new RegExp(`^\\s*(?:export\\s+)?${key}\\s*=`).test(l));
+  if (i >= 0) lines[i] = `${key}=${v}`;
+  else lines.push(`${key}=${v}`, '');
+  fs.writeFileSync(file, lines.join('\n'));
+  return { key, result: 'set' };
+}
+
+module.exports = {
+  PLAIN_KEYS, setPlain, GROUPS, TEMPLATE, parse, read, status, ensure, childEnv, isIgnored, envPath };

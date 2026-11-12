@@ -18,6 +18,8 @@
       "Bash(node .claude/bin/sf-sdlc audit*)",
       "Bash(node .claude/bin/sf-sdlc mcp*)",
       "Bash(node .claude/bin/sf-sdlc env status*)",
+      "Bash(node .claude/bin/sf-sdlc env set*)",
+      "Bash(node .claude/bin/sf-sdlc setup*)",
       "Bash(sf org list*)",
       "Bash(sf config get*)",
       "Bash(sf code-analyzer *)",
@@ -43,6 +45,7 @@
       "Bash(sf data update*)",
       "Bash(sf package install*)",
       "Bash(sf package uninstall*)",
+      "Bash(node .claude/bin/sf-sdlc setup*--install-tools*)",
       "Bash(git push*)",
       "Bash(gh pr merge*)",
       "Bash(gh release create*)",
@@ -60,7 +63,7 @@
       "Bash(sf api request rest /ide/auth*)"
     ]
   },
-  "enabledMcpjsonServers": ["sf-metadata-experts", "sf-metadata-grounding", "sf-headless-360", "sf-data360", "atlassian-token"],
+  "enabledMcpjsonServers": ["sf-metadata-experts", "sf-metadata-grounding", "sf-headless-360", "sf-data360", "sf-sobject-reads", "sf-sobject-all", "atlassian-token"],
   "hooks": {
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" session-start", "timeout": 60 } ] }
@@ -68,7 +71,7 @@
     "PreToolUse": [
       { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-bash", "timeout": 900, "statusMessage": "sf-sdlc guard" } ] },
       { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-write", "timeout": 30 } ] },
-      { "matcher": "mcp__.*sf-(headless-360|data360)__.*", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-mcp", "timeout": 60 } ] }
+      { "matcher": "mcp__.*sf-(headless-360|data360|sobject-all)__.*", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-mcp", "timeout": 60 } ] }
     ],
     "PostToolUse": [
       { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" post-write", "timeout": 30 } ] },

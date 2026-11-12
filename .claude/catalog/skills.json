@@ -40,7 +40,7 @@
       "name": "sdlc-project-setup",
       "location": "skills",
       "source": "nagarro",
-      "description": "Set a Salesforce project up for the SDLC kit, for technical and non-technical users: check the environment and offer installs (Node.js, git, Salesforce CLI, Code Analyzer, Java, gh, uv), connect the Salesforce org, hosted MCP servers, Jira/Confluence (browser sign-in or API token in .env) and GitHub"
+      "description": "Set a Salesforce project up for the SDLC kit in one run, for technical and non-technical users: run sf-sdlc setup first (creates the project files, git repository and .env template, explores the code, installs the core skills plus those the code needs, checks tools, the Salesforce org, hosted MCP se"
     },
     {
       "name": "sdlc-qa-test-case-generate",

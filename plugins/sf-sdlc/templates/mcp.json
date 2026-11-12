@@ -32,6 +32,22 @@
         "data360"
       ]
     },
+    "sf-sobject-reads": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "sobject-reads"
+      ]
+    },
+    "sf-sobject-all": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-mcp-proxy",
+        "sobject-all"
+      ]
+    },
     "atlassian-token": {
       "type": "stdio",
       "command": "node",

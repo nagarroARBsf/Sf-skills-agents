@@ -18,6 +18,8 @@
       "Bash(sf-sdlc audit*)",
       "Bash(sf-sdlc mcp*)",
       "Bash(sf-sdlc env status*)",
+      "Bash(sf-sdlc env set*)",
+      "Bash(sf-sdlc setup*)",
       "Bash(sf org list*)",
       "Bash(sf config get*)",
       "Bash(sf code-analyzer *)",
@@ -43,6 +45,7 @@
       "Bash(sf data update*)",
       "Bash(sf package install*)",
       "Bash(sf package uninstall*)",
+      "Bash(sf-sdlc setup*--install-tools*)",
       "Bash(git push*)",
       "Bash(gh pr merge*)",
       "Bash(gh release create*)",
@@ -65,6 +68,8 @@
     "sf-metadata-grounding",
     "sf-headless-360",
     "sf-data360",
+    "sf-sobject-reads",
+    "sf-sobject-all",
     "atlassian-token"
   ]
 }

@@ -1,19 +1,22 @@
 ---
-description: Set this project up for the Salesforce SDLC kit — environment, connections (Salesforce, Jira, GitHub), .env, config, code baseline and skills
-argument-hint: "[optional: developer | admin | ba, or what to redo: environment | connections | config | skills | baseline]"
+description: Set this project up for the Salesforce SDLC kit in one go — files, skills chosen from the code, tools, Salesforce, Jira and GitHub connections — and show a checklist of what is done and what is left
+argument-hint: "[optional: developer | admin | ba, or an org alias]"
 ---
 <!-- Generated from .claude/commands/sdlc-setup.md by scripts/build-claude-plugin.py. Edit the source in .claude/ and re-run the script; changes here are overwritten. -->
-Use the **sf-sdlc:sdlc-project-scout-agent** subagent to set up this project.
+Set this project up by following the `sdlc-project-setup` skill **yourself, in this conversation**.
 
-Scope from the user: $ARGUMENTS
+From the user: $ARGUMENTS
 
-The agent follows the `sdlc-project-setup` skill. It asks who is running setup (developer, admin, or
-business analyst / manager) and speaks to match. It runs `sf-sdlc doctor` and offers
-the install command for each missing tool; runs `init` (project settings with the plugin on at project
-scope, coding rules in `${CLAUDE_PLUGIN_ROOT}/skills/salesforce-coding-rules/references/`, `.gitignore`, and a git-ignored `.env` template); helps
-connect the Salesforce org (`sf org login web`), the hosted MCP servers, Jira/Confluence (browser
-sign-in, or API tokens the person fills into `.env` in their editor) and GitHub; explores the code with
-`detect`; fills `.claude/sf-sdlc.json` from what it detects and asks only for what it cannot detect;
-installs the core skills plus the ones the project needs after the user confirms; records the
-baseline for projects that already have metadata. It never asks for or reads a credential. Stop after
-the report.
+1. If the `sdlc-project-setup` skill is not available in this session, the plugin was installed after
+   the session started. Say so in one line, ask the person to run `/reload-plugins` (or restart Claude
+   Code) and then run this command again, and stop.
+2. Run `sf-sdlc setup --json` **first, before asking anything**. It creates the
+   project files, explores the code, installs the skills the code needs, checks every tool and
+   connection, and returns the checklist.
+3. Show the checklist, ask the few questions it marks (in one batch), do what the person agrees to,
+   and finish with the final checklist — exactly as the skill describes.
+
+Do not hand setup to a subagent and do not run it in the background: a subagent cannot ask the person
+anything, and they cannot see its progress. Only the deeper code study (baseline and grounding
+drafts) goes to the **sdlc-project-scout-agent** subagent, after the checklist is on screen. Never ask
+for or read a credential.

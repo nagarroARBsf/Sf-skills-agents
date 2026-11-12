@@ -167,7 +167,8 @@ test('config validation', () => {
   assert.ok(!v({ quality: { coverageTarget: 50 } }).ok);
   assert.ok(!v({ jira: { enabled: true, projectKey: '' } }).ok);
   assert.ok(v({ mcp: { servers: ['metadata-grounding', 'headless-360', 'data360'] } }).ok);
-  assert.ok(!v({ mcp: { servers: ['metadata-grounding', 'sobject-all'] } }).ok);
+  assert.ok(v({ mcp: { servers: ['metadata-grounding', 'sobject-all', 'sobject-reads'] } }).ok);
+  assert.ok(!v({ mcp: { servers: ['metadata-grounding', 'sobject-everything'] } }).ok);
   assert.ok(!v({ mcp: { servers: 'metadata-grounding' } }).ok);
 });
 
@@ -216,7 +217,7 @@ test('CLI: init, skills install/sync/remove in a temp project', () => {
   assert.ok(created.includes('.github/workflows/sf-code-analyzer.yml'));
   assert.ok(created.some((c) => c.startsWith('.mcp.json')));
   const servers = JSON.parse(fs.readFileSync(path.join(dir, '.mcp.json'), 'utf8')).mcpServers;
-  assert.deepStrictEqual(Object.keys(servers).sort(), ['atlassian-token', 'sf-data360', 'sf-headless-360', 'sf-metadata-experts', 'sf-metadata-grounding']);
+  assert.deepStrictEqual(Object.keys(servers).sort(), ['atlassian-token', 'sf-data360', 'sf-headless-360', 'sf-metadata-experts', 'sf-metadata-grounding', 'sf-sobject-all', 'sf-sobject-reads']);
   assert.ok(created.some((c) => c.startsWith('.env (created')), 'init creates the .env template');
   assert.ok(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8').split('\n').includes('.env'), '.env is git-ignored');
   assert.ok(!fs.existsSync(path.join(dir, '.claude', 'rules')), 'the copy-in folder already holds its rules; init does not write them');
@@ -355,6 +356,69 @@ test('hosted MCP guard: org-changing tools always ask', () => {
   assert.match(g('mcp__sf-headless-360__dispatch', cfg({ mcp: { org: 'ghost' } })).reason, /unknown, treated as production/);
   assert.strictEqual(g('mcp__sf-headless-360__dispatch_readonly', cfg({ mcp: { org: 'prod' } })).decision, 'allow');
   assert.strictEqual(g('mcp__sf-metadata-grounding__search_metadata', cfg()).decision, 'allow');
+  // sobject-all: tool names are not known to the kit, so everything asks unless it is plainly a read.
+  for (const t of ['create_record', 'updateRecord', 'delete_sobject', 'upsert', 'listener_start', 'getaway']) assert.strictEqual(g(`mcp__plugin_sf-sdlc_sf-sobject-all__${t}`, cfg({ mcp: { org: 'uat' } })).decision, 'ask', t);
+  for (const t of ['query', 'soql_query', 'describe_sobject', 'getRecord', 'list_objects', 'search']) assert.strictEqual(g(`mcp__sf-sobject-all__${t}`, cfg({ mcp: { org: 'prod' } })).decision, 'allow', t);
+  assert.strictEqual(g('mcp__sf-sobject-reads__anything', cfg()).decision, 'allow');
+});
+
+test('setup: one run creates files, picks skills from the code inside the budget, and reports a checklist', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-setup-'));
+  for (const d of ['classes', 'lwc/a', 'flows', 'objects/A__c', 'permissionsets', 'flexipages', 'aura/b', 'namedCredentials']) fs.mkdirSync(path.join(dir, 'force-app/main/default', d), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'sfdx-project.json'), JSON.stringify({ packageDirectories: [{ path: 'force-app' }], sourceApiVersion: '62.0' }));
+  fs.writeFileSync(path.join(dir, 'force-app/main/default/classes/A.cls'), 'public with sharing class A {}');
+  const cli = (...a) => {
+    const r = spawnSync('node', [path.join(KIT, 'bin', 'sf-sdlc'), ...a], { cwd: dir, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: dir } });
+    return { status: r.status, out: r.stdout, json: a.includes('--json') ? JSON.parse(r.stdout) : null };
+  };
+  const first = cli('setup', '--offline', '--json').json;
+  const step = (re) => first.steps.find((x) => re.test(x.item));
+  assert.strictEqual(step(/Git repository/).state, 'done');
+  assert.ok(fs.existsSync(path.join(dir, '.git')), 'setup creates the git repository');
+  assert.ok(fs.existsSync(path.join(dir, '.claude', 'sf-sdlc.json')) && fs.existsSync(path.join(dir, '.env')));
+  const sk = step(/^Skills for this project/);
+  const core = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'detection-rules.json'), 'utf8')).rules.find((r) => r.id === 'core').skills;
+  assert.ok(core.every((n) => sk.installed.includes(n)), 'the core set is always installed');
+  assert.ok(sk.installed.includes('platform-apex-generate') && sk.installed.includes('experience-lwc-generate'), 'the main skill for each kind of code comes before secondary skills');
+  assert.ok(sk.availableLater.length > 0, 'what does not fit is listed, not installed');
+  const listing = JSON.parse(cli('skills', 'list', '--json').out).listingChars;
+  assert.ok(listing <= 8000, `skills stay inside the listing budget (${listing})`);
+  assert.ok(first.steps.every((x) => ['done', 'claude', 'you', 'optional', 'skipped'].includes(x.state)));
+  const jira = step(/^Jira/);
+  assert.strictEqual(jira.state, 'you');
+  assert.match(jira.url, /^https:\/\/id\.atlassian\.com\//, 'a step for the person carries its link');
+  assert.match(step(/Other Salesforce MCP servers/).detail, /sobject-all/, 'optional servers are stated, not asked');
+  // A second run changes nothing and says so; the text form is a table with the three lists.
+  const again = cli('setup', '--offline', '--json').json;
+  assert.strictEqual(again.restartNeeded, false);
+  assert.deepStrictEqual(again.steps.find((x) => /^Skills for this project/.test(x.item)).added, []);
+  const text = cli('setup', '--offline').out;
+  assert.match(text, /^## Setup checklist/);
+  assert.match(text, /\| ✅ \| Project \| Git repository \|/);
+  assert.match(text, /### 👉 Your turn/);
+  // Flags record answers without questions.
+  assert.strictEqual(cli('setup', '--offline', '--no-jira', '--json').json.steps.find((x) => /^Jira/.test(x.item)).state, 'skipped');
+  const ba = cli('setup', '--offline', '--profile', 'ba', '--json').json;
+  assert.ok(ba.steps.filter((x) => /MCP server:/.test(x.item)).length === 0, 'requirements work is not asked to turn on org servers');
+  // env set: addresses yes, tokens never (and nothing is half-written).
+  assert.strictEqual(cli('env', 'set', 'JIRA_URL=https://x.atlassian.net', 'JIRA_USERNAME=a@b.c', '--json').status, 0);
+  assert.notStrictEqual(cli('env', 'set', 'CONFLUENCE_URL=https://x.atlassian.net/wiki', 'JIRA_API_TOKEN=secret', '--json').status, 0);
+  const env = fs.readFileSync(path.join(dir, '.env'), 'utf8');
+  assert.match(env, /^JIRA_URL=https:\/\/x\.atlassian\.net$/m);
+  assert.doesNotMatch(env, /secret/);
+  assert.match(env, /^CONFLUENCE_URL=$/m);
+  // mcp enable / disable edit mcp.servers and refuse unknown names.
+  assert.deepStrictEqual(cli('mcp', 'enable', 'sobject-reads', '--json').json.servers, ['metadata-experts', 'metadata-grounding', 'sobject-reads']);
+  assert.deepStrictEqual(cli('mcp', 'disable', 'metadata-grounding', '--json').json.servers, ['metadata-experts', 'sobject-reads']);
+  assert.notStrictEqual(cli('mcp', 'enable', 'made-up', '--json').status, 0);
+  assert.ok(cli('config', 'validate', '--json').json.ok);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('setup command runs in the main conversation, not in a subagent', () => {
+  const cmd = fs.readFileSync(path.join(KIT, 'commands', 'sdlc-setup.md'), 'utf8');
+  assert.doesNotMatch(cmd.split(/^---\s*$/m)[2], /^\s*Use the \*\*/, 'a subagent cannot ask the person anything');
+  assert.match(cmd, /sf-sdlc setup --json/);
 });
 
 test('sf-mcp-proxy answers the handshake with no tools when its server is not enabled', () => {

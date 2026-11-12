@@ -1,14 +1,14 @@
 ---
-description: Check that the tools, CLI plugins, config and org setup the SDLC kit needs are in place
-allowed-tools: Bash(node .claude/bin/sf-sdlc doctor*), Bash(node .claude/bin/sf-sdlc config*), Bash(node .claude/bin/sf-sdlc env status*)
+description: Show the setup checklist — what is done, what Claude can do for you, and what still needs you
+allowed-tools: Bash(node .claude/bin/sf-sdlc setup*), Bash(node .claude/bin/sf-sdlc doctor*), Bash(node .claude/bin/sf-sdlc config*), Bash(node .claude/bin/sf-sdlc env status*)
 ---
-Run `node .claude/bin/sf-sdlc doctor`, `node .claude/bin/sf-sdlc config validate` and
-`node .claude/bin/sf-sdlc env status`, then report:
+Run `node .claude/bin/sf-sdlc setup` and show its output as it is: the checklist table, then
+"Your turn", then "Claude can do these", then "Optional". It is safe to run at any time; it only
+creates what is missing.
 
-1. Required items that failed, each with the exact fix command from the output.
-2. Optional items that are missing and what stops working without each.
-3. Config errors and warnings, and which key in `.claude/sf-sdlc.json` to change.
-4. Which `.env` groups (Jira, Confluence, GitHub) are configured, partial or empty — names only,
-   never values.
+Then add, only if they say something the checklist does not:
+- errors and warnings from `node .claude/bin/sf-sdlc config validate`, each with the key to change;
+- failed required checks from `node .claude/bin/sf-sdlc doctor`.
 
-Do not install anything or change any file. If everything passes, say so in one line.
+Do not install anything or sign in to anything here; offer `/sdlc-setup` for that. If nothing needs
+the person, say so in one line.

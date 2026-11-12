@@ -31,17 +31,28 @@ Choose one. Do not use both in the same project: agents and commands would appea
 
 ### Option A — plugin (recommended)
 
-```text
-/plugin marketplace add nagarroARBsf/Sf-skills-agents
-/plugin install sf-sdlc@nagarro-sf
+In a terminal, inside your Salesforce project folder (this works everywhere, including when Claude
+Code runs in VS Code or the desktop app, where the `/plugin` command is not available):
+
+```bash
+claude plugin marketplace add nagarroARBsf/Sf-skills-agents
+claude plugin install sf-sdlc@nagarro-sf --scope project
 ```
 
-Commands are then `/sf-sdlc:<name>` (for example `/sf-sdlc:setup`, `/sf-sdlc:brd`, `/sf-sdlc:plan`)
-and the CLI is `sf-sdlc` inside Claude Code's shell. Then, in your Salesforce project:
+Then open Claude Code in that folder — or, if it was already open, run `/reload-plugins` so the new
+commands and skills load — and run:
 
 ```text
 /sf-sdlc:setup
 ```
+
+In the terminal version of Claude Code you can type `/plugin marketplace add nagarroARBsf/Sf-skills-agents`
+and `/plugin install sf-sdlc@nagarro-sf` instead; in VS Code, `/plugins` opens the same thing as a
+dialog. The repository is private: each person needs read access to it on GitHub and a working git
+sign-in (`gh auth login`, or an SSH key).
+
+Commands are `/sf-sdlc:<name>` (for example `/sf-sdlc:setup`, `/sf-sdlc:brd`, `/sf-sdlc:plan`) and the
+CLI is `sf-sdlc` inside Claude Code's shell.
 
 Setup follows Claude Code's documented practice for team plugins: the plugin's commands, agents,
 hooks, CLI and MCP servers stay in the plugin, and setup writes the project's own files — the plugin
@@ -93,17 +104,33 @@ A private repository works the same way; each user needs git read access to it.
 
 ## 3. What setup does
 
-`/sdlc-setup` (plugin: `/sf-sdlc:setup`) runs these, which you can also run yourself:
+`/sdlc-setup` (plugin: `/sf-sdlc:setup`) does the work first and asks afterwards. It runs one command,
+`sf-sdlc setup`, which needs no answers from you:
 
-It first asks who is running it (developer, admin, or business analyst / manager) and explains each
-step to match: commands for technical people, one plain-language step at a time for everyone else.
+- creates a git repository if there is none, and the project files;
+- explores the code and installs the skills it calls for (the core set, then the main skill for each
+  kind of code found, as many as fit Claude Code's skill listing budget; the rest are listed);
+- checks every tool, the Salesforce org, the hosted MCP servers, Jira and GitHub;
+- prints a checklist: ✅ done, 🔧 what Claude can do when you say yes, 👉 what only you can do — each
+  with the link or command — and ➖ optional items.
+
+Claude then asks, once, only what cannot be detected (which signed-in org the project uses, whether
+you use Jira, whether to install what is missing), does what you agree to, and shows the checklist
+again. `/sf-sdlc:doctor` shows the same checklist at any time. Run `sf-sdlc setup --org <alias>` to
+record the project's org, `--install-tools` to install the Salesforce CLI, Code Analyzer and CLI
+plugins, `--no-jira` if you do not use Jira.
+
+The single steps, which you can also run yourself:
 
 | Step | Command | Result |
 |---|---|---|
+| Everything below, then the checklist | `sf-sdlc setup` | See above |
 | Check the environment | `sf-sdlc doctor` | What is missing, each with the install command; installed only after you say yes |
 | Create project files | `sf-sdlc init` | `.claude/sf-sdlc.json`, `.gitignore` entries, a `.env` template, `code-analyzer.yml`, a pull request template; plugin users also get `.claude/settings.json` (plugin on at project scope) and `.claude/rules/` |
 | Connect | `sf org login web`, Setup → MCP Servers, `/mcp` → `atlassian` or `.env` tokens, `gh auth login` | Salesforce org, hosted MCP servers, Jira/Confluence, GitHub (each optional) |
 | Check credentials | `sf-sdlc env status` | Which `.env` groups are filled — names only, never values |
+| Fill an address or user name | `sf-sdlc env set JIRA_URL=… JIRA_USERNAME=…` | Writes non-secret values into `.env`; refuses tokens |
+| Choose hosted MCP servers | `sf-sdlc mcp list`, `sf-sdlc mcp enable <name>`, `mcp disable <name>` | Edits `mcp.servers` |
 | Explore the code | `sf-sdlc detect`, `sf-sdlc inventory` | What metadata and conventions exist today |
 | Choose skills | `sf-sdlc skills recommend` | The core set plus recommended skills, with the evidence for each |
 | Install skills | `sf-sdlc skills install <names>` | Copies into `.claude/skills/`, recorded in a lock file |
@@ -198,8 +225,11 @@ and the CI workflow also select `Custom`. When an agent repeats a mistake, add a
 
 ### 4.5 `.mcp.json` — Salesforce Hosted MCP Servers, and other MCP servers
 
-**Salesforce Hosted MCP Servers.** The plugin registers four servers (`sf-metadata-grounding`,
-`sf-metadata-experts`, `sf-headless-360`, `sf-data360`). For the copy-in folder, `sf-sdlc init`
+**Salesforce Hosted MCP Servers.** The plugin registers six servers (`sf-metadata-grounding`,
+`sf-metadata-experts`, `sf-headless-360`, `sf-data360`, `sf-sobject-reads`, `sf-sobject-all`). Metadata
+Experts and Metadata Grounding are on by default; turn the others on with `sf-sdlc mcp enable <name>`.
+A server that is registered but not enabled, or not switched on in the org, shows in `/mcp` as
+"no tools" — that is expected, not an error. For the copy-in folder, `sf-sdlc init`
 adds the same entries to the project's `.mcp.json` without touching other servers. Each entry starts
 `bin/sf-mcp-proxy`, which signs in with your Salesforce CLI login: there is no client ID, secret,
 External Client App or `.env` file to manage.

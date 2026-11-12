@@ -1,183 +1,147 @@
 ---
 name: sdlc-project-setup
-description: "Set a Salesforce project up for the SDLC kit, for technical and non-technical users: check the environment and offer installs (Node.js, git, Salesforce CLI, Code Analyzer, Java, gh, uv), connect the Salesforce org, hosted MCP servers, Jira/Confluence (browser sign-in or API token in .env) and GitHub, create the git-ignored .env template without reading its values, install the project files (plugin on at project scope, coding rules), explore the code, fill .claude/sf-sdlc.json from detection first and questions second, install the core skills plus those the project needs, record the baseline and draft the grounding files. TRIGGER when: user asks to set up, onboard or configure a project, connect Salesforce, Jira or GitHub, which skills to install, what a config key means, reports a failing doctor check, or runs /sdlc-setup, /sdlc-doctor or /sdlc-skills. DO NOT TRIGGER when: the user wants architecture work (use sdlc-solution-architecture-generate) or a deployment (use sdlc-deploy-release)."
+description: "Set a Salesforce project up for the SDLC kit in one run, for technical and non-technical users: run sf-sdlc setup first (creates the project files, git repository and .env template, explores the code, installs the core skills plus those the code needs, checks tools, the Salesforce org, hosted MCP servers, Jira and GitHub), show a checklist of what is done, what Claude can do on a yes and what needs the person with the exact link, ask only what cannot be detected, then install tools, sign in and fill .claude/sf-sdlc.json. Never asks which skills or MCP servers to use; never reads a credential. TRIGGER when: user asks to set up, onboard or configure a project, connect Salesforce, Jira or GitHub, which skills or MCP servers to install, what a config key means, reports a failing doctor check, or runs /sdlc-setup, /sdlc-doctor or /sdlc-skills. DO NOT TRIGGER when: the user wants architecture work (use sdlc-solution-architecture-generate) or a deployment (use sdlc-deploy-release)."
 metadata:
-  version: "2.0"
+  version: "3.0"
   author: "Nagarro Salesforce CoE"
 ---
 
 # sdlc-project-setup
 
-Get the person's environment working, connect what they use, then find out what the project holds
-before anyone designs or builds. **Detect first, ask second, never guess.**
+Do the work first, then show a checklist, then ask only what nobody could detect. The person running
+setup may never have used a terminal. **Do everything you can; tell them exactly what is left.**
 
-Sequence: who is running setup → environment → project files → connections and `.env` → explore the
-code → configuration → skills → baseline → grounding → final check.
+## How setup runs (read this before anything else)
+- **Run it yourself, in the main conversation.** Never hand setup to a subagent and never run it in the
+  background: a subagent cannot ask the person anything and they cannot see its progress.
+- **One command does the detectable work:** `node .claude/bin/sf-sdlc setup --json`. Run it before
+  asking a single question. It is safe to run again at any time.
+- **Never ask what can be detected.** Not which skills, not which MCP servers, not the project type,
+  not the branch. Setup decides from the code and says what it chose and why.
+- **Always show the checklist** (format below) after the first run and again at the end. Never replace
+  it with paragraphs.
+- **Plain words.** Say what a step does for the person ("lets Claude read your Jira backlog"), not how
+  it works. Show a command only as something Claude will run for them, or inside "Your turn".
 
 ## Ground rules
 - Read-only towards orgs and source: setup does not deploy, retrieve into the source tree, change an
-  org, or edit Salesforce metadata. It writes only the files `init` creates, `.claude/sf-sdlc.json`,
-  `.claude/sf-sdlc.local.json`, installed skills and their lock file, the baseline inventory and the
-  grounding drafts.
-- Never read, print or write credentials: not CLI auth (`.sf/`, `.sfdx/`, auth URLs, access tokens),
-  and not `.env`. `node .claude/bin/sf-sdlc env status` is the only way to look at `.env`; it reports
-  names, never values. Never ask for a token in the chat.
-- Never guess which org is production. An empty `orgs.production` is reported as a risk.
-- Install a tool, sign in, or install skills only after the person says yes.
-- Every step can be skipped. Record what was skipped and what does not work until it is done.
+  org, or edit Salesforce metadata.
+- Never read, print or write a credential: not CLI auth (`.sf/`, `.sfdx/`, auth URLs, access tokens)
+  and not `.env`. Never ask for a token in the chat. If one is pasted, tell the person to revoke it.
+- Addresses and user names are not secrets: write them with
+  `node .claude/bin/sf-sdlc env set JIRA_URL=… JIRA_USERNAME=…`. It refuses tokens.
+- Installing software and opening a sign-in window happen only after the person says yes — asked
+  once, for everything together.
+- Never guess which org is production. Treat an org that cannot be classified as production.
+- Never invent an MCP server, a URL or a config key. The Salesforce servers the kit supports are the
+  ones `node .claude/bin/sf-sdlc mcp list` prints; anything else is "not supported by the kit yet".
 
-## Where the kit lives (explain this once, in plain words)
-This follows Claude Code's documented practice for team plugins.
+## 1. Run setup
+`node .claude/bin/sf-sdlc setup --json` (add `--profile developer|admin|ba` only when the person
+already said who they are; add `--org <alias>` when they already named the org).
 
-| Part | Lives in | Committed |
+In one run it:
+- creates a git repository when there is none;
+- writes the project files: `.claude/sf-sdlc.json`, `.gitignore` entries, the `.env` template,
+  `code-analyzer.yml`, and for plugin users `.claude/settings.json` (plugin on for the whole team) and
+  the coding rules in `.claude/rules/`;
+- explores the code and **installs the skills it calls for** into `.claude/skills/`: the core set
+  (diagrams, Salesforce documentation, SOQL, API context, environment check, org management) for
+  every project, then the main skill for each kind of code found, then deploy and analysis — as many
+  as fit Claude Code's skill listing budget. The rest are listed, not installed;
+- checks every tool, the Salesforce org, the hosted MCP servers, Jira and GitHub;
+- returns `steps[]`, each with `area`, `item`, `state`, `detail`, and where relevant `url`, `command`,
+  `ask`, `choices`.
+
+`state` is one of: `done`; `claude` (Claude can do it on a yes); `you` (only the person can, with the
+link or command); `optional`; `skipped`.
+
+## 2. Show the checklist
+Print this, filled from `steps[]`, and nothing longer:
+
+```
+## Setup checklist — <project>
+<n> done · <n> need you · <n> I can do for you · <n> optional
+
+| | Step | Status |
 |---|---|---|
-| Commands (`/sf-sdlc:…`), agents, hooks, the `sf-sdlc` CLI, output styles, workflows, MCP server definitions, the skill library | The plugin (Claude Code's plugin cache; updated with the plugin) | n/a |
-| Plugin turned on for the whole team (`enabledPlugins`, `extraKnownMarketplaces`), kit permissions, `.env` read-deny | Project `.claude/settings.json` | Yes |
-| Coding rules and the kit instructions (`sf-sdlc-kit.md`) | Project `.claude/rules/` (plugins cannot ship rules) | Yes |
-| Configuration | `.claude/sf-sdlc.json` | Yes |
-| Installed technical skills and their lock file | `.claude/skills/`, `.claude/sf-sdlc.skills.lock.json` | Yes |
-| Personal overrides | `.claude/sf-sdlc.local.json`, `.claude/settings.local.json` | No |
-| Tokens (Jira, Confluence, GitHub) | `.env` | **Never** |
-| Salesforce and Atlassian logins | The sf CLI and Claude Code keep them in the user's home folder | Never |
+| ✅ | <item> | <detail, short> |
+| 🔧 | <item> | I can do this — say yes |
+| 👉 | <item> | Needs you (see below) |
+| ➖ | <item> | Optional / Skipped |
 
-The copy-in folder (a whole `.claude/` copied into the project) already holds everything above except
-the configuration, skills and `.env`.
+### 👉 Your turn
+1. **<item>** — <one plain sentence: what to do and why>. Link: <url>
 
-## 0. Who is running setup
-Ask once: developer, admin, or business analyst / product owner / manager. This sets
-- the skill profile (`developer`, `admin`, `ba`) for step 6, and
-- how to speak: technical people get commands; non-technical people get one plain-language step at a
-  time and an offer to run each command for them
-  ([references/environment-setup.md](references/environment-setup.md), "Speak to the person").
-Skip the question when the command arguments already name the profile.
+### 🔧 I can do these for you
+1. **<item>** — <what happens, e.g. "a browser window opens and you sign in">
+```
+Keep every ✅ row (people want to see what was done). Put the links in the chat exactly as returned;
+never tell the person to "find" a page. Group the optional rows into one line when there are many.
 
-## 1. Environment
-Run `node .claude/bin/sf-sdlc doctor --json`. Report each failed check in the order below, with why it
-matters to this person and the install command for their operating system from
-[references/environment-setup.md](references/environment-setup.md). Offer to run it; run it on a yes.
-- **Required** failures (Node.js, git, an invalid config): stop until they are fixed, then re-run doctor.
-- **Needed for this person's work**: Salesforce CLI, Code Analyzer and Java for developers and
-  reviewers; `gh` for whoever opens pull requests or releases.
-- **Optional**: sfdx-git-delta, Lightning Flow Scanner, mermaid-cli, uv or Docker (only for token-based
-  Jira). Say what stops working without each and continue.
-- A business analyst doing requirements work needs Node.js and git; say that the rest was skipped.
-- Projects with no Salesforce source and no `sfdx-project.json` are valid; continue.
+## 3. Ask once, only what is marked
+Use one AskUserQuestion batch (at most four questions), each with a recommended first option. Ask
+only what applies:
+- **Which org is this project for?** — only when a step has `ask: "org"`; the options are its
+  `choices` (alias and kind). Never ask when setup already found the org.
+- **Shall I install and sign in to what is missing?** — only when there are `claude` steps. One yes
+  covers all of them.
+- **Do you use Jira?** — only when a step has `ask: "jira"`: "Yes, sign in through the browser"
+  (recommended), "Yes, with an API token", "No".
+- **What will you mostly do here?** (build / configure / write requirements) — only when the project
+  has no Salesforce source to detect from.
+Do not ask about skills, MCP servers, branch names, API versions or anything in `detail`.
 
-## 2. Project files
-Run `node .claude/bin/sf-sdlc init --json`. It creates what is missing and keeps what exists:
-- `.claude/sf-sdlc.json`, pre-filled with the project name, namespace, main branch, an integration
-  branch if one exists, and the default target org as `orgs.dev` when that org is not production;
-- `.gitignore` entries for CLI auth, local state, `.env` and personal overrides;
-- `.env` from the template (or the kit's missing keys appended; existing values never touched);
-- `code-analyzer.yml` and a Code Analyzer CI workflow for Salesforce DX projects, and a pull-request template;
-- **plugin users**: `.claude/settings.json` merged with the kit permissions, a read-deny on `.env`, and
-  the plugin turned on at project scope; the kit rules copied into `.claude/rules/`. A later `init`
-  updates rule files nobody edited and keeps edited ones (`locally modified; not overwritten`);
-- **copy-in folder**: the hosted MCP servers and `atlassian-token` merged into `.mcp.json`.
-Report what was created, merged and kept. Tell the person to restart Claude Code once at the end so the
-new settings, rules and MCP servers load.
+## 4. Do what was agreed
+Run each of these yourself and say in one line what happened:
+- **Org chosen:** `node .claude/bin/sf-sdlc setup --org <alias> --json`. It records the org for the
+  project and for the MCP servers; a production org goes to `orgs.production` and stays protected.
+- **No org signed in:** `sf org login web --alias <alias>` (sandbox: add
+  `--instance-url https://test.salesforce.com`). Tell the person a browser window opens. Then
+  `setup --org <alias>`.
+- **Missing tools:** `node .claude/bin/sf-sdlc setup --install-tools --json` installs the Salesforce
+  CLI, Code Analyzer and the optional CLI plugins. Tools that need an administrator password (Node.js,
+  git, Java, GitHub CLI) stay under "Your turn" with the command for their system.
+- **GitHub:** `gh auth login --web --git-protocol https`.
+- **Jira, browser sign-in:** the person types `/mcp`, chooses `atlassian` (plugin users see
+  `plugin:sf-sdlc:atlassian`), chooses **Authenticate**. Claude cannot do this step; say so.
+- **Jira, API token:** ask for the site address and the Atlassian e-mail (not secrets), write them with
+  `env set`, then give the token link and ask the person to type the token into `.env` as
+  `JIRA_API_TOKEN` in their editor. Fill `jira.site` and `jira.projectKey` in the config from the
+  address or board link they gave.
+- **No Jira:** `node .claude/bin/sf-sdlc setup --no-jira --json`.
+- **Values the person volunteers** (project code, client, which org is UAT): write them to
+  `.claude/sf-sdlc.json` and run `node .claude/bin/sf-sdlc config validate`. Keys:
+  [references/config-reference.md](references/config-reference.md).
 
-## 3. Connections and `.env`
-Follow [references/environment-setup.md](references/environment-setup.md), Connections, in this
-order, skipping what this person does not use:
-1. **Salesforce org**: `sf org login web --alias <alias>` (browser sign-in), then `org classify`.
-2. **Hosted MCP servers**: open the org's Setup with `sf org open --path …`, turn the servers on under
-   MCP Servers, then `node .claude/bin/sf-sdlc mcp status`.
-3. **Jira and Confluence**: Option A, browser sign-in through `/mcp` → `atlassian` (recommended);
-   Option B, API token in `.env` → the `atlassian-token` server (needs uv or Docker).
-4. **GitHub**: `gh auth login`, or `GITHUB_TOKEN` in `.env` and `node .claude/bin/sf-sdlc env gh-login`.
-
-For `.env`: tell the person the file exists, which keys to fill for the option they chose, and to fill
-them **in their editor**. Then run `node .claude/bin/sf-sdlc env status --json` and report each group
-as configured, partial (name the missing keys) or empty. MCP servers read `.env` at start-up, so a
-change needs a Claude Code restart. When Jira tools are available, make one read-only call (list
-projects) to confirm the connection and to fill the `jira` configuration in step 5.
-
-## 4. Explore the code
-Run `node .claude/bin/sf-sdlc detect --json`. Read from it: Salesforce DX or not, greenfield or not,
-API version, package directories, namespace, packaging, metadata folders and counts, tooling files
-(`package.json`, Jest config, scratch definition, CI files, `code-analyzer.yml`), and which SDLC
-documents already exist.
-
-Then read, without changing anything:
-- `git remote -v`, `git branch -a`, recent branch names and commit subjects (branch model,
-  ticket-key pattern, commit convention);
-- `sf org list --json` for authorised aliases, and
-  `node .claude/bin/sf-sdlc org classify <alias> --json` for each alias the project might use;
-- `README`, contribution guide, CI workflow files (which branches deploy where, test levels);
-- a sample of the source: the trigger framework, a service and a selector class, a test data
-  factory, naming prefixes, logging, the largest LWC and Flow folders;
-- an existing `specs/constitution.md`, `docs/sdlc/` and `.claude/rules/`.
-Summarise what the project is in five lines or fewer before asking anything.
-
-## 5. Configuration
-Fill `.claude/sf-sdlc.json` using
-[references/config-reference.md](references/config-reference.md) (every key: meaning, example,
-how to detect it, whether to ask).
-
-1. **From detection, without asking**: `salesforce.*` (leave `"auto"` unless the project
-   overrides `sfdx-project.json`), `git.mainBranch`, `git.integrationBranch`,
-   `git.pullRequestBase`, `git.branchPattern` and `git.commitPattern` when history shows one
-   consistent convention, `project.name`.
-2. **Proposed from evidence, confirmed by the user**: org aliases per role (from `sf org list`
-   and the classifier), `git.protectedBranches`, `deploy.pipeline` and `deploy.testLevel` (from
-   CI files), `quality.*` (from an existing constitution, CI thresholds or `code-analyzer.yml`).
-   Show the evidence with each proposal.
-3. **Asked, because they cannot be detected**: `orgs.production` (which aliases are production),
-   `project.code` and `project.client`, the Jira block when no Jira tool is connected, the
-   promotion order if CI does not show it, the branch model if history is inconsistent.
-4. Ask the open questions **in one batch**, each with the detected default. Do not ask what was
-   detected. Leave a key at its default and list it as "unset" rather than inventing a value.
-5. Jira: when a Jira tool is connected, read the site, issue types, field IDs and transitions from
-   the project and propose them; otherwise ask the user to supply them later. Never guess a
-   `customfield_…` ID.
-6. Personal values (a developer's own default org) go in `.claude/sf-sdlc.local.json`, which is
-   not committed.
-7. Run `node .claude/bin/sf-sdlc config validate --json`. Fix every error; report every
-   warning with the key to change.
-
-Safety checks on the result: every alias in `orgs.production` classifies as production (or the
-user confirms an exception); no production alias also appears under `orgs.dev`, `qa` or `uat`;
-`deploy.testLevel.production` is not `NoTestRun`; `deploy.allowDirectProductionDeploy` stays
-false unless the user explicitly sets it.
+## 5. Salesforce MCP servers: state the defaults, offer the rest
+Do not ask "which servers do you want". Say:
+- **On by default:** the servers in `mcp.servers` (Metadata Experts and Metadata Grounding).
+- **Also available:** the rest of `node .claude/bin/sf-sdlc mcp list` with its one-line summary —
+  SObject Reads (read records and schema), SObject All (read and change records), Headless 360,
+  Data 360. Add one with `node .claude/bin/sf-sdlc mcp enable <name>`; remove with `mcp disable`.
+- Each server must also be switched on in the org. That is the person's step: give the Setup link from
+  the checklist (`url`) and "type MCP in Quick Find → MCP Servers → turn on <name>".
+- In `/mcp` a Salesforce server showing "no tools" means it is not switched on in the org yet. That
+  is normal, not an error.
+- A server the kit does not list cannot be added through the kit. Say that plainly; do not guess a URL.
+Details: [references/environment-setup.md](references/environment-setup.md).
 
 ## 6. Skills
-The `sdlc-*` skills are always available from the kit. Salesforce technical skills are installed
-per project into `.claude/skills/`, and every installed skill costs context in every session.
+Setup already installed them. Report in two lines: how many, and the reason in plain words ("your
+project has Apex, Lightning components and Flows"). Then:
+- skills left out for space are in the step's `availableLater`; install one when the work needs it:
+  `node .claude/bin/sf-sdlc skills install <name>`;
+- org-only features the source cannot show (Experience Cloud, OmniStudio, Agentforce, Data Cloud):
+  add them only when the person mentions them — `node .claude/bin/sf-sdlc skills list --all --json`;
+- never overwrite a locally modified skill (`skills sync` reports it); skills the kit did not install
+  are never touched;
+- after a kit upgrade: `node .claude/bin/sf-sdlc setup`, then `skills sync --dry-run`, then `skills sync`.
 
-1. Run `node .claude/bin/sf-sdlc skills recommend --json` (add `--profile developer|admin|ba` when
-   there is little or no source to detect from).
-2. **Core set, every project and profile**: diagrams (`sf-diagram`,
-   `external-diagram-mermaid-generate`), Salesforce documentation, SOQL, API context, environment
-   check and org management (the `core` rule in `catalog/detection-rules.json`). Every Salesforce DX
-   project adds deploy, retrieve and the official Code Analyzer (the `base` rule).
-3. **Explain each further recommendation with its evidence**, taken from the output's reasons
-   ("the project contains Lightning Web Components: `lwc/` has 14 bundles").
-4. **Add what detection cannot see**, each with its own stated reason:
-   - org-only features that are not in source (Experience Cloud sites, OmniStudio, Agentforce,
-     Data Cloud, managed packages) — from `sf package installed list --target-org <alias>` on a
-     non-production org the user names, or from the user;
-   - planned work in the BRD, backlog or HLD (an integration, a mobile requirement, a data
-     migration) that needs a skill the current source does not justify;
-   - team conventions (a test framework, a DevOps tool).
-   Find candidates with `node .claude/bin/sf-sdlc skills list --all --json`.
-5. **Remove what is not needed**: recommendations for metadata the team will not touch.
-6. **Profiles**: *business analyst or manager* — the core set only; *admin* — the core set plus data
-   model, permissions, Flow, validation and sharing; *developer* — the above as needed, plus Apex,
-   Apex tests, LWC, deployment and analysis. A mixed team installs for the work the repository holds.
-7. Show the final list (install, already installed, removed, with reasons) and **wait for
-   confirmation**. Then `node .claude/bin/sf-sdlc skills install <names> --json`.
-8. **Keep the set small.** `doctor` reports the skill listing budget; if it is exceeded, propose
-   removals (`node .claude/bin/sf-sdlc skills remove <names>`) before adding anything.
-9. The lock file `.claude/sf-sdlc.skills.lock.json` records source and content hash per
-   installed skill (and per installed rule file); it is committed with the skills.
-
-**Upgrades and local edits.** After a kit upgrade run `node .claude/bin/sf-sdlc init` (updates
-unedited rule files) and `node .claude/bin/sf-sdlc skills sync --dry-run --json`, show what would
-change, then `skills sync`. Skills or rules whose content differs from the lock are **locally
-modified**: sync and init leave them alone and report them. Never overwrite or force-remove a locally
-edited file; show the user the name and let them decide. Skills in `.claude/skills/` that the kit did
-not install are "unmanaged" and are never touched.
+Sections 7 and 8 are the deeper study of an existing codebase. Start them after the checklist is on
+screen; they may run in the **sdlc-project-scout-agent** subagent while the person does their steps.
+They read `git log`, the README, CI files and a sample of the source (trigger framework, a service
+class, a test data factory, naming prefixes).
 
 ## 7. Baseline
 For an existing project (detection shows metadata), record what exists so that later designs
@@ -186,7 +150,7 @@ can mark components New, Changed, Unchanged or Removed:
 2. Write `docs/sdlc/03-architecture/baseline/inventory.md` (root from `paths.docs`) using the
    baseline template in
    `.claude/skills/sdlc-solution-architecture-generate/references/baseline-template.md`:
-   classification, baseline commit, counts by metadata type, conventions found in step 4 (trigger
+   classification, baseline commit, counts by metadata type, conventions found while reading the source (trigger
    framework, naming prefix, test data factory, logging), automation per object, gaps.
 3. State what the source tree cannot show (components created in Setup and never retrieved)
    and list it as a gap. Check an org only when the user names a non-production one.
@@ -198,7 +162,7 @@ skip the baseline and say so.
 Draft the two grounding files described in the `sdlc-workflow` skill (section Grounding), under
 `<paths.docs>/00-grounding/`. Never overwrite existing ones; propose additions instead.
 
-1. **Hosted MCP status**: use the result of step 3 (`node .claude/bin/sf-sdlc mcp status --json`).
+1. **Hosted MCP status**: use the checklist (or `node .claude/bin/sf-sdlc mcp status --json`).
    If Metadata Grounding is off or inactive, say what it needs and continue without it.
 2. **`feature-map.md`** from
    `.claude/skills/sdlc-workflow/references/feature-map-template.md`: group the baseline
@@ -216,26 +180,14 @@ Draft the two grounding files described in the `sdlc-workflow` skill (section Gr
 
 Both files are drafts until the lead confirms the terms.
 
-## 9. Final check
-Run [references/setup-checklist.md](references/setup-checklist.md), then
-`node .claude/bin/sf-sdlc doctor --json`, `node .claude/bin/sf-sdlc config validate --json` and
-`node .claude/bin/sf-sdlc env status --json` once more.
+## 9. Finish
+Run `node .claude/bin/sf-sdlc setup --json` once more and print the checklist from section 2 again —
+this is the last thing the person sees. Under it, at most four lines:
+- what is still theirs to do, in order, each with its link;
+- "Restart Claude Code (or run `/reload-plugins`) so the new skills and connections load";
+- what to commit: `.claude/`, `.gitignore`, `code-analyzer.yml` — never `.env`;
+- the next step: `/sdlc-brd` for new requirements, or `/sdd-specify` for build work.
 
-Report, in this order (plain language for non-technical people):
-1. Environment: what is installed, what was installed now, what was skipped and why.
-2. Connections: Salesforce org(s) and their classification, hosted MCP servers, Jira/Confluence
-   (which option), GitHub — each connected, skipped, or waiting on the person (and what to do).
-3. What was detected (project type, greenfield or brownfield, API version, main metadata).
-4. The configuration: values set and where each came from (detected / confirmed / supplied).
-5. **Still unset**, each with who should supply it and what does not work until then
-   (for example "`orgs.production` empty: production is recognised only by org type").
-6. Skills installed and why; skills deliberately not installed; locally modified skills or rules.
-7. Failed doctor checks with the fix for each.
-8. Baseline path, or why none was written; grounding files and whether the grounding MCP was used.
-9. Next steps: restart Claude Code; commit `.claude/settings.json`, `.claude/rules/`,
-   `.claude/sf-sdlc.json`, `.claude/skills/`, the lock file and `.gitignore` (never `.env`);
-   teammates who clone the repository trust the folder and install the plugin once with
-   `claude plugin install sf-sdlc@nagarro-sf --scope project`; then `/sdlc-brd` for new
-   requirements, or `/sdd-constitution` and `/sdd-specify` for build work.
-
-The configuration is a draft until the project lead confirms it. Do not start another stage.
+A project lead who wants the full audit: [references/setup-checklist.md](references/setup-checklist.md).
+Teammates who clone the repository run `claude plugin install sf-sdlc@nagarro-sf --scope project`
+once. Do not start another stage.

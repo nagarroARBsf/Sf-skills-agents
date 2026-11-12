@@ -1,7 +1,8 @@
 # Setup checklist
 
-Run at the end of setup, and again whenever `/sdlc-doctor` is asked for. Each unticked item goes
-into the report with its owner. Items that do not apply to the project (for example org checks
+The full audit behind the short checklist that `node .claude/bin/sf-sdlc setup` prints. Use it when a
+project lead asks whether setup is complete; do not show it to a person during setup. Each unticked
+item goes into the report with its owner. Items that do not apply to the project (for example org checks
 on a requirements-only project) are marked "n/a" with the reason.
 
 ## Tooling (`node .claude/bin/sf-sdlc doctor --json`)
@@ -72,7 +73,7 @@ on a requirements-only project) are marked "n/a" with the reason.
 ## Skills (`node .claude/bin/sf-sdlc skills list --json`)
 - [ ] Every installed technical skill has a stated reason: detection evidence, an org-only
       feature, or planned work.
-- [ ] The user confirmed the list before installation.
+- [ ] The person was told which skills were installed and why, and how to add or remove one.
 - [ ] The core set is installed (or its absence explained); business-analyst or manager projects
       have nothing beyond it.
 - [ ] The skill listing budget check in `doctor` passes; otherwise removals were proposed.

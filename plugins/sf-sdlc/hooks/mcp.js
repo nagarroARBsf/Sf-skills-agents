@@ -19,11 +19,17 @@ const HOSTED_SERVERS = {
   'metadata-grounding': { route: 'platform/metadata-grounding', writes: false, summary: 'find existing org metadata by meaning (needs Data 360 and Salesforce Catalog)' },
   'headless-360': { route: 'platform/headless-360', writes: true, summary: 'live Setup state and org REST/Connect operations' },
   'data360': { route: 'data/data360', writes: true, summary: 'Data 360 recipes and operations' },
+  'sobject-reads': { route: 'platform/sobject-reads', writes: false, summary: 'read records and object schema: describe, SOQL query, search (read-only)' },
+  'sobject-all': { route: 'platform/sobject-all', writes: true, summary: 'read, create, update and delete records' },
 };
 
 // Tools that may change the org. Claude Code tool names are mcp__<server>__<tool>, where <server> is
 // sf-<name> in a project .mcp.json or plugin_sf-sdlc_sf-<name> for the plugin.
-const WRITE_TOOLS = { 'headless-360': ['dispatch'], 'data360': ['execute'] };
+// '*' means every tool on that server asks unless its name is plainly a read (READ_TOOL_NAME).
+const WRITE_TOOLS = { 'headless-360': ['dispatch'], 'data360': ['execute'], 'sobject-all': '*' };
+const READ_TOOL_NAME = /^(get|list|describe|query|search|find|read|soql|sosl)(?![a-z])/;
+// What to show a person: the servers setup turns on by default, and where to switch them on.
+const SETUP_PATH = '/lightning/setup/SetupOneHome/home';
 
 function serverUrl(name, env = process.env) {
   const s = HOSTED_SERVERS[name];
@@ -75,7 +81,8 @@ function classifyStatus(status, body) {
 function parseToolName(toolName) {
   const m = /^mcp__(?:plugin_[^_]+(?:_[^_]+)*?_)?sf-([a-z0-9-]+)__(.+)$/.exec(String(toolName || ''));
   if (!m || !HOSTED_SERVERS[m[1]]) return null;
-  return { server: m[1], tool: m[2], writes: (WRITE_TOOLS[m[1]] || []).includes(m[2]) };
+  const w = WRITE_TOOLS[m[1]];
+  return { server: m[1], tool: m[2], writes: w === '*' ? !READ_TOOL_NAME.test(m[2]) : (w || []).includes(m[2]) };
 }
 
 function mintJwt(org, root) {
@@ -157,7 +164,7 @@ function serveNoTools(label, reason, log) {
 }
 
 module.exports = {
-  MCP_API_VERSION, HOSTED_SERVERS, WRITE_TOOLS,
+  MCP_API_VERSION, HOSTED_SERVERS, WRITE_TOOLS, SETUP_PATH,
   serverUrl, enabledServers, mcpOrg, parseRpcBody, classifyStatus, parseToolName,
   mintJwt, rpc, probe, recordHealth, readHealth, noToolsReply, serveNoTools,
 };

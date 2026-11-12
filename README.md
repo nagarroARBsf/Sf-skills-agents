@@ -24,11 +24,15 @@ browser, or publish `docs/` with GitHub Pages).
 
 ## Install in one minute
 
-```text
-/plugin marketplace add nagarroARBsf/Sf-skills-agents
-/plugin install sf-sdlc@nagarro-sf
-/sf-sdlc:setup
+```bash
+claude plugin marketplace add nagarroARBsf/Sf-skills-agents
+claude plugin install sf-sdlc@nagarro-sf --scope project
 ```
+
+Then in Claude Code (run `/reload-plugins` first if it was already open): `/sf-sdlc:setup`. Setup
+does the work first — project files, skills chosen from your code, every check — and shows a
+checklist of what is done, what Claude can do when you say yes, and what only you can do, with the
+link for each. (`/plugin …` also works, but only in the terminal version of Claude Code.)
 
 Or copy the `.claude/` folder into your project and run `/sdlc-setup`. Command names below are the
 plugin's; with the copied folder use `/sdlc-<name>` for lifecycle commands and `/sdd-<name>` for the
@@ -295,6 +299,13 @@ never overwrites a skill you edited. Starter sets: `--profile developer`, `admin
   format moves. Monitors do not run in headless (`claude -p`) sessions.
 - **Workflows depend on your Claude plan and provider** and can be disabled by an administrator.
   Each has a plain command that does the same job without parallelism.
+- **The SObject servers (`sobject-reads`, `sobject-all`) have not been run against a real org.** They use
+  the same route pattern and CLI sign-in as the other hosted servers; whether Salesforce accepts that
+  sign-in for them is unverified. They are off by default, and a server that does not answer shows as
+  "no tools" with the reason. `sobject-all` tool names are not known to the kit, so every tool on it
+  asks first unless its name is plainly a read (`get…`, `list…`, `describe…`, `query…`, `search…`).
+- **`sf-sdlc setup --install-tools` installs only what needs no administrator password** (Salesforce CLI
+  through npm, and CLI plugins). Node.js, git, Java and the GitHub CLI are listed with the command.
 - **The token-based Jira/Confluence server (`atlassian-token`) has not been run against a real Jira.**
   It starts the community `mcp-atlassian` server, which is not part of this kit and is fetched by
   `uvx` (or Docker) when it starts; it is unpinned unless you set `ATLASSIAN_MCP_PACKAGE` or

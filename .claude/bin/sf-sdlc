@@ -16,7 +16,7 @@ const argv = process.argv.slice(2);
 const JSON_OUT = argv.includes('--json');
 const flags = {};
 const pos = [];
-const VALUE_FLAGS = new Set(['--org', '--from', '--severity', '--job-id', '--run-id', '--tests', '--level', '--manifest', '--source-dir', '--wait', '--profile', '--tail', '--output', '--rule-selector', '--report', '--type']);
+const VALUE_FLAGS = new Set(['--jira', '--org', '--from', '--severity', '--job-id', '--run-id', '--tests', '--level', '--manifest', '--source-dir', '--wait', '--profile', '--tail', '--output', '--rule-selector', '--report', '--type']);
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a.startsWith('--')) {
@@ -28,7 +28,7 @@ for (let i = 0; i < argv.length; i++) {
 }
 
 const root = lib.projectDir();
-const cfg = lib.loadConfig(root);
+let cfg = lib.loadConfig(root);
 
 function out(data, text) {
   if (JSON_OUT) process.stdout.write(JSON.stringify(data, null, 2) + '\n');
@@ -42,7 +42,7 @@ function fail(msg, code = 1) {
 
 // ------------------------------------------------------------------ doctor
 
-function doctor() {
+function doctorRows() {
   const rows = [];
   const add = (name, ok, detail, fix, required = true) => rows.push({ name, ok, required, detail, fix: ok ? undefined : fix });
   const major = Number(process.versions.node.split('.')[0]);
@@ -98,6 +98,13 @@ function doctor() {
   add('.gitignore covers .sf/, .sfdx/, .sf-sdlc/', ['.sf/', '.sfdx/', '.sf-sdlc/'].every((p) => gi.includes(p)), '', 'Run `sf-sdlc init` to add the entries.');
   const sk = skillsState();
   add('skill listing budget', sk.listingChars <= 8000, `${sk.installed.length} project skills, about ${sk.listingChars} description characters (Claude Code shares roughly 1% of the context window between all skill descriptions; about 8,000 characters on a 200k-token model)`, 'Remove skills the project does not need: `sf-sdlc skills remove <name>`.', false);
+  const IDS = [[/^node$/, 'node'], [/^git$/, 'git'], [/^sf CLI/, 'sf'], [/Code Analyzer \(/, 'code-analyzer'], [/^Java/, 'java'], [/^sfdx-git-delta/, 'sgd'], [/^Lightning Flow Scanner/, 'lfs'], [/^gh CLI/, 'gh'], [/^gh signed in/, 'gh-auth'], [/^\.env/, 'env'], [/^uv or Docker/, 'uv'], [/plugin enabled/, 'plugin-scope'], [/^kit rules/, 'rules'], [/^mermaid-cli/, 'mermaid'], [/^sfdx-project/, 'sfdx'], [/sf-sdlc\.json$/, 'config'], [/^default target org/, 'org'], [/hosted MCP/, 'mcp'], [/^\.gitignore/, 'gitignore'], [/^skill listing/, 'budget']];
+  for (const r of rows) r.id = (IDS.find(([re]) => re.test(r.name)) || [])[1] || r.name;
+  return rows;
+}
+
+function doctor() {
+  const rows = doctorRows();
   const ok = rows.every((r) => r.ok || !r.required);
   out({ ok, checks: rows }, () => rows.map((r) => `${r.ok ? '✔' : r.required ? '✘' : '•'} ${r.name}${r.detail ? ' — ' + r.detail : ''}${r.fix ? `\n    fix: ${r.fix}` : ''}`).join('\n') + `\n\n${ok ? 'Ready.' : 'Required items are missing.'}`);
   process.exit(ok ? 0 : 1);
@@ -105,7 +112,7 @@ function doctor() {
 
 // ------------------------------------------------------------------ init
 
-function init() {
+function initRun() {
   const done = [];
   const skipped = [];
   const cp = lib.configPaths(root);
@@ -156,7 +163,12 @@ function init() {
   const env = envfile.ensure(root);
   if (env.result === 'kept') skipped.push('.env (exists; values untouched)');
   else done.push(`.env (${env.result}${env.added ? ': ' + env.added.join(', ') : ''}; fill the values in your editor)`);
-  out({ ok: true, created: done, skipped, next: 'Fill .env in your editor if you use Jira/Confluence/GitHub tokens, edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run `sf-sdlc doctor` and `sf-sdlc skills recommend`. Restart Claude Code so new settings, rules and MCP servers load.' },
+  return { created: done, skipped };
+}
+
+function init() {
+  const { created: done, skipped } = initRun();
+  out({ ok: true, created: done, skipped, next: 'Fill .env in your editor if you use Jira/Confluence/GitHub tokens, edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run `sf-sdlc doctor` and `sf-sdlc skills recommend`. Restart Claude Code so new settings, rules and MCP servers load. `sf-sdlc setup` does all of this in one go.' },
     () => `${done.map((d) => 'created  ' + d).concat(skipped.map((s) => 'kept     ' + s)).join('\n')}\n\nNext: fill .env in your editor if you use Jira/Confluence/GitHub tokens, edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run \`sf-sdlc doctor\` and \`sf-sdlc skills recommend\`. Restart Claude Code so new settings, rules and MCP servers load.`);
 }
 
@@ -255,7 +267,16 @@ function envCmd() {
     const s = lib.run('gh', ['auth', 'status'], { cwd: root, timeout: 30000 });
     return out({ ok: true }, `gh is signed in.${s.status === 0 ? '' : ' (gh auth status did not confirm; run it yourself to check.)'} You may now delete GITHUB_TOKEN from .env; gh keeps its own login.`);
   }
-  fail('usage: sf-sdlc env status|init|gh-login');
+  if (sub === 'set') {
+    const pairs = pos.slice(2).map((a) => { const i = a.indexOf('='); return i > 0 ? [a.slice(0, i), a.slice(i + 1)] : null; });
+    if (!pairs.length || pairs.some((x) => !x)) fail(`usage: sf-sdlc env set KEY=VALUE [...]  (addresses and user names only: ${envfile.PLAIN_KEYS.join(', ')})`);
+    const res = [];
+    const bad = pairs.find(([k]) => !envfile.PLAIN_KEYS.includes(k));
+    if (bad) fail(`"${bad[0]}" cannot be set from the command line: only ${envfile.PLAIN_KEYS.join(', ')}. Type secrets (tokens, passwords) into .env in your editor. Nothing was changed.`);
+    try { for (const [k, v] of pairs) res.push(envfile.setPlain(root, k, v)); } catch (e) { fail(e.message); }
+    return out({ ok: true, set: res.map((r) => r.key) }, `.env: set ${res.map((r) => r.key).join(', ')}. Tokens are still yours to type into .env in your editor.`);
+  }
+  fail('usage: sf-sdlc env status|init|set|gh-login');
 }
 
 // The copy-in folder registers the hosted MCP servers in the project's .mcp.json (the plugin ships
@@ -284,7 +305,19 @@ async function mcpCmd() {
     const rows = Object.entries(mcp.HOSTED_SERVERS).map(([n, s]) => ({ name: n, server: `sf-${n}`, enabled: on.includes(n), canChangeOrg: s.writes, summary: s.summary }));
     return out({ org: mcp.mcpOrg(root, cfg) || null, servers: rows }, () => `Org: ${mcp.mcpOrg(root, cfg) || '(none)'}\n` + rows.map((r) => `${r.enabled ? '✔' : '•'} ${r.server.padEnd(22)} ${r.summary}${r.canChangeOrg ? ' — can change the org; every change asks first' : ''}`).join('\n'));
   }
-  if (sub !== 'status') fail('usage: sf-sdlc mcp status|list [server...]');
+  if (sub === 'enable' || sub === 'disable') {
+    const want = pos.slice(2);
+    if (!want.length) fail(`usage: sf-sdlc mcp ${sub} <server...>  (known: ${Object.keys(mcp.HOSTED_SERVERS).join(', ')})`);
+    for (const n of want) if (!mcp.HOSTED_SERVERS[n]) fail(`unknown server "${n}" (known: ${Object.keys(mcp.HOSTED_SERVERS).join(', ')})`);
+    saveConfig((c) => {
+      c.mcp = c.mcp || {};
+      const cur = Array.isArray(c.mcp.servers) ? c.mcp.servers : mcp.enabledServers(cfg);
+      c.mcp.servers = sub === 'enable' ? [...new Set([...cur, ...want])] : cur.filter((n) => !want.includes(n));
+    });
+    const on = mcp.enabledServers(cfg);
+    return out({ ok: true, servers: on }, `mcp.servers: ${on.join(', ') || '(none)'}\nTurn each one on in the org (Setup → MCP Servers), then restart Claude Code.`);
+  }
+  if (sub !== 'status') fail('usage: sf-sdlc mcp status|list|enable|disable [server...]');
   const names = pos.slice(2).length ? pos.slice(2) : mcp.enabledServers(cfg);
   for (const n of names) if (!mcp.HOSTED_SERVERS[n]) fail(`unknown server "${n}" (known: ${Object.keys(mcp.HOSTED_SERVERS).join(', ')})`);
   if (!names.length) fail('no hosted MCP servers are enabled: add names to mcp.servers in .claude/sf-sdlc.json');
@@ -349,11 +382,10 @@ function skillsState() {
   return { installed, listingChars };
 }
 
-function recommend() {
+function recommendData(profile) {
   const rules = lib.readJson(path.join(lib.KIT_ROOT, 'catalog', 'detection-rules.json'));
   if (!rules) fail('catalog/detection-rules.json not found in the kit.');
   const d = detect();
-  const profile = flags['--profile'];
   const names = new Set(catalog().map((s) => s.name));
   const have = new Set(skillsState().installed.map((s) => s.name));
   const picks = new Map();
@@ -371,12 +403,18 @@ function recommend() {
     if (!evidence) continue;
     for (const s of rule.skills) {
       if (!names.has(s)) continue;
-      const p = picks.get(s) || { name: s, reasons: [], installed: have.has(s) };
+      const p = picks.get(s) || { name: s, rule: rule.id, core: Boolean(w.core), primary: rule.skills[0] === s, kind: w.core ? 'core' : /^(Salesforce DX project|profile)/.test(evidence) ? 'base' : /^hosted MCP/.test(evidence) ? 'mcp' : 'code', reasons: [], installed: have.has(s) };
       p.reasons.push(`${rule.reason} [${evidence}]`);
       picks.set(s, p);
     }
   }
-  const list = [...picks.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return { d, ordered: [...picks.values()] };
+}
+
+function recommend() {
+  const profile = flags['--profile'];
+  const { d, ordered } = recommendData(profile);
+  const list = ordered.slice().sort((a, b) => a.name.localeCompare(b.name));
   const toInstall = list.filter((p) => !p.installed).map((p) => p.name);
   out({ profile: profile || null, detected: { greenfield: d.greenfield, folders: d.folders, counts: d.counts }, recommended: list, toInstall, installCommand: toInstall.length ? `sf-sdlc skills install ${toInstall.join(' ')}` : null, note: 'Detection reads the source tree only. Add skills for org-only features and planned work by name; see `sf-sdlc skills list --all`.' },
     () => (list.length ? list.map((p) => `${p.installed ? '✔' : '+'} ${p.name}\n    ${p.reasons.join('\n    ')}`).join('\n') : 'No technical skills recommended (no Salesforce source detected). Use --profile developer|admin|ba to pick a starter set.') +
@@ -384,6 +422,25 @@ function recommend() {
 }
 
 function copyDir(src, dest) { fs.cpSync(src, dest, { recursive: true }); }
+
+function installSkills(names) {
+    const lock = readLock();
+    const res = [];
+    const cat = new Map(catalog().map((s) => [s.name, s]));
+    for (const n of names) {
+      const src = path.join(libraryDir(), n);
+      const dest = path.join(projectSkills(), n);
+      if (!fs.existsSync(path.join(src, 'SKILL.md'))) { res.push({ name: n, result: cat.has(n) && cat.get(n).location === 'skills' ? 'already part of the kit (always loaded)' : 'not found in the skill library' }); continue; }
+      if (fs.existsSync(dest) && !flags['--force']) { res.push({ name: n, result: 'already installed (use --force to replace)' }); continue; }
+      fs.rmSync(dest, { recursive: true, force: true });
+      fs.mkdirSync(projectSkills(), { recursive: true });
+      copyDir(src, dest);
+      lock.skills[n] = { hash: lib.hashDir(dest), source: (cat.get(n) || {}).source || 'unknown', installedAt: new Date().toISOString().slice(0, 10) };
+      res.push({ name: n, result: 'installed' });
+    }
+    writeLock(lock);
+    return res;
+}
 
 function skillsCmd() {
   const sub = pos[1] || 'list';
@@ -400,21 +457,7 @@ function skillsCmd() {
   }
   if (sub === 'install') {
     if (!names.length) fail('usage: sf-sdlc skills install <name> [<name>...]');
-    const lock = readLock();
-    const res = [];
-    const cat = new Map(catalog().map((s) => [s.name, s]));
-    for (const n of names) {
-      const src = path.join(libraryDir(), n);
-      const dest = path.join(projectSkills(), n);
-      if (!fs.existsSync(path.join(src, 'SKILL.md'))) { res.push({ name: n, result: cat.has(n) && cat.get(n).location === 'skills' ? 'already part of the kit (always loaded)' : 'not found in the skill library' }); continue; }
-      if (fs.existsSync(dest) && !flags['--force']) { res.push({ name: n, result: 'already installed (use --force to replace)' }); continue; }
-      fs.rmSync(dest, { recursive: true, force: true });
-      fs.mkdirSync(projectSkills(), { recursive: true });
-      copyDir(src, dest);
-      lock.skills[n] = { hash: lib.hashDir(dest), source: (cat.get(n) || {}).source || 'unknown', installedAt: new Date().toISOString().slice(0, 10) };
-      res.push({ name: n, result: 'installed' });
-    }
-    writeLock(lock);
+    const res = installSkills(names);
     const st = skillsState();
     return out({ results: res, listingChars: st.listingChars }, () => res.map((r) => `${r.name}: ${r.result}`).join('\n') + `\n\nRestart the Claude Code session (or run /reload-plugins) so new skills are listed. Listing size: about ${st.listingChars} characters.`);
   }
@@ -677,12 +720,226 @@ function audit() {
   out({ file: path.relative(root, file), total: rows.length, entries: tail }, () => tail.map((r) => `${r.at}  ${String(r.outcome).padEnd(6)} ${String(r.orgKind).padEnd(10)} ${String(r.targetOrg).padEnd(20)} ${r.user}  ${r.command}`).join('\n') || 'No org-affecting commands recorded yet.');
 }
 
+
+// ------------------------------------------------------------------ setup
+
+// Change the shared config file and reload it. Creates the file from the defaults when it is missing.
+function saveConfig(mutate) {
+  const file = lib.configPaths(root).shared;
+  const cur = lib.readJson(file);
+  if (fs.existsSync(file) && !cur) fail('.claude/sf-sdlc.json is not valid JSON; fix it first.');
+  const c = cur || {};
+  mutate(c);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(c, null, 2) + '\n');
+  cfg = lib.loadConfig(root);
+}
+
+// Tools the kit can install without an administrator password. Everything else is listed for the person.
+const AUTO_INSTALL = {
+  sf: ['npm', ['install', '--global', '@salesforce/cli']],
+  'code-analyzer': ['sf', ['plugins', 'install', 'code-analyzer']],
+  sgd: ['sf', ['plugins', 'install', 'sfdx-git-delta']],
+  lfs: ['sf', ['plugins', 'install', 'lightning-flow-scanner']],
+};
+
+const LINKS = {
+  atlassianToken: 'https://id.atlassian.com/manage-profile/security/api-tokens',
+  githubToken: 'https://github.com/settings/personal-access-tokens/new',
+  gh: 'https://cli.github.com',
+  node: 'https://nodejs.org/en/download',
+  java: 'https://adoptium.net/temurin/releases/?version=17',
+  uv: 'https://docs.astral.sh/uv/getting-started/installation/',
+};
+
+// One run that does everything that needs no decision, then reports a checklist: what is done, what
+// Claude can do on a yes, and what only the person can do (with the link or command for each).
+// Safe to run again at any time; it never overwrites a value or a file somebody edited.
+async function setupCmd() {
+  const profile = ['developer', 'admin', 'ba'].includes(flags['--profile']) ? flags['--profile'] : null;
+  const offline = Boolean(flags['--offline']);
+  const steps = [];
+  // state: done | claude (Claude can do it on a yes) | you (only the person can) | optional | skipped
+  const add = (area, item, state, detail, extra = {}) => steps.push({ area, item, state, detail: detail || '', ...extra });
+
+  // 1. Git repository
+  if (lib.has('git')) {
+    if (lib.git(['rev-parse', '--is-inside-work-tree'], root) === 'true') add('Project', 'Git repository', 'done', `branch ${lib.git(['branch', '--show-current'], root) || '(no commits yet)'}`);
+    else if (flags['--no-git']) add('Project', 'Git repository', 'optional', 'not a git repository (skipped: --no-git)');
+    else {
+      const ok = lib.git(['init', '-b', 'main'], root) !== null || lib.git(['init'], root) !== null;
+      add('Project', 'Git repository', ok ? 'done' : 'you', ok ? 'created now (empty; nothing committed)' : 'could not create it', ok ? {} : { command: 'git init' });
+    }
+  }
+
+  // 2. Project files
+  const files = initRun();
+  cfg = lib.loadConfig(root);
+  add('Project', 'Kit files (settings, rules, config, .env template, .gitignore)', 'done', files.created.length ? `created ${files.created.length}: ${files.created.map((f) => f.split(' ')[0]).join(', ')}` : 'already in place');
+
+  // 3. Tools
+  const wantSf = profile !== 'ba';
+  let rows = doctorRows();
+  const installed = [];
+  if (flags['--install-tools']) {
+    for (const id of ['sf', 'code-analyzer', 'sgd', 'lfs']) {
+      const row = rows.find((r) => r.id === id);
+      if (!row || row.ok || !wantSf) continue;
+      if (id !== 'sf' && !lib.has('sf')) continue;
+      const [cmd, args] = AUTO_INSTALL[id];
+      const r = lib.run(cmd, args, { cwd: root, timeout: 600000, input: 'y\n' });
+      installed.push({ id, ok: r.status === 0, detail: r.status === 0 ? 'installed now' : (r.stderr || r.stdout).replace(/\s+/g, ' ').trim().slice(-200) });
+    }
+    rows = doctorRows();
+  }
+  const os = process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : 'linux';
+  const manual = {
+    node: { mac: 'brew install node', win: 'winget install OpenJS.NodeJS.LTS', linux: 'sudo apt-get install -y nodejs npm', url: LINKS.node },
+    git: { mac: 'xcode-select --install', win: 'winget install Git.Git', linux: 'sudo apt-get install -y git' },
+    java: { mac: 'brew install --cask temurin@17', win: 'winget install EclipseAdoptium.Temurin.17.JDK', linux: 'sudo apt-get install -y openjdk-17-jdk', url: LINKS.java },
+    gh: { mac: 'brew install gh', win: 'winget install GitHub.cli', linux: 'sudo apt-get install -y gh', url: LINKS.gh },
+    mermaid: { mac: 'npm install --global @mermaid-js/mermaid-cli', win: 'npm install --global @mermaid-js/mermaid-cli', linux: 'npm install --global @mermaid-js/mermaid-cli' },
+  };
+  const toolLabel = { node: 'Node.js 18+', git: 'git', sf: 'Salesforce CLI (sf)', 'code-analyzer': 'Salesforce Code Analyzer', java: 'Java 11+ (Code Analyzer engines)', sgd: 'sfdx-git-delta (smaller deployments)', lfs: 'Lightning Flow Scanner', gh: 'GitHub CLI (gh)', mermaid: 'mermaid-cli (diagram images)' };
+  for (const id of ['node', 'git', 'sf', 'code-analyzer', 'java', 'sgd', 'lfs', 'gh', 'mermaid']) {
+    const row = rows.find((r) => r.id === id);
+    if (!row) continue;
+    const did = installed.find((x) => x.id === id);
+    const sfOnly = ['sf', 'code-analyzer', 'java', 'sgd', 'lfs'].includes(id);
+    if (row.ok) add('Tools', toolLabel[id], 'done', did ? 'installed now' : row.detail);
+    else if (sfOnly && !wantSf) add('Tools', toolLabel[id], 'skipped', 'not needed for requirements work');
+    else if (AUTO_INSTALL[id] && (id === 'sf' ? lib.has('npm') : lib.has('sf'))) add('Tools', toolLabel[id], id === 'sf' || id === 'code-analyzer' ? 'claude' : 'optional', did ? `install failed: ${did.detail}` : 'not installed', { command: `${AUTO_INSTALL[id][0]} ${AUTO_INSTALL[id][1].join(' ')}`, auto: true });
+    else if (manual[id]) add('Tools', toolLabel[id], row.required || id === 'java' ? 'you' : 'optional', 'not installed', { command: manual[id][os], url: manual[id].url });
+    else add('Tools', toolLabel[id], 'optional', 'not installed', { command: row.fix });
+  }
+
+  // 4. Salesforce org for this project
+  try { fs.rmSync(path.join(lib.stateDir(root), 'org-list.cache.json'), { force: true }); } catch { /* no cache */ }
+  const orgs = lib.has('sf') && !offline ? (lib.orgList(root) || []) : [];
+  const choices = orgs.filter((o) => o.alias).map((o) => ({ alias: String(o.alias).split(',')[0].trim(), username: o.username, kind: lib.classifyByFacts(o), instanceUrl: o.instanceUrl }))
+    .filter((o, i, all) => all.findIndex((x) => x.alias === o.alias) === i);
+  let projectOrg = null;
+  if (flags['--org'] && flags['--org'] !== true) {
+    const alias = String(flags['--org']);
+    const c = lib.classifyOrg(alias, cfg, root);
+    if (c.kind === 'unknown' && !offline) add('Salesforce', `Project org "${alias}"`, 'you', `${c.reason}. Sign in first.`, { command: `sf org login web --alias ${alias}` });
+    else {
+      saveConfig((j) => {
+        j.orgs = j.orgs || {}; j.mcp = j.mcp || {};
+        if (c.kind === 'production') { j.orgs.production = [...new Set([...(j.orgs.production || []), alias])]; if (j.orgs.dev === alias) j.orgs.dev = ''; }
+        else j.orgs.dev = alias;
+        j.mcp.org = alias;
+      });
+      projectOrg = alias;
+    }
+  } else {
+    const cand = cfg.mcp.org ? lib.resolveOrg(cfg.mcp.org, cfg) : cfg.orgs.dev;
+    if (cand) projectOrg = cand;
+  }
+  if (lib.has('sf') || !wantSf) {
+    if (projectOrg) {
+      const c = lib.classifyOrg(projectOrg, cfg, root);
+      add('Salesforce', 'Project org', 'done', `${projectOrg} (${c.kind}${c.kind === 'production' ? ' — protected: every change asks first' : ''})`);
+    } else if (!wantSf) add('Salesforce', 'Project org', 'skipped', 'not needed for requirements work');
+    else if (choices.length) add('Salesforce', 'Project org', 'you', 'Which signed-in org is this project for?', { ask: 'org', choices: choices.map(({ alias, kind }) => ({ alias, kind })), command: 'sf-sdlc setup --org <alias>' });
+    else add('Salesforce', 'Project org', 'claude', 'No org is signed in. A browser window opens; you sign in and allow access.', { command: 'sf org login web --alias dev   (sandbox: add --instance-url https://test.salesforce.com)', then: 'sf-sdlc setup --org dev' });
+  }
+
+  // 5. Skills: the core set always, then what the code shows, in priority order, inside the listing budget.
+  const BUDGET = 8000;
+  let rec = { d: detect(), ordered: [] };
+  try { rec = recommendData(profile === 'ba' || (profile && rec.d.total === 0) ? profile : undefined); } catch { /* no catalog */ }
+  const cost = (n) => Math.min(skillDescription(path.join(libraryDir(), n)).length, 1536) + n.length;
+  let used = skillsState().listingChars;
+  const take = []; const later = [];
+  // Priority: core, then the main skill for each kind of code found, then deploy and analysis, then the rest.
+  const rank = (p) => p.core ? 0 : p.kind === 'code' && p.primary ? 1 : p.kind === 'base' ? (p.primary ? 2 : 3) : p.kind === 'code' ? 4 : 5;
+  for (const p of rec.ordered.map((p, i) => ({ ...p, i })).sort((a, b) => rank(a) - rank(b) || a.i - b.i)) {
+    if (p.installed) continue;
+    const c = cost(p.name);
+    if (p.core || used + c <= BUDGET) { take.push(p.name); used += c; } else later.push(p.name);
+  }
+  const res = take.length ? installSkills(take) : [];
+  const now = skillsState();
+  const d = rec.d;
+  const found = d.total ? Object.entries(d.counts).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t, n]) => `${n} ${t}`).join(', ') : '';
+  add('Project', 'Code explored', 'done', d.isSfdxProject ? (d.total ? `${d.total} components (${found})` : 'new Salesforce project, no metadata yet') : 'no Salesforce source here (documents and requirements still work)');
+  add('Skills', 'Skills for this project', 'done', `${now.installed.length} installed${res.filter((r) => r.result === 'installed').length ? ` (${res.filter((r) => r.result === 'installed').length} added now)` : ''}, chosen from the code`, { installed: now.installed.map((x) => x.name), added: res.filter((r) => r.result === 'installed').map((r) => r.name), availableLater: later });
+  if (later.length) add('Skills', `${later.length} more skills match the code`, 'optional', 'left out to keep Claude fast; add any by name when the work needs it', { command: `sf-sdlc skills install ${later.slice(0, 3).join(' ')}${later.length > 3 ? ' …' : ''}`, names: later });
+
+  // 6. Salesforce hosted MCP servers
+  const servers = mcp.enabledServers(cfg);
+  const others = Object.keys(mcp.HOSTED_SERVERS).filter((n) => !servers.includes(n));
+  const mcpOrg = mcp.mcpOrg(root, cfg);
+  const orgFacts = choices.find((o) => o.alias === mcpOrg || o.username === mcpOrg);
+  const setupUrl = orgFacts && orgFacts.instanceUrl ? orgFacts.instanceUrl.replace(/\/$/, '') + mcp.SETUP_PATH : null;
+  if (wantSf && servers.length) {
+    let probes = null;
+    if (!offline && lib.has('sf') && mcpOrg) { probes = []; for (const n of servers) probes.push(await mcp.probe(n, root, cfg, mcpOrg)); }
+    for (const n of servers) {
+      const pr = probes && probes.find((x) => x.name === n);
+      const label = `Salesforce MCP server: ${n}`;
+      if (pr && pr.state === 'ok') add('Connections', label, 'done', `connected to ${mcpOrg} (${pr.tools.length} tools)`);
+      else if (pr && pr.state === 'inactive') add('Connections', label, 'you', `switched off in org ${mcpOrg}. Open Setup, type "MCP" in Quick Find, open MCP Servers and turn on "${n}". Takes effect in about two minutes.`, { url: setupUrl, command: `sf org open --target-org ${mcpOrg} --path ${mcp.SETUP_PATH}` });
+      else if (pr && pr.state === 'auth') add('Connections', label, 'you', `the sign-in to ${mcpOrg} did not work (expired, or the user has no API access)`, { command: `sf org login web --alias ${mcpOrg}` });
+      else if (pr) add('Connections', label, 'you', `could not reach it: ${pr.detail.slice(0, 120)}`);
+      else add('Connections', label, 'you', mcpOrg ? `not checked yet. Turn it on in the org: Setup → Quick Find "MCP" → MCP Servers.` : 'waits for the project org above', { url: setupUrl });
+    }
+    add('Connections', 'Other Salesforce MCP servers', 'optional', `off by default: ${others.map((n) => `${n} (${mcp.HOSTED_SERVERS[n].summary})`).join('; ')}`, { command: 'sf-sdlc mcp enable <name>', names: others });
+  }
+
+  // 7. Jira / Confluence and GitHub
+  const est = envfile.status(root);
+  if (flags['--jira'] === 'no' || flags['--no-jira']) { saveConfig((j) => { j.jira = { ...(j.jira || {}), enabled: false }; }); add('Connections', 'Jira / Confluence', 'skipped', 'not used (stories are written to a CSV file instead)'); }
+  else if (est.groups.jira.state === 'configured') add('Connections', 'Jira (API token in .env)', lib.has('uvx') || lib.has('docker') ? 'done' : 'you', lib.has('uvx') || lib.has('docker') ? 'token is filled in; restart Claude Code to connect' : 'token is filled in, but the helper program "uv" is missing', lib.has('uvx') || lib.has('docker') ? {} : { url: LINKS.uv, command: os === 'win' ? 'powershell -c "irm https://astral.sh/uv/install.ps1 | iex"' : 'curl -LsSf https://astral.sh/uv/install.sh | sh' });
+  else {
+    const missing = Object.entries(est.groups.jira.keys).filter(([, v]) => !v).map(([k]) => k);
+    add('Connections', 'Jira / Confluence', 'you', `Easiest: type /mcp in Claude Code, choose "atlassian" (shown as plugin:sf-sdlc:atlassian), choose Authenticate and sign in in the browser. Or use an API token: create one at the link, then type it into .env as JIRA_API_TOKEN${missing.filter((k) => k !== 'JIRA_API_TOKEN').length ? ` (also still empty: ${missing.filter((k) => k !== 'JIRA_API_TOKEN').join(', ')} — tell Claude the address and e-mail and it fills those)` : ''}. Not using Jira? Say so.`, { url: LINKS.atlassianToken, ask: 'jira' });
+  }
+  const gh = rows.find((r) => r.id === 'gh');
+  const ghAuth = rows.find((r) => r.id === 'gh-auth');
+  if (gh && gh.ok) add('Connections', 'GitHub sign-in', ghAuth && ghAuth.ok ? 'done' : 'claude', ghAuth && ghAuth.ok ? 'gh is signed in' : 'A browser window opens; you sign in to GitHub.', ghAuth && ghAuth.ok ? {} : { command: 'gh auth login --web --git-protocol https' });
+
+  // 8. Configuration
+  const v = lib.validateConfig(cfg);
+  add('Project', 'Configuration (.claude/sf-sdlc.json)', v.ok ? 'done' : 'you', v.ok ? 'valid' : v.errors.join('; '));
+  if (!cfg.project.code) add('Project', 'Project code (short prefix for documents, e.g. ACME)', 'optional', 'not set; tell Claude and it fills it in', { ask: 'projectCode' });
+
+  const count = (st) => steps.filter((x) => x.state === st);
+  const icon = { done: '✅', claude: '🔧', you: '👉', optional: '➖', skipped: '➖' };
+  const word = { done: 'Done', claude: 'Claude can do this — say yes', you: 'Needs you', optional: 'Optional', skipped: 'Skipped' };
+  const act = (x) => `**${x.item}** — ${x.detail}${x.url ? `\n   Link: ${x.url}` : ''}${x.command ? `\n   Command: \`${x.command}\`` : ''}${x.then ? `\n   Then: \`${x.then}\`` : ''}`;
+  const result = {
+    ok: count('you').length === 0 && count('claude').length === 0,
+    project: cfg.project.name || path.basename(root), profile, projectOrg,
+    summary: { done: count('done').length, claudeCanDo: count('claude').length, needsYou: count('you').length, optional: count('optional').length + count('skipped').length },
+    steps, orgChoices: choices.map(({ alias, kind }) => ({ alias, kind })),
+    restartNeeded: files.created.length > 0 || res.some((r) => r.result === 'installed'),
+  };
+  out(result, () => [
+    `## Setup checklist — ${result.project}`,
+    `${result.summary.done} done · ${result.summary.needsYou} need you · ${result.summary.claudeCanDo} Claude can do on a yes · ${result.summary.optional} optional`,
+    '',
+    '| | Area | Step | Status |', '|---|---|---|---|',
+    ...steps.map((x) => `| ${icon[x.state]} | ${x.area} | ${x.item} | ${x.state === 'done' ? x.detail.replace(/\|/g, '/') : word[x.state]} |`),
+    ...(count('you').length ? ['', '### 👉 Your turn', ...count('you').map((x, i) => `${i + 1}. ${act(x)}`)] : []),
+    ...(count('claude').length ? ['', '### 🔧 Claude can do these — just say yes', ...count('claude').map((x, i) => `${i + 1}. ${act(x)}`)] : []),
+    ...(count('optional').length ? ['', '### ➖ Optional, any time', ...count('optional').map((x) => `- ${act(x)}`)] : []),
+    '', result.restartNeeded ? 'Last step: restart Claude Code (or run /reload-plugins) so the new skills, rules and connections load.' : 'Nothing new to load.',
+    'Run `sf-sdlc setup` again at any time to refresh this list.',
+  ].join('\n'));
+}
+
 const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
 
+  setup [--org <alias>] [--profile developer|admin|ba] [--install-tools] [--no-jira] [--no-git] [--offline]
+                               do everything that needs no decision (files, git, skills, checks) and print a
+                               checklist: done, what Claude can do on a yes, what needs you (with links)
   doctor                       check tools, plugins, config and org setup
   init                         create .claude/sf-sdlc.json, .gitignore entries, code-analyzer.yml, .env template;
                                plugin users also get project settings (plugin on at project scope) and .claude/rules/
   env status|init|gh-login     .env credentials: which are set (never values), create the template, sign gh in
+  env set KEY=VALUE            write an address or user name into .env (never a token)
   config show|validate         show the merged configuration, or validate it
   detect                       what this project contains (metadata folders, counts, tooling)
   inventory                    existing-state inventory of the source tree, by metadata type
@@ -698,12 +955,14 @@ const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
   diagram render <file>        Mermaid to SVG (needs mermaid-cli)
   audit [--tail N]             local log of org-affecting commands
   mcp status|list [server...]  Salesforce hosted MCP servers: probe through the sf CLI login, or list
+  mcp enable|disable <server>  add or remove a hosted server in mcp.servers
 `;
 
 function main() {
   switch (pos[0]) {
     case 'doctor': return doctor();
     case 'init': return init();
+    case 'setup': return setupCmd().catch((e) => fail(String(e && e.message || e)));
     case 'config': {
       const v = lib.validateConfig(cfg);
       if (pos[1] === 'validate') { out(v, () => [...v.errors.map((e) => '✘ ' + e), ...v.warnings.map((w) => '• ' + w), v.ok ? 'Configuration is valid.' : 'Configuration has errors.'].join('\n')); process.exit(v.ok ? 0 : 1); }
