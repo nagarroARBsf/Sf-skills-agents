@@ -1,0 +1,20 @@
+# Salesforce Code Analyzer (v5) configuration, read by `sf code-analyzer run`
+# and `sf-sdlc analyze`. The blocking severity comes from
+# quality.analyzerSeverityThreshold in .claude/sf-sdlc.json (1 = Critical ... 5 = Info).
+
+ignores:
+  files:
+    - "**/node_modules/**"
+    - "**/staticresources/**"
+    - "**/__tests__/**"
+
+# Custom rules: not part of "Recommended", so sf-sdlc analyze and CI also select "Custom".
+engines:
+  regex:
+    custom_rules:
+      NoHardcodedSalesforceIds:
+        regex: '/[''"](?<target>(?=[a-zA-Z0-9]{0,14}\d)[a-zA-Z0-9]{15}(?:[A-Z0-5]{3})?)\\?[''"]/g'
+        description: "Detects hardcoded 15 or 18 character Salesforce record IDs"
+        violation_message: "Replace hardcoded ID with Custom Label, Custom Metadata, or Custom Setting"
+        severity: 2
+        file_extensions: [".cls", ".trigger"]

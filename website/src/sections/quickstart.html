@@ -1,0 +1,12 @@
+    <section id="quickstart" data-tab="start">
+      <h2>Quickstart</h2>
+      <div class="steps">
+        <div class="card step"><div><h3>Run setup in your Salesforce project</h3><p>Checks tools, writes <code>.claude/sf-sdlc.json</code>, records what already exists and recommends only the skills the project needs.</p><pre><code>/sf-sdlc:setup</code></pre></div></div>
+        <div class="card step"><div><h3>Turn on the Salesforce Hosted MCP Servers</h3><p>Required. In the org: Setup → <strong>MCP Servers</strong> → turn on Metadata Grounding, Metadata Experts and the servers your project needs. Then log in once with the Salesforce CLI and check the connection.</p><pre><code>sf org login web --alias my-dev
+sf-sdlc mcp status</code></pre></div></div>
+        <div class="card step"><div><h3>Tell it which orgs are production</h3><p>Open <code>.claude/sf-sdlc.json</code> and list every production alias in <code>orgs.production</code>. This is the one setting you must get right.</p><pre><code>"orgs": { "dev": "orion-dev", "qa": "orion-qa", "uat": "orion-uat", "production": ["orion-prod"] }</code></pre></div></div>
+        <div class="card step"><div><h3>Start at the stage you are in</h3><p>Transcripts? Start with the BRD. A story already in Jira? Start with the spec.</p><pre><code>/sf-sdlc:brd docs/sdlc/00-inputs/
+/sf-sdlc:specify US-04-02
+/sf-sdlc:trace        # where are we, what is blocked</code></pre></div></div>
+      </div>
+    </section>

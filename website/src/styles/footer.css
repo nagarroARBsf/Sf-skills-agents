@@ -1,0 +1,8 @@
+footer { border-top: 1px solid var(--border); padding-top: 22px; color: var(--muted); font-size: 14px; }
+
+.footer-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.footer-brand img { height: 44px; width: auto; border-radius: 8px; }
+.footer-cta { margin: 0 0 12px; color: var(--text); }
+.link-btn { all: unset; color: var(--accent-text); cursor: pointer; font-weight: 600; }
+.link-btn:hover { text-decoration: underline; }
+.link-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }

@@ -1,0 +1,9 @@
+docs/sdlc/
+├── 00-inputs/                 raw transcripts, notes, emails (never edited)
+├── 00-grounding/              ontology.yaml (business terms → objects), feature-map.md
+├── 01-brd/BRD.md
+├── 02-backlog/                backlog.md, jira-import.csv
+├── 03-architecture/           baseline/, components.json, HLD.md, LLD/, ADR/
+├── 04-qa/                     test-strategy.md, test-cases/, test-runs/, defects/, rtm.md
+├── 05-release/                deployments/DEP-001.md, REL-1.2.0/
+└── 06-observe/                findings-YYYYMMDD.md: production findings → defects, stories, constraints

@@ -1,0 +1,14 @@
+{
+  "analytics": {
+    "connectionString": "InstrumentationKey=9ce443e3-f1d8-44c2-b3d2-97d8314fdb6e;IngestionEndpoint=https://centralindia-0.in.applicationinsights.azure.com/;LiveEndpoint=https://centralindia.livediagnostics.monitor.azure.com/;ApplicationId=baf83857-2511-4cde-9490-74721cfb9c76",
+    "engagedSeconds": 20
+  },
+  "lead": {
+    "enabled": false,
+    "endpoint": "/api/lead",
+    "nudge": true,
+    "nudgeScrollPercent": 60,
+    "nudgeAfterSeconds": 45,
+    "snoozeDays": 30
+  }
+}

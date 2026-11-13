@@ -1,0 +1,38 @@
+    <section id="install" data-tab="start">
+      <h2>Install</h2>
+      <p>Pick one form per project. Using both makes every agent and command appear twice.</p>
+      <p class="downloads">
+        <a class="dl-btn" href="downloads/sf-sdlc-plugin.zip" download>&#11015; Download the plugin (.zip)</a>
+        <a class="dl-btn" href="downloads/claude-folder.zip" download>&#11015; Download the .claude folder (.zip)</a>
+      </p>
+      <div class="seg" role="tablist" data-tabs="install">
+        <button role="tab" aria-selected="true" data-target="inst-plugin">Plugin (recommended)</button>
+        <button role="tab" aria-selected="false" data-target="inst-copy">Copy the .claude/ folder</button>
+      </div>
+      <div class="tabpanel" id="inst-plugin">
+<pre><code>/plugin marketplace add nagarroARBsf/Sf-skills-agents
+/plugin install sf-sdlc@nagarro-sf
+/sf-sdlc:setup</code></pre>
+        <p class="muted">Commands are namespaced <code>/sf-sdlc:&lt;name&gt;</code>. The CLI is on the PATH as <code>sf-sdlc</code>. Try a local checkout with <code>claude --plugin-dir plugins/sf-sdlc</code>.</p>
+      </div>
+      <div class="tabpanel" id="inst-copy" hidden>
+<pre><code># from the root of your Salesforce DX project
+cp -r /path/to/Sf-skills-agents/.claude ./.claude
+claude
+/sdlc-setup</code></pre>
+        <p class="muted">Lifecycle commands are <code>/sdlc-&lt;name&gt;</code> and build-phase commands are <code>/sdd-&lt;name&gt;</code>. The CLI is <code>node .claude/bin/sf-sdlc</code>.</p>
+      </div>
+      <h3>Prerequisites</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Tool</th><th>Needed for</th></tr></thead>
+        <tbody>
+          <tr><td>Claude Code 2.1.271+ and Node.js 18+</td><td>Everything: the hooks and the CLI are plain Node, no <code>npm install</code></td></tr>
+          <tr><td>Git</td><td>Change delta, branch guard</td></tr>
+          <tr><td>Salesforce CLI <code>sf</code> v2</td><td>Build, test, deploy</td></tr>
+          <tr><td><code>sf plugins install code-analyzer</code> + Java 11+</td><td>Code review, <code>analyze</code>, the commit gate</td></tr>
+          <tr><td>GitHub CLI <code>gh</code> (optional)</td><td>Pull requests, tags, releases</td></tr>
+          <tr><td><strong>Salesforce Hosted MCP Servers (required)</strong></td><td>How agents see your org: Metadata Grounding and Metadata Experts for every project, plus the servers your project needs. Turned on in the org: Setup → MCP Servers. See <a href="#hosted-mcp">Salesforce Hosted MCP Servers</a></td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">Business analysts and managers who only produce documents need Claude Code and Node.js only.</p>
+    </section>

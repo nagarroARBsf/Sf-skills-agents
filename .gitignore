@@ -13,5 +13,6 @@ __pycache__/
 .sf-sdlc/
 .claude/sf-sdlc.local.json
 
-# Generated static site (scripts/build-site.py)
+# Generated static site (scripts/build-site.py) and website videos (too large for git)
 site/
+website/media/

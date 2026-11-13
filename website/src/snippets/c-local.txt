@@ -1,0 +1,1 @@
+{ "orgs": { "dev": "my-scratch-org" }, "hooks": { "mode": "enforce" } }

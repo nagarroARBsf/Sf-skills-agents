@@ -1,0 +1,30 @@
+    <section id="structure" data-tab="plugin">
+      <div class="eyebrow">Plugin structure</div>
+      <div class="card explorer">
+        <div class="explorer-head">
+          <h2>What goes in the plugin</h2>
+          <p>The <code>sf-sdlc</code> plugin has one of nearly every kind of Claude Code plugin component. Select a file or folder to read what it is for, what you configure, and how you use it. Switch to <em>Your project</em> to see what setup creates in your Salesforce repository.</p>
+        </div>
+        <div class="explorer-body">
+          <div class="tree-pane">
+            <div class="pane-label">
+              <span id="treeTitle">Plugin directory</span>
+              <div class="seg" role="tablist" data-tabs="tree" style="margin:0">
+                <button role="tab" aria-selected="true" data-target="tree-plugin">Plugin</button>
+                <button role="tab" aria-selected="false" data-target="tree-project">Your project</button>
+              </div>
+            </div>
+            <ul class="tree tabpanel" id="tree-plugin" role="tree" aria-label="Plugin directory"></ul>
+            <ul class="tree tabpanel" id="tree-project" role="tree" aria-label="Your project after setup" hidden></ul>
+            <div class="legend">
+              <span><i class="dot gen"></i>Generated from <code>.claude/</code></span>
+              <span><i class="dot hand"></i>Hand-written</span>
+              <span><i class="dot proj"></i>Lives in your project</span>
+            </div>
+          </div>
+          <div class="detail-pane" id="detail" aria-live="polite">
+            <div class="eyebrow" style="color:var(--muted)">Selected piece</div>
+          </div>
+        </div>
+      </div>
+    </section>

@@ -19,8 +19,8 @@ deployment → QA testing → re-test → release → observe.**
 | Plugin extras | 3 workflows, 2 monitors, 2 output styles, 2 themes, Atlassian (Jira) connection |
 
 Install and configure: **[SETUP.md](SETUP.md)**. Research and sources: [RESEARCH.md](RESEARCH.md).
-Interactive guide to the plugin structure: **[docs/index.html](docs/index.html)** (open it in a
-browser, or publish `docs/` with GitHub Pages).
+Interactive guide to the plugin structure: the website in **[website/](website/README.md)**
+(build it with `python3 scripts/build-site.py`, then open `site/index.html`).
 
 ## Install in one minute
 

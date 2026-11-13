@@ -1,0 +1,16 @@
+    <section id="two-forms" data-tab="plugin">
+      <h2>Plugin vs. copy-in folder</h2>
+      <p><code>.claude/</code> in this repository is the single source of truth. <code>plugins/sf-sdlc/</code> is generated from it by <code>python3 scripts/build-claude-plugin.py</code>, which rewrites paths and command names on the way.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Component</th><th>Copy-in <code>.claude/</code></th><th>Plugin <code>plugins/sf-sdlc/</code></th></tr></thead>
+        <tbody>
+          <tr><td>Agents, commands, SDLC skills, skill library</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td>Command names</td><td><code>/sdlc-brd</code>, <code>/sdd-plan</code></td><td><code>/sf-sdlc:brd</code>, <code>/sf-sdlc:plan</code></td></tr>
+          <tr><td>Hooks</td><td>In <code>settings.json</code></td><td><code>hooks/hooks.json</code></td></tr>
+          <tr><td>CLI</td><td><code>node .claude/bin/sf-sdlc</code></td><td><code>sf-sdlc</code> on the PATH</td></tr>
+          <tr><td>Project instructions and coding rules</td><td><code>CLAUDE.md</code>, <code>rules/</code></td><td>Printed at session start; rules become the <code>salesforce-coding-rules</code> skill</td></tr>
+          <tr><td>Salesforce Hosted MCP servers</td><td>Project <code>.mcp.json</code>, written by <code>sf-sdlc init</code></td><td><code>.mcp.json</code> in the plugin</td></tr>
+          <tr><td>Monitors, themes, Jira MCP, per-user options</td><td>No (plugin-only features)</td><td>Yes</td></tr>
+        </tbody>
+      </table></div>
+    </section>

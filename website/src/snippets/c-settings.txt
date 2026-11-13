@@ -1,0 +1,9 @@
+{
+  "env": { "SF_AUTOUPDATE_DISABLE": "true", "SF_DISABLE_TELEMETRY": "true" },
+  "permissions": {
+    "allow": [ "Bash(sf-sdlc doctor*)", "Bash(sf org list*)", "Bash(sf code-analyzer *)" ],
+    "ask":   [ "Bash(sf project deploy start*)", "Bash(sf project deploy quick*)",
+               "Bash(sf data delete*)", "Bash(git push*)", "Bash(gh release create*)" ],
+    "deny":  [ "Read(./.sf/**)", "Read(./.sfdx/**)", "Bash(sf org auth*)" ]
+  }
+}

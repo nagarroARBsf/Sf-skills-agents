@@ -1,0 +1,24 @@
+    <section id="lifecycle" data-tab="use">
+      <div class="eyebrow">Using the plugin</div>
+      <h2>The SDLC lifecycle</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Stage</th><th>Plugin command</th><th>Copy-in command</th><th>Agent</th><th>Draft it writes</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>Setup</td><td><code>setup</code> <code>doctor</code> <code>skills</code></td><td><code>/sdlc-setup</code></td><td>project scout</td><td>config, baseline, installed skills</td></tr>
+          <tr><td>G</td><td>Ground</td><td><code>setup</code></td><td><code>/sdlc-setup</code></td><td>project scout (every agent reads them)</td><td><code>00-grounding/ontology.yaml</code>, <code>feature-map.md</code>, from the org through Metadata Grounding when connected</td></tr>
+          <tr><td>1</td><td>BRD</td><td><code>brd &lt;files&gt;</code></td><td><code>/sdlc-brd</code></td><td>BRD</td><td><code>docs/sdlc/01-brd/BRD.md</code></td></tr>
+          <tr><td>2</td><td>Stories</td><td><code>stories</code></td><td><code>/sdlc-stories</code></td><td>Jira story</td><td>backlog, Jira CSV; issues after you say yes</td></tr>
+          <tr><td>3</td><td>Architecture</td><td><code>architecture</code> <code>diagram</code></td><td><code>/sdlc-architecture</code></td><td>solution architect</td><td>HLD, LLD per story, ADRs, diagrams marking New / Changed / Unchanged</td></tr>
+          <tr><td>4</td><td>Spec &amp; plan</td><td><code>constitution</code> <code>specify</code> <code>clarify</code> <code>plan</code> <code>tasks</code></td><td><code>/sdd-specify</code> …</td><td>planner</td><td><code>specs/&lt;story&gt;/spec.md</code>, <code>plan.md</code>, <code>tasks.md</code></td></tr>
+          <tr><td>5</td><td>Build</td><td><code>implement</code> <code>verify</code></td><td><code>/sdd-implement</code></td><td>developer</td><td>Apex, LWC, Flow, metadata, tests, evidence per task</td></tr>
+          <tr><td>6</td><td>Review</td><td><code>review</code> <code>analyze</code></td><td><code>/sdlc-review</code></td><td>code reviewer (read-only)</td><td><code>review.md</code> with a verdict</td></tr>
+          <tr><td>7</td><td>Deploy</td><td><code>deploy &lt;org&gt;</code></td><td><code>/sdlc-deploy</code></td><td>deployment</td><td>validate, quick deploy, <code>DEP-nnn.md</code> with rollback</td></tr>
+          <tr><td>8</td><td>Test</td><td><code>test-cases</code> <code>test-run &lt;org&gt;</code></td><td><code>/sdlc-test-run</code></td><td>QA</td><td>test cases, <code>TR-*</code> reports, <code>DEF-nnn</code> defects</td></tr>
+          <tr><td>9</td><td>Re-test</td><td><code>retest</code></td><td><code>/sdlc-retest</code></td><td>QA</td><td>defect status with the passing run cited</td></tr>
+          <tr><td>10</td><td>Release</td><td><code>release &lt;version&gt;</code></td><td><code>/sdlc-release</code></td><td>release manager</td><td>readiness, release notes, Jira version and GitHub release after yes</td></tr>
+          <tr><td>11</td><td>Observe</td><td><code>test-run</code> <code>specify</code></td><td><code>/sdlc-test-run</code></td><td>QA, planner</td><td><code>06-observe/findings-*.md</code>: each finding becomes a defect or story <strong>and</strong> a constraint (test, Code Analyzer rule, hook)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Traceability runs through one ID chain: <code>BR-04</code> → <code>FR-04.2</code> → <code>US-04-02</code> → <code>LLD-US-04-02</code> → <code>TC-US-04-02-007</code> → <code>TR-…</code> → <code>DEF-012</code> → <code>DEP-005</code> → <code>REL-1.4.0</code>. <code>/sf-sdlc:trace</code> shows it at any time.</p>
+      <div class="callout"><p><strong>Every repeated mistake becomes a constraint.</strong> Instructions and skills are advisory; tests, Code Analyzer rules, hooks and quality gates are deterministic. A defect closes only when its record names the constraint added (or says why none fits), and the reviewer recommends the strongest check that would have caught a finding.</p></div>
+    </section>

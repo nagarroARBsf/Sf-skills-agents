@@ -1,0 +1,12 @@
+    <section id="user-options" data-tab="configure">
+      <h2>Per-user options</h2>
+      <p>Declared under <code>userConfig</code> in <code>plugin.json</code>. Each developer sets them for themselves with <code>/plugin configure sf-sdlc@nagarro-sf</code>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>Values</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>Hook mode</td><td><code>project</code> (default), <code>observe</code>, <code>enforce</code>, <code>off</code></td><td>Overrides <code>hooks.mode</code> for you only</td></tr>
+          <tr><td>Audit log</td><td>on (default) / off</td><td>Turns the local audit log off for you</td></tr>
+        </tbody>
+      </table></div>
+      <p>Jira: the plugin's <code>.mcp.json</code> connects the Atlassian remote MCP server. Sign in once with <code>/mcp</code>. Without it, the story agent writes a Jira CSV you can import. Salesforce: see <a href="#hosted-mcp">Salesforce Hosted MCP Servers</a>.</p>
+    </section>

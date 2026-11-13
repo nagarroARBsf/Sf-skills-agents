@@ -1,0 +1,7 @@
+.claude/
+├── sf-sdlc.json
+├── sf-sdlc.skills.lock.json   # name → source + hash for each installed skill
+└── skills/
+    ├── platform-apex-generate/
+    ├── platform-apex-test-run/
+    └── experience-lwc-generate/

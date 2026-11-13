@@ -1,0 +1,9 @@
+    <section id="verify" data-tab="configure">
+      <h2>Verify the install</h2>
+<pre><code>sf-sdlc doctor            # every required line should show ✔
+sf-sdlc config validate
+sf-sdlc org classify      # your production org must report "production"
+sf-sdlc analyze --changed # the official Code Analyzer runs, with your custom rules
+sf-sdlc mcp status        # hosted MCP servers: connected with their tools, or why not</code></pre>
+      <p class="muted">Copy-in folder: prefix each with <code>node .claude/bin/</code>. Or run <code>/sf-sdlc:doctor</code>.</p>
+    </section>

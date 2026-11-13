@@ -1,0 +1,61 @@
+<!-- Email sign-up: one dialog used by "Talk to us", the download buttons and the corner nudge. Logic: scripts/lead.js -->
+<dialog class="lead-dialog" id="leadDialog" aria-labelledby="leadTitle">
+  <form class="lead-form" id="leadForm" method="dialog" novalidate>
+    <button type="button" class="lead-close" data-lead-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div class="eyebrow" id="leadEyebrow">Stay in touch</div>
+    <h2 id="leadTitle">Get SF-SDLC updates</h2>
+    <p class="lead-intro" id="leadIntro">New releases, videos and guides for the framework. No spam, and you can unsubscribe at any time.</p>
+
+    <label class="lead-field">Work email
+      <input type="email" name="email" required autocomplete="email" maxlength="254" placeholder="you@company.com">
+    </label>
+    <div class="lead-row">
+      <label class="lead-field">Name <span class="lead-opt">optional</span>
+        <input type="text" name="name" autocomplete="name" maxlength="100">
+      </label>
+      <label class="lead-field">Company <span class="lead-opt">optional</span>
+        <input type="text" name="company" autocomplete="organization" maxlength="120">
+      </label>
+    </div>
+    <label class="lead-field" id="leadMessageField" hidden>How can we help? <span class="lead-opt">optional</span>
+      <textarea name="message" rows="3" maxlength="2000"></textarea>
+    </label>
+    <!-- spam trap: hidden from people, filled in by bots -->
+    <label class="lead-hp" aria-hidden="true">Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+
+    <label class="lead-consent">
+      <input type="checkbox" name="consent" required>
+      <span id="leadConsentText">I agree that Nagarro may contact me about the SF-SDLC Framework. See the <a href="https://www.nagarro.com/en/privacy-policy" target="_blank" rel="noopener">Nagarro privacy policy</a>.</span>
+    </label>
+
+    <p class="lead-status" id="leadStatus" role="status" aria-live="polite"></p>
+    <div class="lead-actions">
+      <button type="button" class="btn btn-ghost" data-lead-close>Not now</button>
+      <button type="submit" class="btn btn-primary" id="leadSubmit">Submit</button>
+    </div>
+  </form>
+
+  <div class="lead-done" id="leadDone" hidden>
+    <div class="lead-done-mark" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    </div>
+    <h2>Thank you</h2>
+    <p class="lead-intro">We have your details and will be in touch.</p>
+    <div class="lead-actions"><button type="button" class="btn btn-primary" data-lead-close>Close</button></div>
+  </div>
+</dialog>
+
+<!-- Corner nudge: shown once, after the visitor has scrolled or stayed a while (thresholds in site.config.json) -->
+<aside class="lead-nudge" id="leadNudge" aria-label="Get updates" hidden>
+  <button type="button" class="lead-close" id="leadNudgeClose" aria-label="Dismiss">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <p class="lead-nudge-title">Finding this useful?</p>
+  <p class="lead-nudge-text">Get new releases and videos, or talk to the team about using SF-SDLC on your project.</p>
+  <div class="lead-actions">
+    <button type="button" class="btn btn-ghost" data-lead-open="talk">Talk to us</button>
+    <button type="button" class="btn btn-primary" data-lead-open="nudge">Get updates</button>
+  </div>
+</aside>

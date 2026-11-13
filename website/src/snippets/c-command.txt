@@ -1,0 +1,11 @@
+---
+description: Validate, then deploy to a named org through the Salesforce CLI, with a
+  deployment record and rollback plan
+argument-hint: "<org role or alias: qa | uat | production | alias> [validate | quick | status]"
+disable-model-invocation: true
+---
+Use the **sdlc-deployment-agent** subagent to run the deployment.
+
+Target and scope from the user: $ARGUMENTS
+
+If no target org was named, ask for it and stop; never choose one.

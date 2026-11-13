@@ -1,0 +1,14 @@
+(generated from .claude/CLAUDE.md and the always-on .claude/rules/)
+
+# Salesforce project — AI delivery kit
+
+## Project settings
+Project-specific values live in `.claude/sf-sdlc.json` ...
+
+## Salesforce engineering rules (always)
+- Security: `with sharing` by default; `WITH USER_MODE`; bind variables ...
+- Bulk-safe: no SOQL/DML in loops; one trigger per object with a handler.
+
+## Orgs and deployment
+- Never deploy to, delete from or change data in production unless the user names the
+  org and confirms in this conversation.

@@ -1,0 +1,5 @@
+.sf-sdlc/                      # ignored by git; the folder ignores itself
+├── audit.jsonl                # one JSON object per org-affecting command:
+│                              #   at, user, agent, action, targetOrg, orgKind,
+│                              #   outcome, command, branch
+└── jobs, test results, caches

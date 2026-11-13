@@ -1,0 +1,10 @@
+{
+  "id": "base",
+  "reason": "Deploy, retrieve, query and scan are needed by every Salesforce DX project",
+  "when": { "always": true, "profiles": ["developer", "admin"] },
+  "skills": [
+    "platform-metadata-deploy", "platform-metadata-retrieve",
+    "platform-soql-query", "dx-code-analyzer-run", "dx-org-manage"
+  ]
+}
+// a rule fires when any listed metadata folder exists, e.g. "folders": ["lwc"]

@@ -1,0 +1,35 @@
+    <section id="configure" data-tab="configure">
+      <div class="eyebrow">Configuration</div>
+      <h2>What you need to provide</h2>
+      <p>The plugin ships no project-specific values. Everything that differs between projects (org aliases, branches, Jira keys, thresholds, paths) comes from files in <em>your</em> repository. <code>sf-sdlc init</code> creates them; setup never overwrites an existing file.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>File in your project</th><th>Commit?</th><th>What you set</th></tr></thead>
+        <tbody>
+          <tr><td><code>.claude/sf-sdlc.json</code></td><td>Yes</td><td>Org aliases and <strong>which are production</strong>, branch rules, Jira project, coverage target, promotion order, document paths, hook mode</td></tr>
+          <tr><td><code>.claude/sf-sdlc.local.json</code></td><td>No</td><td>Personal overrides, same shape; for example your own scratch org</td></tr>
+          <tr><td><code>.claude/settings.json</code></td><td>Yes</td><td>Claude Code permissions (allow / ask / deny). Plugin users get a template from <code>templates/project-settings.json</code></td></tr>
+          <tr><td><code>code-analyzer.yml</code></td><td>Yes</td><td>Which Code Analyzer rules run and at what severity, plus custom rules (ships <code>NoHardcodedSalesforceIds</code>)</td></tr>
+          <tr><td><code>.github/workflows/sf-code-analyzer.yml</code></td><td>Yes</td><td>Code Analyzer on the files changed in each pull request; keep its threshold equal to the local one</td></tr>
+          <tr><td><code>docs/sdlc/00-grounding/</code></td><td>Yes</td><td><code>ontology.yaml</code> (business terms → Salesforce objects) and <code>feature-map.md</code> (components per feature), drafted by setup</td></tr>
+          <tr><td><code>.claude/sf-sdlc.skills.lock.json</code></td><td>Yes</td><td>Nothing by hand: records installed skills so <code>skills sync</code> never overwrites your edits</td></tr>
+          <tr><td><code>specs/constitution.md</code></td><td>Yes</td><td>Created by <code>/sf-sdlc:constitution</code>: your engineering principles, trigger framework, logging utility</td></tr>
+        </tbody>
+      </table></div>
+      <h3>A filled-in <code>.claude/sf-sdlc.json</code></h3>
+<div class="code-wrap"><button class="copy" data-copy="cfgExample">Copy</button><p class="code-label">templates/sf-sdlc.example.json (abridged)</p><pre><code id="cfgExample">{
+  "project":  { "name": "Orion Sales Cloud", "code": "ORION" },
+  "orgs":     { "dev": "orion-dev", "qa": "orion-qa", "uat": "orion-uat",
+                "devHub": "orion-hub", "production": ["orion-prod"] },
+  "git":      { "mainBranch": "main", "integrationBranch": "develop",
+                "protectedBranches": ["main", "develop", "release/*"],
+                "branchPattern": "feature/{ticket}-{slug}" },
+  "jira":     { "enabled": true, "site": "https://acme.atlassian.net", "projectKey": "ORION" },
+  "quality":  { "coverageTarget": 85, "analyzerSeverityThreshold": 2, "bulkTestSize": 200 },
+  "deploy":   { "pipeline": ["dev", "qa", "uat", "production"],
+                "testLevel": { "qa": "RunLocalTests", "production": "RunLocalTests" },
+                "validateBeforeDeploy": true, "allowDirectProductionDeploy": false, "useDelta": true },
+  "paths":    { "docs": "docs/sdlc", "specs": "specs" },
+  "mcp":      { "servers": ["metadata-experts", "metadata-grounding"], "org": "dev" },
+  "hooks":    { "mode": "observe", "auditLog": true }
+}</code></pre></div>
+    </section>
