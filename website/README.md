@@ -34,7 +34,7 @@ website/
 ├── media/                     videos — NOT in git (too large); see "Videos" below
 └── api/                       Azure Function behind the sign-up form
     ├── host.json
-    └── lead/                  POST /api/lead → Azure Table Storage
+    └── lead/                  POST /api/lead → email to the team (Azure Communication Services)
 ```
 
 `site/` (repository root) is the build output. It is git-ignored and rebuilt from scratch every time;
@@ -88,5 +88,5 @@ sign-up prompts and time on page. Visitor counts are therefore visits, not uniqu
 cookie a returning visitor cannot be recognised.
 
 `scripts/lead.js` stores in the visitor's own browser (`localStorage`) only whether they signed up
-or dismissed the prompt, so it is not shown again. Sign-ups go to `/api/lead`, which writes
-them to Azure Table Storage with the consent text the visitor agreed to.
+or dismissed the prompt, so it is not shown again. Sign-ups go to `/api/lead`, which emails
+them, with the consent text the visitor agreed to, to the team mailbox (see [HOSTING.md](HOSTING.md)).

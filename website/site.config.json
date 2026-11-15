@@ -4,7 +4,7 @@
     "engagedSeconds": 20
   },
   "lead": {
-    "enabled": false,
+    "enabled": true,
     "endpoint": "/api/lead",
     "nudge": true,
     "nudgeScrollPercent": 60,

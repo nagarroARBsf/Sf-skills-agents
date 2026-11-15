@@ -18,7 +18,7 @@ The public site for the Nagarro Salesforce SDLC kit. The source is `website/` (l
 | Default URL | https://nice-plant-00b857600.8.azurestaticapps.net |
 | Subscription | `ARB azure` |
 | Tenant | `a45fe71a-f480-4e42-ad5e-aff33165aa35` |
-| Other resources | `appi-sfsdlc-web` (Application Insights) and `log-sfsdlc-web` (Log Analytics workspace) for visitor analytics, created 2026-11-13. See "Visitor analytics" below. |
+| Other resources | `appi-sfsdlc-web` and `log-sfsdlc-web` (visitor analytics, 2026-11-13); `ecs-sfsdlc-web` and `acs-sfsdlc-web` (sign-up emails, 2026-11-15). See the sections below. |
 | Custom domain | Planned: `www.nagarro-salesforce-sdlc.com`. **Not attached yet.** Status: waiting for Nagarro IT to buy it. |
 
 ## How files are stored
@@ -104,25 +104,32 @@ pageViews | where timestamp > ago(30d)
 
 Without cookies every visit counts as a new user, so read "users" as visits.
 
-## Sign-up form (switched off)
+## Sign-up form (emails the team)
 
-The form, the "Talk to us" button, the corner nudge and the download prompt are built and deployed but
-hidden (`lead.enabled: false` in `website/site.config.json`). The function `website/api/lead` is
-deployed and answers 503 until it has somewhere to store sign-ups.
+"Talk to us", the corner nudge and the download prompt post to `/api/lead` (`website/api/lead/`), a managed
+Azure Function that emails each sign-up to **arb.salesforce@nagarro.com** through Azure Communication
+Services Email. The email is the record: nothing is stored. Reply-To is the visitor, so replying in Outlook
+answers them directly. Switched on with `lead.enabled: true` in `website/site.config.json` (2026-11-15).
 
-Blocked by policy: on 2026-11-13 creating a storage account (`sfsdlcleads`) was denied by the Nagarro
-management-group policy **"Restrict Storage Account network access from all networks"**
-(`restrict-storage-network-access`, effect deny). Storage accounts must not be reachable from the
-internet, and the Free plan's managed function has no fixed IP or private network to allow in. Do not
-work around the policy. To turn the form on, one of:
+| Item | Value |
+|---|---|
+| Email Communication Service | `ecs-sfsdlc-web` (data location India) |
+| Sender domain | `AzureManagedDomain` (free, Azure-managed): sends from `DoNotReply@7962bc4c-3763-48b0-a8af-6a992e3eb03a.azurecomm.net` |
+| Communication Service | `acs-sfsdlc-web` (`acs-sfsdlc-web.india.communication.azure.com`), linked to the domain |
+| Static Web App app settings | `ACS_CONNECTION_STRING`, `LEAD_EMAIL_FROM`, `LEAD_EMAIL_TO`. Never in git; list names with `az staticwebapp appsettings list -n salesforce-sdlc-docs -g rg-salesforce-sdlc --query "keys(properties)"` |
 
-1. Nagarro IT grants an exemption for one storage account used only through an add-only SAS token; then
-   create the account and table `leads`, set the Static Web App app setting `LEADS_TABLE_SAS_URL`
-   (`https://<account>.table.core.windows.net/leads?<SAS, permission a only>`, never in git; the SAS
-   expires, so note the date here), and set `lead.enabled: true`.
-2. Send the form to Nagarro marketing's own form or CRM tool instead: change `lead.endpoint` and the
-   field names in `scripts/lead.js`.
-3. Standard plan (about US$9/month) with a private endpoint to a closed storage account.
+**Cost.** US$0.00025 per email plus US$0.00012 per MB (Microsoft's email pricing page); about US$0.25 per
+1,000 sign-ups. No monthly fee.
+
+**If sign-up emails do not arrive:** check Junk in the mailbox and mark the sender "Not junk" (or ask IT to
+allow `*.azurecomm.net` for this address). Azure-managed domains have low sending limits, which is fine for
+sign-ups; for higher volume or a `@nagarro-salesforce-sdlc.com` sender, add a custom domain to
+`ecs-sfsdlc-web` (needs DNS records from IT). To change the recipient:
+`az staticwebapp appsettings set -n salesforce-sdlc-docs -g rg-salesforce-sdlc --setting-names LEAD_EMAIL_TO=<address> -o none`.
+If the access key is rotated (`az communication regenerate-key`), set `ACS_CONNECTION_STRING` again.
+
+Storage was not used: on 2026-11-13 a storage account was denied by the Nagarro policy "Restrict Storage
+Account network access from all networks". Do not work around that policy.
 
 ## If the Azure login expires
 Error `AADSTS50173`. Fix:
