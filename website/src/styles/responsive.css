@@ -12,11 +12,11 @@
   .tabs { display: none; }
   .menu-btn { display: inline-flex; }
   .brand small { display: none; }
-  .sidebar { position: fixed; top: 60px; left: 0; width: 290px; max-width: 85vw; background: var(--bg); border-right: 1px solid var(--border); padding: 20px 12px; z-index: 25; transform: translateX(-102%); transition: transform .2s ease; }
+  .sidebar { position: fixed; top: 56px; left: 0; width: 290px; max-width: 85vw; background: var(--bg); border-right: 1px solid var(--border); padding: 20px 12px; z-index: 25; transform: translateX(-102%); transition: transform .2s ease; }
   body.nav-open .sidebar { transform: none; }
   main { padding-top: 24px; }
-  h1 { font-size: 32px; }
-  h2 { font-size: 25px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
   .detail-pane { padding: 16px; }
   .explorer-head { padding: 18px 16px; }
   .flow { grid-template-columns: 1fr; }
@@ -27,8 +27,8 @@
 @media (max-width: 560px) {
   .top-actions .nagarro-logo { display: none; } /* the Nagarro logo stays in the footer */
   .topbar-inner { gap: 8px; }
-  .brand { font-size: 17px; gap: 7px; }
-  .brand-mark { width: 26px; height: 26px; }
+  .brand { font-size: 16px; gap: 6px; }
+  .brand-mark { width: 30px; height: 22px; }
   .top-actions { gap: 4px; }
   .talk-btn { padding: 0; width: 36px; }
 }

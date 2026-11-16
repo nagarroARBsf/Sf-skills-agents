@@ -1,0 +1,29 @@
+/* ---------- overview hero: text on the left, the animated lifecycle emblem on the right ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 36px; align-items: center; margin-top: 8px; }
+.hero .lead { margin-bottom: 14px; }
+.hero-art { margin: 0; text-align: center; }
+.hero-art figcaption { color: var(--muted); font-size: 12.5px; margin-top: 2px; letter-spacing: .02em; }
+.emblem { width: 100%; max-width: 300px; height: auto; display: block; margin: 0 auto; overflow: visible; }
+.em-orbit { stroke: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.em-node { fill: var(--surface); stroke: var(--border); }
+.em-num { font: 700 11px var(--sans); fill: var(--muted); }
+.em-num-on { fill: #fff; }
+.em-word { font: 800 27px var(--sans); fill: #fff; letter-spacing: .5px; }
+.em-sub { font: 600 9.5px var(--sans); fill: #e6f6ff; letter-spacing: 3.5px; }
+.em-stage { font: 600 12.5px var(--sans); fill: var(--accent-text); }
+
+.agent-strip { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; max-width: none; }
+.agent-strip a { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; }
+.agent-strip a:hover { text-decoration: none; border-color: var(--accent); }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.dot.ok { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+.dot.soon { background: var(--warn); }
+
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: minmax(0, 1fr) 220px; gap: 24px; }
+}
+@media (max-width: 760px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-art { order: -1; }
+  .emblem { max-width: 220px; }
+}

@@ -38,7 +38,7 @@
 .guard-band { margin-top: 10px; border: 1px dashed var(--warn); color: var(--text); border-radius: 12px; padding: 10px 14px; font-size: 14px; background: color-mix(in srgb, var(--proj-soft) 60%, transparent); }
 
 .lifecycle { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
-.lifecycle span { padding: 6px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 13.5px; }
+.lifecycle span { padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 13px; }
 .lifecycle span b { color: var(--accent-text); margin-right: 4px; }
 
 .persona-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }

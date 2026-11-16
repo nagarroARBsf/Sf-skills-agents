@@ -18,7 +18,8 @@ const MODES = {
   talk: 'Talk to us',
   updates: 'Get updates',
   nudge: 'Get updates (corner prompt)',
-  download: 'After a download'
+  download: 'After a download',
+  soon: 'Coming soon (another coding agent)'
 };
 
 function clean(v, max) {

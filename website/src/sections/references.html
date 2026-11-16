@@ -1,0 +1,37 @@
+    <section id="references" data-tab="ref">
+      <div class="eyebrow">Reference</div>
+      <h2>References</h2>
+      <p class="lead">This framework is inspired by Salesforce's <a href="https://developer.salesforce.com/blogs/2026/11/accelerate-agent-driven-development-with-the-headless-toolkit" target="_blank" rel="noopener">Accelerate Agent-Driven Development with the Headless Toolkit</a> (Mohith Shrivastava, Salesforce Developers Blog, 10 November 2026). The post describes a seven-stage loop of <strong>ground, specify, build, verify, review, release and observe</strong>. SF-SDLC turns that loop into agents, commands, skills and guard hooks for Claude Code, and adds the requirements, architecture, testing and release stages a delivery team also needs.</p>
+
+      <h3>How the kit maps to the Headless Toolkit loop</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Headless Toolkit stage</th><th>In SF-SDLC</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1. Ground</strong></td><td>Project scout agent, <code>ontology.yaml</code> and feature map, Metadata Grounding MCP server</td></tr>
+          <tr><td><strong>2. Specify</strong></td><td>BRD, stories and architecture stages, then the <code>/sdd-*</code> spec, plan and tasks commands</td></tr>
+          <tr><td><strong>3. Build</strong></td><td>Developer agent, one approved task at a time, with the Salesforce skills installed for the project</td></tr>
+          <tr><td><strong>4. Verify</strong></td><td>Code Analyzer through <code>/sdlc-analyze</code>, Apex and Jest runs through <code>/sdlc-test-run</code>, hooks that run on every edit</td></tr>
+          <tr><td><strong>5. Review</strong></td><td>Read-only code review agent that cites file and line, run in a fresh context</td></tr>
+          <tr><td><strong>6. Release</strong></td><td>Deployment agent: validate, then quick deploy; the production gate stays with a person</td></tr>
+          <tr><td><strong>7. Observe</strong></td><td>Observe stage; findings become new specs and new checks</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Salesforce documentation</h3>
+      <p>Official Salesforce sources behind the skills, plugins, MCP servers and tools this kit uses.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Topic</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>The post this framework follows</td><td><a href="https://developer.salesforce.com/blogs/2026/11/accelerate-agent-driven-development-with-the-headless-toolkit" target="_blank" rel="noopener">Accelerate Agent-Driven Development with the Headless Toolkit</a></td></tr>
+          <tr><td>Salesforce Skills Library (<code>sf-skills</code>)</td><td><a href="https://github.com/forcedotcom/sf-skills" target="_blank" rel="noopener">forcedotcom/sf-skills</a> on GitHub, Apache-2.0. The kit's official skills are vendored from it</td></tr>
+          <tr><td>Salesforce Development plugin</td><td><a href="https://developer.salesforce.com/docs/platform/salesforce-skills-plugins/guide/salesforce-development-overview.html" target="_blank" rel="noopener">Overview of the Salesforce Development Plugin</a> · <a href="https://developer.salesforce.com/docs/platform/salesforce-skills-plugins/guide/use-salesforce-development.html" target="_blank" rel="noopener">Build, Test, and Deploy with the Salesforce Development Plugin</a></td></tr>
+          <tr><td>Hosted MCP Servers</td><td><a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/hosted-mcp-servers-overview.html" target="_blank" rel="noopener">Get Started</a> · <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/servers-reference.html" target="_blank" rel="noopener">Standard Servers</a> · <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/custom-servers.html" target="_blank" rel="noopener">Build Custom MCP Servers</a> · <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/general-best-practices.html" target="_blank" rel="noopener">General Best Practices</a></td></tr>
+          <tr><td>Hosted MCP announcement and security</td><td><a href="https://developer.salesforce.com/blogs/2026/04/salesforce-hosted-mcp-servers-are-now-generally-available" target="_blank" rel="noopener">Salesforce Hosted MCP Servers Are Now Generally Available</a> · <a href="https://developer.salesforce.com/blogs/2026/06/how-to-secure-salesforce-hosted-mcp-servers" target="_blank" rel="noopener">How to Secure Salesforce Hosted MCP Servers</a></td></tr>
+          <tr><td>Code Analyzer</td><td><a href="https://developer.salesforce.com/docs/platform/salesforce-code-analyzer/guide/get-started.html" target="_blank" rel="noopener">Get Started</a> · <a href="https://developer.salesforce.com/docs/platform/salesforce-code-analyzer/guide/analyze.html" target="_blank" rel="noopener">Use CLI Commands to Analyze Your Code</a> · <a href="https://developer.salesforce.com/docs/platform/salesforce-code-analyzer/guide/skills.html" target="_blank" rel="noopener">Use Salesforce Agent Skills to Analyze Code in Natural Language</a></td></tr>
+          <tr><td>Salesforce CLI</td><td><a href="https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_install_cli.htm" target="_blank" rel="noopener">Install Salesforce CLI</a> · <a href="https://developer.salesforce.com/docs/platform/sfdx-setup/guide/sfdx-setup-plugins-overview.html" target="_blank" rel="noopener">Salesforce CLI Plugins</a></td></tr>
+          <tr><td>Agentic development lifecycle</td><td><a href="https://developer.salesforce.com/blogs/2026/06/master-the-agentic-development-lifecycle-for-agentforce" target="_blank" rel="noopener">Master the Agentic Development Lifecycle for Agentforce</a></td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="callout"><p>Salesforce pages move and are renamed. When a link no longer opens, search the title on <a href="https://developer.salesforce.com" target="_blank" rel="noopener">developer.salesforce.com</a>. This site is not affiliated with or endorsed by Salesforce.</p></div>
+    </section>

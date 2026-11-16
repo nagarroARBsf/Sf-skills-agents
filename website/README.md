@@ -28,9 +28,10 @@ website/
 │       ├── explorer-data.js   rows of the plugin-structure explorer
 │       ├── explorer.js        renders the explorer
 │       ├── ui.js              tabs, copy buttons, theme, mobile menu, scroll spy
+│       ├── agents.js          install section: coding-agent card rail, coming-soon panel; pauses the emblem for reduced motion
 │       ├── analytics.js       visitor counting (Application Insights, no cookies)
 │       └── lead.js            sign-up dialog, download prompt, corner nudge
-├── assets/                    images (logos, diagrams)
+├── assets/                    images (logos, diagrams; sf-sdlc-emblem.svg is a standalone copy of the animated emblem)
 ├── media/                     videos — NOT in git (too large); see "Videos" below
 └── api/                       Azure Function behind the sign-up form
     ├── host.json
@@ -52,6 +53,7 @@ never edit it.
 | Add styles for a new component | New file in `src/styles/`, plus a `<link>` in `src/index.html` |
 | Add behaviour | New file in `src/scripts/`, plus a `<script>` at the end of `src/index.html` |
 | Add a code sample to the explorer | `src/snippets/c-<name>.txt`, then `code: 'c-<name>'` on a row in `explorer-data.js` |
+| Release a package for another coding agent | In `src/sections/install.html`, change that card's badge to `Available` and replace its `data-soon` button with an `<a class="agent-dl" href="downloads/<file>.zip" download>` link; add the zip to `scripts/build-site.py` |
 | Add an image | Put it in `assets/`, reference it as `assets/<file>` |
 | Change when the sign-up nudge appears | `lead` in `site.config.json` (`nudgeScrollPercent`, `nudgeAfterSeconds`, `snoozeDays`, `nudge: false` to turn it off) |
 | Turn the sign-up form on or off | `lead.enabled` in `site.config.json` (`false` hides Talk to us, the nudge and the download prompt) |

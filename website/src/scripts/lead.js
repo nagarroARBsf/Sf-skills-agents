@@ -5,6 +5,7 @@
 //   talk      "Talk to us", with a message box
 //   download  shown just after a download starts; never blocks the download
 //   nudge     the corner card's "Get updates" button
+//   soon      an install card for a coding agent whose package is not released yet
 //
 // The form posts JSON to config.lead.endpoint (the Azure Function in website/api/lead).
 // This browser remembers only whether the visitor already signed up or dismissed the prompt
@@ -29,6 +30,7 @@
     updates: ['Stay in touch', 'Get SF-SDLC updates', 'New releases, videos and guides for the framework. No spam, and you can unsubscribe at any time.'],
     nudge: ['Stay in touch', 'Get SF-SDLC updates', 'New releases, videos and guides for the framework. No spam, and you can unsubscribe at any time.'],
     talk: ['Talk to us', 'Use SF-SDLC on your project', 'Tell us a little about your Salesforce project and the Nagarro team will get back to you.'],
+    soon: ['Coming soon', 'Get told when it ships', 'Leave your email and we will tell you when the framework is out for Codex, Cursor, GitHub Copilot and other coding agents.'],
     download: ['Your download has started', 'Want to hear about new releases?', 'Leave your email and we will tell you when a new version, video or guide is out.']
   };
 
