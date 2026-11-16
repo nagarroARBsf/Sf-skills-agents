@@ -36,10 +36,14 @@ team uses Jira. Everything else can be skipped.
 Signs the CLI in through the browser; no password is stored in the project.
 
 1. Ask for an alias (a short name such as `dev`, `uat`) and the kind of org. Ask which aliases are
-   production; never guess.
-2. Run `sf org login web --alias <alias>`. For a sandbox add `--instance-url https://test.salesforce.com`
-   (or the org's My Domain URL). A browser opens; the person signs in and allows access; the command
-   finishes on its own.
+   production; never guess. The login address, user name and alias are not secrets: write them to
+   `.env` with `node .claude/bin/sf-sdlc env set SF_LOGIN_URL=https://test.salesforce.com SF_USERNAME=<user> SF_ORG_ALIAS=<alias>`
+   (`SF_LOGIN_URL` is `https://login.salesforce.com` for production and Developer Edition,
+   `https://test.salesforce.com` for a sandbox, or the org's My Domain address).
+2. Run `node .claude/bin/sf-sdlc org login` (it runs `sf org login web` with the alias and login
+   address from `.env`; `--alias` and `--instance-url` override them). A browser opens; the person
+   signs in and allows access; the command finishes on its own. When `SF_USERNAME` is set, the next
+   `sf-sdlc setup` picks the signed-in org with that user name as the project org without asking.
 3. Check with `sf org list` and `node .claude/bin/sf-sdlc org classify <alias>`.
 4. Set it as the default only for a non-production org, and only on a yes:
    `sf config set target-org <alias>`.
@@ -71,6 +75,11 @@ org (or not in `mcp.servers`) — that is expected.
    and is not available in scratch orgs.
 3. Wait about two minutes, then run `node .claude/bin/sf-sdlc mcp status`.
 4. Restart Claude Code (or run `/mcp`) so the servers reconnect.
+
+Addresses: the kit knows every server's address and signs in with the CLI login, so `.env` needs no
+client ID, key or token for them. `SF_SDLC_MCP_HOST` (one host for all) and `SF_MCP_<SERVER>_URL`
+(one server, e.g. `SF_MCP_METADATA_EXPERTS_URL`) in `.env` override an address only when Salesforce
+gives the team a different one; each must be an `https://` address on a `salesforce.com` host.
 
 ### 3. Jira and Confluence
 
@@ -107,6 +116,31 @@ project key, issue type names, field IDs). Never create or change an issue durin
    removed from `.env`.
 3. Check with `gh auth status`.
 
+### 5. Browser for UI tests (Playwright)
+
+The kit registers Microsoft's Playwright MCP server as `sf-browser` (pinned version, started through
+`npx`, so it needs only Node.js). Claude can then open the org in a real browser, click through a
+story and take screenshots for the QA agent.
+
+1. Nothing to install: the checklist row "Browser for UI tests" is ✅ when Node.js (npx) is there.
+   On first use Playwright downloads its browser if needed; on Linux without Google Chrome the kit uses
+   Chrome for Testing, which needs no administrator password.
+2. **Sign in once.** The first time Claude opens the org (`node .claude/bin/sf-sdlc browser url --org qa`
+   gives the address; sandbox, scratch and developer orgs only), a browser window shows the
+   Salesforce login page. The person signs in there, including any verification code. Claude never
+   types or sees the password.
+3. The sign-in (cookies) is kept in `.sf-sdlc/browser-profile/` in the project: git-ignored, denied to
+   Claude's Read tool and protected by the secret guard. Setup sets the profile to restore the last
+   session, so later Claude sessions — also after a restart of the laptop — open the same profile and
+   stay signed in until Salesforce ends the session (the org's session timeout). Nobody changes a
+   browser setting by hand.
+4. One browser at a time per project: while one Claude session has the browser open, another session
+   gets "profile in use" until the first one closes it (`browser_close`) or ends.
+5. `node .claude/bin/sf-sdlc browser status` shows the state; `sf-sdlc browser reset` signs out of every
+   site by deleting the profile.
+6. Opening a page of a production-class org, or of a Salesforce org the CLI does not know, asks first
+   (the `pre-mcp` hook). UI tests run only in sandbox, scratch or developer orgs.
+
 ## Secrets
 
 - `.env` is created by `sf-sdlc init`, git-ignored, and Claude is denied read access to it through
@@ -114,3 +148,8 @@ project key, issue type names, field IDs). Never create or change an issue durin
 - Never ask for, repeat, log or write a credential. If a person pastes one into the chat, tell them to
   revoke it and create a new one, and do not repeat it.
 - Salesforce needs no secret in `.env`: the CLI keeps its own login in the user's home folder.
+  `SF_LOGIN_URL`, `SF_USERNAME` and `SF_ORG_ALIAS` are addresses and names only. There is no
+  Salesforce password, client secret or token key, and none must be added.
+- `.env.sample` (written by `sf-sdlc init`, committed) lists every key the kit reads with no values,
+  so teammates know what to fill.
+- The browser sign-in lives in `.sf-sdlc/browser-profile/` and must never be read, copied or committed.

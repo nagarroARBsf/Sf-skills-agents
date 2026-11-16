@@ -128,15 +128,21 @@ only records deviations.
 
 ## Diagrams: rules
 - Follow the `sdlc-architecture-diagram` skill for every diagram that shows components: type
-  selection, the status overlay, the Key, limits and accessibility.
-- [references/mermaid-patterns.md](references/mermaid-patterns.md) holds additional patterns
-  (sequence, ERD with attributes, state, class, pipeline) for views that carry no change status.
-- Mermaid only. Quote every label; ≤ 25 nodes per diagram; split by domain otherwise.
-- `flowchart` for landscape, solution, process and any data model that shows status;
-  `erDiagram` for attribute-level data models; `sequenceDiagram` for interactions;
+  selection, Salesforce's diagram standard, the status overlay, the key, limits and accessibility.
+- Every architecture diagram is a Salesforce-standard draw.io diagram generated from a spec in
+  `docs/sdlc/03-architecture/diagrams/` (`node .claude/bin/sf-sdlc diagram drawio`), checked, exported
+  to PNG and looked at. The HLD carries at least the system landscape, the solution architecture and
+  the data model; add a capability map for business readers, a roadmap when delivery is phased, and
+  process diagrams for the key flows. Each LLD carries the story's solution view
+  (`node .claude/bin/sf-sdlc diagram drawio docs/sdlc/03-architecture/components.json --story US-nn-mm`,
+  refined) and, when it changes objects, its data model view.
+- In the Markdown: the PNG, the caption, a link to the `.drawio`, then a Mermaid block as the text
+  version. Quote every label; ≤ 25 cards or nodes per diagram; split by domain otherwise.
+- Mermaid text versions: `flowchart` for landscape, solution, process and any data model that shows
+  status; `erDiagram` for attribute-level data models; `sequenceDiagram` for interactions;
   `classDiagram` for Apex structure; `stateDiagram-v2` for status lifecycles.
-- Do not use `architecture-beta`, `C4Context` or other experimental types; renderers differ.
-- For Jira, Confluence or slides, render SVG with `node .claude/bin/sf-sdlc diagram render <file>`.
+  [references/mermaid-patterns.md](references/mermaid-patterns.md) holds additional patterns for
+  views that carry no change status. No `architecture-beta`, `C4Context` or other experimental types.
 
 ## Technical skills
 Design uses knowledge of Flow, Apex, LWC, security and integration. If an installed skill under

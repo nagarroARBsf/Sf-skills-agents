@@ -1,9 +1,10 @@
 {
-  "$comment": "Project signal -> skills to recommend. `folders` are metadata folder names found under the package directories; a rule fires when any listed folder exists. `mcpServers` fires when any listed hosted MCP server is in mcp.servers of .claude/sf-sdlc.json. `core` rules fire for every project and profile. `profiles` are starter sets chosen with `sf-sdlc skills recommend --profile <name>`. Skills not present in the catalog are ignored, so a rule can name a skill that only newer upstream versions ship.",
+  "$comment": "Project signal -> skills to recommend. `folders` are metadata folder names found under the package directories; a rule fires when any listed folder exists. `mcpServers` fires when any listed hosted MCP server is in mcp.servers of .claude/sf-sdlc.json. `core` rules fire for every project and profile; they form the mandatory set, installed whatever the code contains and outside the listing budget. `skillPrefixes` adds every catalog skill whose name starts with a listed prefix. `profiles` are starter sets chosen with `sf-sdlc skills recommend --profile <name>`. Skills not present in the catalog are ignored, so a rule can name a skill that only newer upstream versions ship.",
   "rules": [
-    { "id": "core", "reason": "Core set for every project and every profile: diagrams, Salesforce documentation, SOQL, API context, environment check and org management",
+    { "id": "core", "reason": "Mandatory set for every project and every profile: draw.io and Mermaid diagrams, plus every official Salesforce platform skill (Apex, objects, fields, permissions, SOQL, metadata, deploy, documentation and more)",
       "when": { "core": true },
-      "skills": ["sf-diagram", "external-diagram-mermaid-generate", "platform-docs-get", "platform-soql-query", "platform-metadata-api-context-get", "platform-environment-validate", "dx-org-manage"] },
+      "skills": ["drawio-skill", "sf-diagram", "external-diagram-mermaid-generate", "dx-org-manage"],
+      "skillPrefixes": ["platform-"] },
     { "id": "base", "reason": "Deploy, retrieve and the official Code Analyzer are needed by every Salesforce DX project",
       "when": { "always": true, "profiles": ["developer", "admin"] },
       "skills": ["platform-metadata-deploy", "platform-metadata-retrieve", "dx-code-analyzer-run", "dx-code-analyzer-custom-rule-create"] },

@@ -1,0 +1,27 @@
+{
+  "type": "process",
+  "title": "Deal review with health score",
+  "description": "What happens, in order and by whom, when a rep submits a discounted deal for review.",
+  "scope": "US-02-03, US-04-02",
+  "groups": [
+    { "id": "rep", "label": "Sales rep" },
+    { "id": "sf", "label": "Salesforce" },
+    { "id": "pricing", "label": "Pricing engine" },
+    { "id": "mgr", "label": "Sales manager" }
+  ],
+  "cards": [
+    { "id": "s1", "title": "Set discount and submit", "icon": "apps", "attributes": ["Opportunity record page"], "group": "rep", "step": 0, "status": "unchanged" },
+    { "id": "s2", "title": "Recalculate health score", "icon": "automation", "attributes": ["OpportunityHealthService"], "group": "sf", "step": 1, "status": "new", "story": "US-04-02" },
+    { "id": "s3", "title": "Return discount guidance", "attributes": ["REST, 2 second timeout"], "group": "pricing", "step": 2, "external": true, "status": "new", "story": "US-04-05" },
+    { "id": "s4", "title": "Route for approval", "icon": "workflow", "attributes": ["~ Skips review when score is 80 or more"], "group": "sf", "step": 3, "status": "changed", "story": "US-02-03" },
+    { "id": "s5", "title": "Approve or reject", "icon": "employees", "attributes": ["Sees score and guidance"], "group": "mgr", "step": 4, "status": "changed", "story": "US-02-03" },
+    { "id": "s6", "title": "Notified of the decision", "icon": "inbox", "attributes": ["Bell and email"], "group": "rep", "step": 5, "status": "unchanged" }
+  ],
+  "connectors": [
+    { "from": "s1", "to": "s2", "kind": "flow", "label": "Save" },
+    { "from": "s2", "to": "s3", "kind": "sync", "label": "Callout" },
+    { "from": "s3", "to": "s4", "kind": "flow", "label": "Guidance" },
+    { "from": "s4", "to": "s5", "kind": "async", "label": "Approval request" },
+    { "from": "s5", "to": "s6", "kind": "async", "label": "Decision" }
+  ]
+}

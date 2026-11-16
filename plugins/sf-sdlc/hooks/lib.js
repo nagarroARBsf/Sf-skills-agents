@@ -14,6 +14,9 @@ const IS_PLUGIN = fs.existsSync(path.join(KIT_ROOT, '.claude-plugin', 'plugin.js
 // exists, the SessionStart hook stops printing the same text.
 const KIT_RULE_FILE = 'sf-sdlc-kit.md';
 
+// Browsers the Playwright MCP server can drive (browser.browser in the config).
+const BROWSERS = ['chrome', 'msedge', 'chromium', 'firefox', 'webkit'];
+
 const DEFAULTS = {
   project: { name: '', code: '', client: '' },
   salesforce: { apiVersion: 'auto', packageDirectories: 'auto', namespacePrefix: '', componentPrefix: '' },
@@ -44,6 +47,7 @@ const DEFAULTS = {
   },
   paths: { docs: 'docs/sdlc', specs: 'specs' },
   mcp: { servers: ['metadata-experts', 'metadata-grounding'], org: '' },
+  browser: { enabled: true, browser: 'chrome', headless: false },
   hooks: { mode: 'observe', auditLog: true, strictEvidence: false },
 };
 
@@ -114,6 +118,10 @@ function validateConfig(cfg) {
   if (!Array.isArray(cfg.mcp.servers)) errors.push('mcp.servers must be an array of hosted MCP server names');
   else for (const n of cfg.mcp.servers) if (!known.includes(n)) errors.push(`mcp.servers: unknown server "${n}" (known: ${known.join(', ')})`);
   if (typeof cfg.mcp.org !== 'string') errors.push('mcp.org must be an org role or alias (a string)');
+  const br = cfg.browser || {};
+  if (typeof br.enabled !== 'boolean') errors.push('browser.enabled must be true or false');
+  if (!BROWSERS.includes(br.browser)) errors.push(`browser.browser must be one of ${BROWSERS.join(', ')}`);
+  if (typeof br.headless !== 'boolean') errors.push('browser.headless must be true or false');
   for (const role of cfg.deploy.pipeline || []) {
     if (role !== 'production' && !cfg.orgs[role]) warnings.push(`orgs.${role} has no alias but "${role}" is in deploy.pipeline`);
   }
@@ -363,7 +371,7 @@ function hashDir(dir) {
 
 module.exports = {
   KIT_ROOT, IS_PLUGIN, KIT_RULE_FILE, DEFAULTS, TEST_LEVELS,
-  merge, readJson, projectDir, configPaths, loadConfig, validateConfig, hookMode,
+  BROWSERS, merge, readJson, projectDir, configPaths, loadConfig, validateConfig, hookMode,
   run, has, sfJson, git, stateDir, appendJsonl,
   splitCommands, stripPrefix, flagValue, sfInvocations, gitInvocations,
   defaultOrg, orgList, classifyByFacts, classifyOrg, resolveOrg,

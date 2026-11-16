@@ -55,7 +55,8 @@ Detailed, file-type-specific rules live in `.claude/rules/` and load when matchi
   `NoTestRun` against production.
 - Guard hooks enforce this and may deny or ask. A denied command is a decision, not an obstacle: do
   not rephrase the command to get around it; report it and ask.
-- Never read, print or write CLI credentials (`.sf/`, `.sfdx/`, auth URLs, access tokens, keys).
+- Never read, print or write CLI credentials (`.sf/`, `.sfdx/`, auth URLs, access tokens, keys) or the
+  browser sign-in in `.sf-sdlc/browser-profile/`. Browser (UI) tests run only in non-production orgs.
 
 ## Working style
 - Read existing code and conventions before writing; reuse frameworks and utilities already here.

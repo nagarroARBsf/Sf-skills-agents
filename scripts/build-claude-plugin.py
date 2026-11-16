@@ -116,6 +116,10 @@ def rules() -> list[tuple[Path, dict, str]]:
 
 # --------------------------------------------------------------------------- catalog (written into .claude/)
 
+# Other skills vendored verbatim from their own repositories (see NOTICE): name -> "repo@commit".
+THIRD_PARTY_SKILLS = {"drawio-skill": "Agents365-ai/drawio-skill@6550495"}
+
+
 def official_skills() -> set[str]:
     lines = (ROOT / "scripts" / "official-skills.txt").read_text(encoding="utf-8").splitlines()
     return {l.strip() for l in lines if l.strip() and not l.startswith("#")}
@@ -133,7 +137,8 @@ def skill_entries(warnings: list[str]) -> list[dict]:
             if len(desc) > 1024:
                 warnings.append(f"{location}/{d.name}: description is {len(desc)} chars (> 1,024)")
             source = ("nagarro" if d.name.startswith("sdlc-") else "official" if d.name in official
-                      else "community" if d.name.startswith("sf-") else "other")
+                      else "community" if d.name.startswith("sf-")
+                      else "third-party" if d.name in THIRD_PARTY_SKILLS else "other")
             entries.append({"name": d.name, "location": location, "source": source,
                             "description": desc[:300]})
     return entries
@@ -169,7 +174,9 @@ edited in the project is never overwritten by `sync`.
 Sources: `official` skills are vendored unmodified from
 [forcedotcom/sf-skills](https://github.com/forcedotcom/sf-skills) (Apache-2.0, see
 `LICENSE-forcedotcom-sf-skills.txt`); `community` skills (`sf-*`) come from
-[Clientell-Ai/salesforce-skills](https://github.com/Clientell-Ai/salesforce-skills) (Apache-2.0).
+[Clientell-Ai/salesforce-skills](https://github.com/Clientell-Ai/salesforce-skills) (Apache-2.0);
+`third-party` skills are vendored unmodified from their own repositories (`drawio-skill`:
+[Agents365-ai/drawio-skill](https://github.com/Agents365-ai/drawio-skill), MIT, commit 6550495).
 See `NOTICE` at the repository root.
 
 ## Index

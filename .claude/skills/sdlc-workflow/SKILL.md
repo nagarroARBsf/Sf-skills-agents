@@ -84,6 +84,7 @@ docs/sdlc/
 ├── 03-architecture/
 │   ├── baseline/inventory.md  what exists today (brownfield) or the greenfield statement
 │   ├── components.json        component model with change status; diagrams are generated from it
+│   ├── diagrams/              per diagram: <name>.diagram.json (spec), .drawio, .png (Salesforce standard)
 │   ├── HLD.md
 │   ├── LLD/US-04-02.md
 │   └── ADR/ADR-001-*.md

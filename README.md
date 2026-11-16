@@ -12,7 +12,7 @@ deployment → QA testing → re-test → release → observe.**
 | 10 agents | BRD, Jira stories, solution architect, planner, developer, code reviewer, QA, deployment, release manager, project scout |
 | 22 commands | One per lifecycle step, each stopping for human review |
 | 11 SDLC skills | The method, templates and checklists behind each step |
-| 176 Salesforce skills | A library; setup installs only the ones your project needs |
+| 177 Salesforce and diagram skills | A library; setup installs only the ones your project needs |
 | Hosted MCP servers | Salesforce's Metadata Grounding and Metadata Experts servers (Headless 360 and Data 360 optional), signed in through your `sf` CLI login: no client ID, secret or token to store |
 | Guard hooks | Production-org guard, secret guard, branch guard, commit gate, write-time source checks, failure triage, audit log |
 | `sf-sdlc` CLI | Tool checks, config, skill installer, official Salesforce Code Analyzer, change delta, validated deploys, test runs |
@@ -52,7 +52,7 @@ plugins/sf-sdlc/
 │   └── sdlc-code-review/
 │       ├── SKILL.md             frontmatter (name, when to trigger) + the method
 │       └── references/          templates and checklists, loaded only when needed
-├── skill-library/               176 Salesforce skills, never loaded from here; installed per project
+├── skill-library/               177 skills, never loaded from here; installed per project
 ├── commands/                    22 slash commands: /sf-sdlc:brd, /sf-sdlc:plan, /sf-sdlc:deploy …
 │   └── deploy.md
 ├── agents/                      10 subagents, one per lifecycle stage
@@ -138,12 +138,13 @@ your-salesforce-project/
 │   ├── settings.json              permissions, .env read-deny, plugin on at project scope                  commit
 │   ├── rules/                     coding rules and sf-sdlc-kit.md (plugins cannot ship rules)              commit
 │   ├── sf-sdlc.skills.lock.json   installed skills and their hashes                                       commit
-│   └── skills/                    only the Salesforce skills this project needs                            commit
+│   └── skills/                    core Salesforce skills (draw.io, all platform-*) + what the code needs   commit
 ├── code-analyzer.yml              Code Analyzer rules                                                      commit
-├── .env                           Jira, Confluence, GitHub tokens you fill in your editor                  never commit
+├── .env                           Salesforce login address/user name; Jira, Confluence, GitHub tokens       never commit
+├── .env.sample                    every .env key with its explanation, no values                           commit
 ├── docs/sdlc/                     BRD, backlog, architecture, QA and release drafts
 ├── specs/                         constitution.md and one folder per story: spec, plan, tasks, review
-└── .sf-sdlc/                      audit log, tracked jobs, caches                                          ignored
+└── .sf-sdlc/                      audit log, tracked jobs, caches, browser sign-in (browser-profile/)     ignored
 ```
 
 The one setting you must get right is `orgs.production`: list every production alias there.
@@ -183,7 +184,7 @@ next step starts. Agents never approve their own work.
 | G | Ground the agents in the business and the org | Tech lead, BA | `/sf-sdlc:setup` (drafts them) | project scout | `docs/sdlc/00-grounding/ontology.yaml` (business terms → objects), `feature-map.md` (components per feature) |
 | 1 | Requirements from transcripts | Business analyst | `/sf-sdlc:brd <files>` | BRD | `docs/sdlc/01-brd/BRD.md` |
 | 2 | Epics and stories | Product owner | `/sf-sdlc:stories` | Jira story | `docs/sdlc/02-backlog/`, Jira issues after you say yes |
-| 3 | Architecture and diagrams | Architect | `/sf-sdlc:architecture`, `/sf-sdlc:diagram` | solution architect | HLD, per-story LLD, ADRs, diagrams marking New / Changed / Unchanged |
+| 3 | Architecture and diagrams | Architect | `/sf-sdlc:architecture`, `/sf-sdlc:diagram` | solution architect | HLD, per-story LLD, ADRs; Salesforce-standard draw.io diagrams (PNG, SVG, PDF) marking New / Changed / Unchanged |
 | 4 | Spec and plan | Developer | `/sf-sdlc:constitution` (once), `/sf-sdlc:specify`, `/sf-sdlc:clarify`, `/sf-sdlc:plan`, `/sf-sdlc:tasks` | planner | `specs/<story>/spec.md`, `plan.md`, `tasks.md` |
 | 5 | Build | Developer | `/sf-sdlc:implement`, `/sf-sdlc:verify` | developer | Apex, LWC, Flow, metadata, tests; evidence per task |
 | 6 | Code verification | Reviewer | `/sf-sdlc:review`, `/sf-sdlc:analyze` | code reviewer (read-only) | `specs/<story>/review.md` with a verdict |
@@ -332,13 +333,47 @@ never overwrites a skill you edited. Starter sets: `--profile developer`, `admin
 - **Windows without WSL:** hooks run where Git Bash is available; the `sf-sdlc` shortcut does not,
   so use `node <path>/bin/sf-sdlc`.
 - **claude.ai and Cowork** do not install plugins that contain executables. This kit targets Claude Code.
-- **Jira and Confluence do not render Mermaid.** Attach the SVG from `sf-sdlc diagram render`
+- **Jira and Confluence do not render Mermaid.** Attach the PNG or SVG of the draw.io diagram
+  (`sf-sdlc diagram export`, needs draw.io desktop), or the SVG from `sf-sdlc diagram render`
   (needs mermaid-cli).
+- **Salesforce-standard diagrams follow the published conventions, not Salesforce's Lucidchart
+  templates.** The draw.io generator was checked by rendering its six examples with draw.io desktop
+  29 on Windows (called from WSL). Export on macOS and on Linux (`snap`, or headless with `xvfb-run`)
+  has not been run. Layout is automatic: very dense diagrams can still have crossing lines or pills
+  near cards, so the agent is told to look at the PNG and split or reorder. draw.io's Salesforce icon
+  library has no Agentforce, Data Cloud, MuleSoft, Slack or Tableau icons; the nearest generic icon
+  is used. Animated connectors move only in draw.io and SVG, not in PNG or PDF.
+- **Nine Salesforce reference diagrams ship as picture references** in the architecture-diagram
+  skill. Salesforce publishes them without a stated licence; they are included unmodified with
+  attribution in `NOTICE`, for the agent to study, not to paste into client documents.
+- **`drawio-skill` is vendored as published** (MIT). Its frontmatter sets `disable-model-invocation`,
+  so a person starts it with `/drawio-skill`; agents read its files and run its scripts. Its scripts
+  need Python 3, and its exports need draw.io desktop; `setup --install-tools` installs both only
+  where no administrator password is needed (Homebrew on macOS, winget on Windows).
 - **Hooks and permission rules guide an agent; they are not a security boundary.** Org permissions,
   branch protection in your Git host, and CI remain the real controls.
 - **GitHub Copilot and Cursor:** the `.github/` and `.cursor/` folders in this repository are from
   the previous release and have not been regenerated for this one.
 - Three upstream skill descriptions exceed 1,024 characters and are truncated in listings.
+- **The mandatory core set is larger than Claude Code's skill listing budget.** Every project gets
+  `drawio-skill` and all 54 official `platform-*` skills (about 18,000 description characters, against
+  roughly 8,000 that Claude Code lists on a 200k-token model). Claude Code then shortens or omits some
+  descriptions, so a core skill may need to be asked for by name (`/platform-…`) or loaded by an agent
+  that knows it. The budget is still applied to on-demand skills. Remove a core skill a project never
+  uses with `sf-sdlc skills remove <name>`; the next `setup` reinstalls it.
+- **Browser testing (`sf-browser`, Playwright MCP) has been run locally, not against a Salesforce
+  org.** The launcher, a headless page load and the sign-in surviving restarts were checked: setup
+  sets the profile in `.sf-sdlc/browser-profile/` to restore the last session, and a session-only
+  cookie (the kind Salesforce uses for its login) survived both a clean close and an abrupt stop of
+  Claude Code with Chrome. A real Salesforce sign-in, Login As and Lightning waits have not been run;
+  Salesforce still ends the session after the org's timeout (Setup → Session Settings). Keeping the
+  sign-in works for Chrome, Edge and Chrome for Testing, is set but untested for Firefox, and is not
+  available for WebKit. The server is Microsoft's `@playwright/mcp`, pinned and fetched by `npx` on first start
+  (network needed once). One browser can use the profile at a time, so two Claude sessions in the same
+  project cannot both drive the browser. The navigation guard only sees `browser_navigate`: a link
+  clicked inside the page that leads to a production org is not stopped by it — the QA agent is told
+  to stay in non-production orgs, and the profile should only ever be signed in to sandboxes. The
+  profile holds live session cookies; treat the project folder accordingly.
 
 ## Maintaining this repository
 

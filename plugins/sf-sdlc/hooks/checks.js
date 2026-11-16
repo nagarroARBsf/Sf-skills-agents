@@ -193,7 +193,7 @@ function findSecrets(text) {
   return hits;
 }
 
-const PROTECTED_PATH = /(^|\/)(\.sf|\.sfdx)\/|(^|\/)(server\.key|[^/]+\.pem|[^/]*\.jwt\.key|sfdx-auth-url[^/]*|authurl[^/]*)$/i;
+const PROTECTED_PATH = /(^|\/)(\.sf|\.sfdx|\.sf-sdlc\/browser-profile)\/|(^|\/)(server\.key|[^/]+\.pem|[^/]*\.jwt\.key|sfdx-auth-url[^/]*|authurl[^/]*)$/i;
 
 function isProtectedPath(file) {
   return PROTECTED_PATH.test(String(file).split(path.sep).join('/'));

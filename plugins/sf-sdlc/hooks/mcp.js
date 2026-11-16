@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const lib = require('./lib');
+const envfile = require('./envfile');
 
 const MCP_API_VERSION = 'v1-beta.2';
 const DEFAULT_HOST = 'api.salesforce.com';
@@ -31,9 +32,28 @@ const READ_TOOL_NAME = /^(get|list|describe|query|search|find|read|soql|sosl)(?!
 // What to show a person: the servers setup turns on by default, and where to switch them on.
 const SETUP_PATH = '/lightning/setup/SetupOneHome/home';
 
+// .env / environment key that overrides one server's full address: SF_MCP_METADATA_EXPERTS_URL, …
+function urlKey(name) { return `SF_MCP_${String(name).toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_URL`; }
+
+// The environment the proxy and the probe read addresses from: the process environment first, then
+// the address keys in the project's .env (never a token: these keys hold addresses only).
+function addressEnv(root, base = process.env) {
+  const vals = envfile.read(root) || {};
+  const env = { ...base };
+  for (const k of ['SF_SDLC_MCP_HOST', ...Object.keys(HOSTED_SERVERS).map(urlKey)]) if (!env[k] && vals[k]) env[k] = vals[k];
+  return env;
+}
+
 function serverUrl(name, env = process.env) {
   const s = HOSTED_SERVERS[name];
   if (!s) throw new Error(`unknown hosted MCP server "${name}"`);
+  const own = env[urlKey(name)];
+  if (own) {
+    let u = null;
+    try { u = new URL(own); } catch { /* reported below */ }
+    if (!u || u.protocol !== 'https:' || !/(^|\.)salesforce\.com$/i.test(u.hostname) || u.username || u.password) throw new Error(`${urlKey(name)} must be an https:// address on a salesforce.com host, got "${own}"`);
+    return u.toString().replace(/\/$/, '');
+  }
   const host = env.SF_SDLC_MCP_HOST || DEFAULT_HOST;
   if (!/^[a-z0-9.-]+\.salesforce\.com$/i.test(host)) throw new Error(`SF_SDLC_MCP_HOST must be a salesforce.com host, got "${host}"`);
   return `https://${host}/platform/mcp/${MCP_API_VERSION}/${s.route}`;
@@ -126,7 +146,7 @@ async function probe(name, root, cfg, org) {
   let jwt;
   try { jwt = mintJwt(org, root); } catch (e) { result.state = 'auth'; result.detail = e.message; return result; }
   try {
-    const url = serverUrl(name);
+    const url = serverUrl(name, addressEnv(root));
     const init = await rpc(url, jwt, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'sf-sdlc', version: '1' } } });
     result.state = classifyStatus(init.status, init.text);
     if (result.state !== 'ok') { result.detail = `HTTP ${init.status}: ${init.text.slice(0, 200)}`; return result; }
@@ -165,6 +185,6 @@ function serveNoTools(label, reason, log) {
 
 module.exports = {
   MCP_API_VERSION, HOSTED_SERVERS, WRITE_TOOLS, SETUP_PATH,
-  serverUrl, enabledServers, mcpOrg, parseRpcBody, classifyStatus, parseToolName,
+  serverUrl, urlKey, addressEnv, enabledServers, mcpOrg, parseRpcBody, classifyStatus, parseToolName,
   mintJwt, rpc, probe, recordHealth, readHealth, noToolsReply, serveNoTools,
 };

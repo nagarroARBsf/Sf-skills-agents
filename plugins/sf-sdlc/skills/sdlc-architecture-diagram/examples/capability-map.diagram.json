@@ -1,0 +1,27 @@
+{
+  "type": "capability-map",
+  "title": "Sales and partner capabilities, release 1.2",
+  "description": "Which business capabilities release 1.2 adds, improves or retires, grouped by business domain.",
+  "scope": "Release 1.2",
+  "version": "1.2",
+  "groups": [
+    { "id": "sales", "label": "Sales management", "icon": "sales" },
+    { "id": "partner", "label": "Partner management", "icon": "partners" },
+    { "id": "service", "label": "Customer service", "icon": "service" },
+    { "id": "insight", "label": "Insight and reporting", "icon": "analytics" }
+  ],
+  "cards": [
+    { "id": "pipeline", "title": "Pipeline management", "group": "sales", "status": "unchanged", "icon": false },
+    { "id": "dealreview", "title": "Deal review", "subtitle": "Discount approval moves into the deal review", "group": "sales", "status": "changed", "story": "BR-02", "icon": false },
+    { "id": "dealhealth", "title": "Deal health insight", "subtitle": "Score and risk flags on every open deal", "group": "sales", "status": "new", "story": "BR-04", "icon": false },
+    { "id": "forecast", "title": "Forecasting", "group": "sales", "status": "unchanged", "icon": false },
+    { "id": "onboard", "title": "Partner onboarding", "group": "partner", "status": "unchanged", "icon": false },
+    { "id": "dealreg", "title": "Deal registration", "subtitle": "Partners register deals on the portal", "group": "partner", "status": "new", "story": "BR-06", "icon": false },
+    { "id": "mdf", "title": "Fund requests by email", "subtitle": "Replaced by deal registration", "group": "partner", "status": "removed", "story": "BR-06", "icon": false },
+    { "id": "cases", "title": "Case management", "group": "service", "status": "unchanged", "icon": false },
+    { "id": "escalation", "title": "Key account escalation", "subtitle": "Escalations see deal health", "group": "service", "status": "changed", "story": "BR-05", "icon": false },
+    { "id": "pipereport", "title": "Pipeline reporting", "group": "insight", "status": "unchanged", "icon": false },
+    { "id": "healthdash", "title": "Deal health dashboard", "group": "insight", "status": "new", "story": "BR-04", "icon": false }
+  ],
+  "connectors": []
+}

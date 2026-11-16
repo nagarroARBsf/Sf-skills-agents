@@ -16,7 +16,9 @@ How to install the Salesforce SDLC kit in a project, and every per-project file 
 | sfdx-git-delta — optional | Alternative delta manifests | `sf plugins install sfdx-git-delta` |
 | Lightning Flow Scanner — optional | Flow static analysis | `sf plugins install lightning-flow-scanner` |
 | mermaid-cli — optional | SVG diagrams for Jira and Confluence | `npm install --global @mermaid-js/mermaid-cli` |
+| draw.io desktop — optional | PNG, SVG and PDF of the Salesforce-standard diagrams (`sf-sdlc diagram export`); without it the `.drawio` files still open in draw.io on the web or the VS Code Draw.io extension | https://www.drawio.com (`brew install --cask drawio`, `winget install JGraph.Draw`, `sudo snap install drawio`); under WSL the Windows app is found automatically; `SF_SDLC_DRAWIO` points to another location |
 | uv or Docker — optional | Only for Jira/Confluence with an API token in `.env` (the `atlassian-token` server) | https://docs.astral.sh/uv/ |
+| A browser — optional | UI tests in a real browser through the Playwright MCP server (`sf-browser`); started with `npx`, so Node.js is enough. Uses Google Chrome when installed; otherwise Playwright downloads Chrome for Testing (no administrator rights) | Nothing to install; `browser.browser` in the config picks another browser |
 | Salesforce Hosted MCP Servers — optional | Grounding in existing org metadata; Metadata Experts skills | Turned on in the org: Setup → MCP Servers (see 4.5) |
 
 Business analysts and managers who only produce documents (BRD, stories, test design, release
@@ -58,7 +60,7 @@ Setup follows Claude Code's documented practice for team plugins: the plugin's c
 hooks, CLI and MCP servers stay in the plugin, and setup writes the project's own files — the plugin
 turned on at **project scope** in `.claude/settings.json` (`enabledPlugins` and
 `extraKnownMarketplaces`), the coding rules in `.claude/rules/`, the configuration, the skills and a
-git-ignored `.env`. Commit them (not `.env`). A teammate who clones the project trusts the folder and
+git-ignored `.env` with its value-free list `.env.sample`. Commit them (not `.env`). A teammate who clones the project trusts the folder and
 installs the plugin once:
 
 ```bash
@@ -72,7 +74,9 @@ claude plugin install sf-sdlc@nagarro-sf --scope project
 | Coding rules and kit instructions (`sf-sdlc-kit.md`) | `.claude/rules/` | Yes |
 | Configuration; installed skills and lock file | `.claude/sf-sdlc.json`; `.claude/skills/`, `.claude/sf-sdlc.skills.lock.json` | Yes |
 | Personal overrides | `.claude/sf-sdlc.local.json`, `.claude/settings.local.json` | No |
-| Jira, Confluence, GitHub tokens | `.env` | **Never** |
+| List of `.env` keys, no values | `.env.sample` | Yes |
+| Salesforce login address and user name; Jira, Confluence, GitHub tokens | `.env` | **Never** |
+| Browser sign-in (cookies) for UI tests | `.sf-sdlc/browser-profile/` | **Never** |
 
 ### Option B — copy the `.claude/` folder
 
@@ -108,9 +112,14 @@ A private repository works the same way; each user needs git read access to it.
 `sf-sdlc setup`, which needs no answers from you:
 
 - creates a git repository if there is none, and the project files;
-- explores the code and installs the skills it calls for (the core set, then the main skill for each
-  kind of code found, as many as fit Claude Code's skill listing budget; the rest are listed);
-- checks every tool, the Salesforce org, the hosted MCP servers, Jira and GitHub;
+- installs the **mandatory core skills** in every project, whatever it contains: `drawio-skill`, the
+  other diagram skills, org management and every official Salesforce `platform-*` skill (54 today).
+  The `sdlc-*` skills come with the kit;
+- explores the code and adds the **on-demand** skills it calls for (LWC, Flow, OmniStudio, Experience
+  Cloud, integration…), as many as fit Claude Code's skill listing budget; the rest are listed. The
+  budget applies to on-demand skills only;
+- checks every tool, the Salesforce org, the hosted MCP servers, the browser for UI tests, Jira and
+  GitHub;
 - prints a checklist: ✅ done, 🔧 what Claude can do when you say yes, 👉 what only you can do — each
   with the link or command — and ➖ optional items.
 
@@ -126,12 +135,14 @@ The single steps, which you can also run yourself:
 |---|---|---|
 | Everything below, then the checklist | `sf-sdlc setup` | See above |
 | Check the environment | `sf-sdlc doctor` | What is missing, each with the install command; installed only after you say yes |
-| Create project files | `sf-sdlc init` | `.claude/sf-sdlc.json`, `.gitignore` entries, a `.env` template, `code-analyzer.yml`, a pull request template; plugin users also get `.claude/settings.json` (plugin on at project scope) and `.claude/rules/` |
-| Connect | `sf org login web`, Setup → MCP Servers, `/mcp` → `atlassian` or `.env` tokens, `gh auth login` | Salesforce org, hosted MCP servers, Jira/Confluence, GitHub (each optional) |
+| Create project files | `sf-sdlc init` | `.claude/sf-sdlc.json`, `.gitignore` entries, `.env` and `.env.sample`, `code-analyzer.yml`, a pull request template; plugin users also get `.claude/settings.json` (plugin on at project scope) and `.claude/rules/` |
+| Sign in to Salesforce | `sf-sdlc org login [--alias a] [--instance-url u]` | `sf org login web` with `SF_ORG_ALIAS` and `SF_LOGIN_URL` from `.env`; a browser opens and you sign in |
+| Connect | `sf-sdlc org login`, Setup → MCP Servers, `/mcp` → `atlassian` or `.env` tokens, `gh auth login` | Salesforce org, hosted MCP servers, Jira/Confluence, GitHub (each optional) |
 | Check credentials | `sf-sdlc env status` | Which `.env` groups are filled — names only, never values |
-| Fill an address or user name | `sf-sdlc env set JIRA_URL=… JIRA_USERNAME=…` | Writes non-secret values into `.env`; refuses tokens |
+| Fill an address or user name | `sf-sdlc env set SF_LOGIN_URL=… SF_USERNAME=… JIRA_URL=…` | Writes non-secret values into `.env`; refuses tokens |
 | Choose hosted MCP servers | `sf-sdlc mcp list`, `sf-sdlc mcp enable <name>`, `mcp disable <name>` | Edits `mcp.servers` |
 | Explore the code | `sf-sdlc detect`, `sf-sdlc inventory` | What metadata and conventions exist today |
+| Browser for UI tests | `sf-sdlc browser status`, `browser url --org <role>`, `browser reset` | Ready or not, where the sign-in is kept; the org's address (non-production only, no token); sign out everywhere |
 | Choose skills | `sf-sdlc skills recommend` | The core set plus recommended skills, with the evidence for each |
 | Install skills | `sf-sdlc skills install <names>` | Copies into `.claude/skills/`, recorded in a lock file |
 
@@ -172,6 +183,9 @@ Validate with `sf-sdlc config validate`.
 | `paths.docs`, `paths.specs` | Where SDLC documents and specs live | `"docs/sdlc"`, `"specs"` |
 | `mcp.servers` | Salesforce Hosted MCP Servers the agents may use: `metadata-grounding`, `metadata-experts`, `headless-360`, `data360` | `["metadata-experts", "metadata-grounding"]` |
 | `mcp.org` | Org role or alias the hosted servers sign in to; empty means the default target org | `"dev"` |
+| `browser.enabled` | Start the Playwright browser server (`sf-browser`) for UI tests | `true` |
+| `browser.browser` | `chrome`, `msedge`, `chromium` (Chrome for Testing), `firefox` or `webkit`. On Linux without Google Chrome, `chrome` falls back to `chromium` | `"chrome"` |
+| `browser.headless` | Run without a visible window. The first sign-in needs a visible one | `false` |
 | `hooks.mode` | `observe` (report what would be blocked), `enforce`, or `off` | `"observe"` |
 | `hooks.auditLog` | Record org-affecting commands in `.sf-sdlc/audit.jsonl` | `true` |
 | `hooks.strictEvidence` | Refuse to end a turn while ticked tasks lack an evidence note | `false` |
@@ -231,14 +245,17 @@ Experts and Metadata Grounding are on by default; turn the others on with `sf-sd
 A server that is registered but not enabled, or not switched on in the org, shows in `/mcp` as
 "no tools" — that is expected, not an error. For the copy-in folder, `sf-sdlc init`
 adds the same entries to the project's `.mcp.json` without touching other servers. Each entry starts
-`bin/sf-mcp-proxy`, which signs in with your Salesforce CLI login: there is no client ID, secret,
-External Client App or `.env` file to manage.
+`bin/sf-mcp-proxy`, which signs in with your Salesforce CLI login: there is no client ID, secret or
+External Client App to manage. The kit knows every server's address; `SF_SDLC_MCP_HOST` or
+`SF_MCP_<SERVER>_URL` in `.env` override one only when Salesforce gives you a different address
+(https, `salesforce.com` hosts only).
 
 1. Turn the servers on in the org: Setup → Quick Find **MCP Servers** → **MCP Servers** under API
    Catalog. Allow two minutes. Metadata Grounding also needs Data 360, API access and Salesforce
    Catalog, and is not available in scratch orgs.
-2. Log in: `sf org login web --alias <alias>` (add `--instance-url https://<mydomain>.my.salesforce.com`
-   for a My Domain login).
+2. Log in: `sf-sdlc org login` (uses `SF_ORG_ALIAS` and `SF_LOGIN_URL` from `.env`), or
+   `sf org login web --alias <alias>` (add `--instance-url https://<mydomain>.my.salesforce.com` for a
+   My Domain login).
 3. Choose servers and org in `.claude/sf-sdlc.json` (`mcp.servers`, `mcp.org`); personal overrides go
    in `sf-sdlc.local.json`. Headless 360 and Data 360 are off by default because they can change the
    org; their write tools always ask first.
@@ -260,6 +277,21 @@ consumer secret out of files and use your own server name so it does not clash w
   `mcp-atlassian` server (with `uvx`, or Docker) using the `JIRA_*` and `CONFLUENCE_*` values in
   `.env` (see 4.6). While those are empty it shows as an empty server. Set
   `ATLASSIAN_MCP_PACKAGE=mcp-atlassian==<version>` in `.env` to pin the server version.
+
+**Browser for UI tests.** `sf-browser` (plugin and copy-in): `bin/sf-browser-mcp` starts Microsoft's
+Playwright MCP server (`@playwright/mcp`, pinned in `hooks/browser.js`, Apache-2.0, fetched by `npx`
+on first start) with a **persistent profile in `.sf-sdlc/browser-profile/`**. The first time the QA
+agent opens your org, a browser window shows the Salesforce login page and you sign in there
+(including any verification code); Claude never types or sees the password. The cookies stay in that
+folder, so the next Claude session is still signed in — also after the laptop restarts — until
+Salesforce ends the session (the org's timeout in Setup → Session Settings). Setup does this for you:
+it sets the profile to restore the last session, which is what makes the browser keep Salesforce's
+session cookie when it closes; the launcher re-applies it on every start. The folder is
+git-ignored, denied to Claude's Read tool and protected by the secret guard; session IDs and OAuth
+codes in URLs are redacted from what the server returns. One browser can use the profile at a time: a
+second Claude session gets "profile in use" until the first closes its browser. Opening a page of a
+production-class org, or of a Salesforce org the `sf` CLI does not know, asks first. Sign out
+everywhere with `sf-sdlc browser reset`; turn the server off with `browser.enabled: false`.
 
 **Other MCP servers.** Add entries like these only for Jira Server/Data Center or the GitHub MCP
 server. Keep tokens in environment variables, never in the file.
@@ -285,20 +317,28 @@ server. Keep tokens in environment variables, never in the file.
 The copy-in folder has no bundled Atlassian remote server; use `atlassian-token`, or add the
 Atlassian entry (`"type": "http", "url": "https://mcp.atlassian.com/v2/mcp"`) here.
 
-### 4.6 `.env` — your tokens (never commit it)
+### 4.6 `.env` — your settings and tokens (never commit it) and `.env.sample` (commit it)
 
 Created by `sf-sdlc init` (or `sf-sdlc env init`) from a template, added to `.gitignore`, and denied
-to Claude's Read tool. Fill it **in your editor**; never paste a token into the chat. Salesforce
-needs nothing here: the `sf` CLI keeps its own login.
+to Claude's Read tool. Fill it **in your editor**; never paste a token into the chat. `init` also
+writes **`.env.sample`**: every key with its explanation and no values, for the team to commit, so a
+new teammate sees what to fill. Salesforce needs no password or token here: the `sf` CLI keeps its own
+login, and the browser keeps its own sign-in.
 
 | Keys | Used by | Where to get it |
 |---|---|---|
+| `SF_LOGIN_URL` | `sf-sdlc org login` (the browser sign-in) | `https://login.salesforce.com` (production, Developer Edition), `https://test.salesforce.com` (sandbox) or your My Domain address |
+| `SF_USERNAME` | `sf-sdlc setup`: picks the signed-in org with this user name as the project org | The Salesforce user name you sign in with |
+| `SF_ORG_ALIAS` | `sf-sdlc org login` and setup: the short name for the org in the `sf` CLI | e.g. `dev`, `uat` |
+| `SF_SDLC_MCP_HOST`, `SF_MCP_<SERVER>_URL` (`SF_MCP_METADATA_EXPERTS_URL`, `…_METADATA_GROUNDING_URL`, `…_HEADLESS_360_URL`, `…_DATA360_URL`, `…_SOBJECT_READS_URL`, `…_SOBJECT_ALL_URL`) | `sf-mcp-proxy`, `sf-sdlc mcp status` | Leave empty. Only to override a hosted server's address; https and a `salesforce.com` host |
 | `JIRA_URL`, `JIRA_USERNAME`, `JIRA_API_TOKEN` | the `atlassian-token` MCP server | https://id.atlassian.com/manage-profile/security/api-tokens; URL `https://<site>.atlassian.net`, username = your Atlassian e-mail |
 | `CONFLUENCE_URL`, `CONFLUENCE_USERNAME`, `CONFLUENCE_API_TOKEN` | the `atlassian-token` MCP server | Same token; URL `https://<site>.atlassian.net/wiki` |
 | `READ_ONLY_MODE`, `ATLASSIAN_MCP_PACKAGE`, `ATLASSIAN_MCP_IMAGE` | optional, the same server | `true` disables create/update tools; pin the version or image |
 | `GITHUB_TOKEN` | `sf-sdlc env gh-login`, which signs the `gh` CLI in once | A fine-grained token for this repository (Contents and Pull requests: read and write). Or skip it and run `gh auth login` |
 
-`sf-sdlc env status` shows which groups are configured, partial or empty — never the values. Restart
+The `SF_*` addresses, user name and alias are not secrets: `sf-sdlc env set` can write them for you
+(it refuses tokens). `sf-sdlc env status` shows which groups are configured, partial or empty — never
+the values. Restart
 Claude Code after editing `.env` so MCP servers read it.
 
 ### 4.7 Other files
@@ -336,6 +376,7 @@ sf-sdlc org classify      # confirm your production org reports "production"
 sf-sdlc analyze --changed # the official Code Analyzer runs (Recommended rules plus your custom rules)
 sf-sdlc mcp status        # each enabled hosted MCP server: connected with its tools, or why not
 sf-sdlc env status        # which .env credential groups are filled (names only)
+sf-sdlc browser status    # the Playwright browser for UI tests is ready; where the sign-in is kept
 ```
 
 (Copy-in folder: prefix each with `node .claude/bin/`.)

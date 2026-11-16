@@ -11,10 +11,14 @@ From the user: $ARGUMENTS
    the session started. Say so in one line, ask the person to run `/reload-plugins` (or restart Claude
    Code) and then run this command again, and stop.
 2. Run `sf-sdlc setup --json` **first, before asking anything**. It creates the
-   project files, explores the code, installs the skills the code needs, checks every tool and
-   connection, and returns the checklist.
+   project files (`.env` and `.env.sample` among them), installs the mandatory core skills (`drawio-skill`
+   and every Salesforce `platform-*` skill) plus the on-demand skills the code needs, checks every tool
+   and connection — including Python 3 and draw.io desktop for the architecture diagrams and the
+   Playwright browser for UI tests — and returns the checklist.
 3. Show the checklist, ask the few questions it marks (in one batch), do what the person agrees to,
-   and finish with the final checklist — exactly as the skill describes.
+   and finish with the final checklist — exactly as the skill describes. On a yes, missing tools
+   (Python 3 and draw.io desktop among them) are installed with
+   `sf-sdlc setup --install-tools --json`.
 
 Do not hand setup to a subagent and do not run it in the background: a subagent cannot ask the person
 anything, and they cannot see its progress. Only the deeper code study (baseline and grounding

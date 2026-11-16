@@ -1,0 +1,44 @@
+#!/usr/bin/env node
+'use strict';
+// sf-browser-mcp — starts the Playwright MCP server (Microsoft, Apache-2.0) so Claude can drive a real
+// browser for UI tests in a Salesforce org. Node.js standard library only (Node 18+).
+//
+//   node .claude/bin/sf-browser-mcp
+//
+// The browser profile is persistent and per project: .sf-sdlc/browser-profile/. The person signs in to
+// Salesforce once, in the browser window, and later Claude sessions reuse that sign-in — also after the
+// laptop restarts, because the profile is set to restore the last session (browser.prepareProfile). No password or
+// token passes through Claude or this script. One browser can hold the profile at a time: a second
+// Claude session gets "profile in use" until the first browser closes.
+//
+// Settings: browser.enabled, browser.browser (chrome | msedge | chromium | firefox | webkit) and
+// browser.headless in .claude/sf-sdlc.json. When the browser is off or npx is missing, the server still
+// answers the MCP handshake with no tools and the reason, so Claude Code shows an empty server.
+
+const { spawn } = require('child_process');
+const lib = require('../hooks/lib');
+const mcp = require('../hooks/mcp');
+const browser = require('../hooks/browser');
+
+const LABEL = 'sf-browser';
+const log = (m) => process.stderr.write(`[sf-browser-mcp] ${m}\n`);
+
+function main() {
+  if (Number(process.versions.node.split('.')[0]) < 18) return mcp.serveNoTools(LABEL, 'Node.js 18 or later is required', log);
+  const root = lib.projectDir();
+  const cfg = lib.loadConfig(root);
+  const p = browser.plan(root, cfg);
+  if (!p.cmd) return mcp.serveNoTools(LABEL, p.reason, log);
+  lib.stateDir(root); // creates .sf-sdlc/ with its own .gitignore before the profile lands in it
+  const kept = browser.prepareProfile(root, p.browser); // keep the sign-in across restarts
+  if (kept.result === 'set') log('profile set to keep the sign-in across restarts');
+  else if (kept.result !== 'kept') log(`sign-in across restarts: ${kept.result}`);
+  if (p.note) log(p.note);
+  log(`starting ${browser.PACKAGE} (${p.browser}${cfg.browser && cfg.browser.headless ? ', headless' : ''}), profile ${browser.PROFILE_DIR}`);
+  const child = spawn(p.cmd, p.args, { stdio: 'inherit', cwd: root, shell: process.platform === 'win32' });
+  child.on('error', (e) => { log(`could not start ${p.cmd}: ${e.message}`); process.exit(1); });
+  child.on('exit', (code, signal) => process.exit(signal ? 1 : code || 0));
+  for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => child.kill(s));
+}
+
+if (require.main === module) main();

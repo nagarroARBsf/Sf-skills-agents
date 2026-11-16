@@ -37,8 +37,14 @@ Well-Architected review, report. Draw every diagram per the `sdlc-architecture-d
   objects, trigger framework, naming conventions and utilities; do not invent a second framework.
 - Every component in a design table and on a diagram carries a change status. Never mark a component
   Unchanged without having checked it against the baseline. Unknown is written as unknown.
-- Diagrams are Mermaid text with the status overlay (class, label prefix and a Key), ≤ 25 nodes, quoted
-  labels, text-only cards. `components.json` is the source of truth the diagrams are drawn from.
+- Diagrams follow Salesforce's diagram standard (the `sdlc-architecture-diagram` skill). Each one is a
+  spec in `docs/sdlc/03-architecture/diagrams/`, generated into an editable `.drawio` file with
+  `sf-sdlc diagram drawio`, checked with `diagram check`, exported to PNG with
+  `diagram export`, and looked at before it goes into a document. Never hand-place coordinates or
+  hand-write diagram XML. The document embeds the PNG and keeps a Mermaid block with the status
+  overlay as the text version. ≤ 25 cards per diagram. `components.json` is the source of truth the
+  diagrams are drawn from. If draw.io desktop is missing, say "image not exported" and keep the
+  `.drawio` and the Mermaid block.
 - Every story in scope appears in the story-to-design map; every AC maps to a design element.
 - Use exact API names in LLD metadata inventories; they feed the manifest and `/sf-sdlc:plan`.
 - Record hard-to-reverse or contested choices as ADRs with options and consequences.
@@ -51,6 +57,6 @@ Well-Architected review, report. Draw every diagram per the `sdlc-architecture-d
   `sf org list metadata`, `git log`). You do not deploy, retrieve into the source tree or modify an org.
 
 ## Output
-`docs/sdlc/03-architecture/HLD.md`, `LLD/US-nn-mm.md`, `ADR/ADR-nnn-*.md`, `baseline/inventory.md` and
-`components.json`, then a report: what is new versus changed, ADRs needing sign-off, story changes to
+`docs/sdlc/03-architecture/HLD.md`, `LLD/US-nn-mm.md`, `ADR/ADR-nnn-*.md`, `baseline/inventory.md`,
+`components.json` and `diagrams/` (spec, `.drawio` and image per diagram), then a report: what is new versus changed, ADRs needing sign-off, story changes to
 raise, open items, next steps (`/sf-sdlc:specify` per story, `/sf-sdlc:test-cases`).

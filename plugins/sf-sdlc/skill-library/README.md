@@ -17,7 +17,9 @@ edited in the project is never overwritten by `sync`.
 Sources: `official` skills are vendored unmodified from
 [forcedotcom/sf-skills](https://github.com/forcedotcom/sf-skills) (Apache-2.0, see
 `LICENSE-forcedotcom-sf-skills.txt`); `community` skills (`sf-*`) come from
-[Clientell-Ai/salesforce-skills](https://github.com/Clientell-Ai/salesforce-skills) (Apache-2.0).
+[Clientell-Ai/salesforce-skills](https://github.com/Clientell-Ai/salesforce-skills) (Apache-2.0);
+`third-party` skills are vendored unmodified from their own repositories (`drawio-skill`:
+[Agents365-ai/drawio-skill](https://github.com/Agents365-ai/drawio-skill), MIT, commit 6550495).
 See `NOTICE` at the repository root.
 
 ## Index
@@ -43,6 +45,7 @@ See `NOTICE` at the repository root.
 | `design-systems-slds-apply` | official | Apply SLDS-compliant UI using the correct blueprints, styling hooks, utility classes, and icons |
 | `design-systems-slds-validate` | official | Audit Lightning Web Components for SLDS design-system compliance and produce a scored quality report |
 | `design-systems-slds2-migrate` | official | Migrate Lightning Web Components from SLDS 1 to SLDS 2 by running the SLDS linter and fixing violations |
+| `drawio-skill` | third-party | Create and edit draw.io/diagrams.net diagrams as editable `.drawio` files |
 | `dx-apexguru-scan` | official | Run an ApexGuru performance scan on a Salesforce Apex project via the ApexGuru SFAP Scan API. Zips the project's Apex (any layout), submits it, polls  |
 | `dx-app-analytics-query` | official | ISV App Analytics metadata types — AppAnalyticsQueryRequest and AppAnalyticsSettings |
 | `dx-code-analyzer-configure` | official | Set up, configure, and troubleshoot Salesforce Code Analyzer for any project |

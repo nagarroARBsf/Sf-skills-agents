@@ -1,0 +1,23 @@
+{
+  "type": "data-model",
+  "title": "Deal health data model",
+  "description": "Which objects and relationships hold deal health, and which fields US-04-01 and US-06-01 add.",
+  "scope": "US-04-01, US-06-01",
+  "cloud": "sales",
+  "columns": 3,
+  "cards": [
+    { "id": "review", "title": "Deal Review", "subtitle": "Deal_Review__c", "entity": "cloud", "status": "new", "story": "US-04-01", "attributes": ["# Name (auto number)", "• Decision__c", "• Reviewer__c", "• Comments__c"] },
+    { "id": "reg", "title": "Deal Registration", "subtitle": "Deal_Registration__c", "entity": "cloud", "status": "new", "story": "US-06-01", "attributes": ["# Name", "• Partner_Account__c", "• Opportunity__c", "• Status__c"] },
+    { "id": "opp", "title": "Opportunity", "subtitle": "Opportunity", "entity": "extended", "status": "changed", "story": "US-04-01", "attributes": ["# Name", "• StageName", "+ Deal_Health_Score__c", "+ Deal_Health_Band__c", "+ Discount_Percentage__c"] },
+    { "id": "user", "title": "User", "subtitle": "User", "entity": "related", "status": "unchanged", "attributes": ["# Username", "• ManagerId"] },
+    { "id": "acc", "title": "Account", "subtitle": "Account", "entity": "related", "status": "unchanged", "attributes": ["# Name", "• Industry"] },
+    { "id": "partner", "title": "Partner Account", "subtitle": "RT: Partner", "entity": "record-type", "status": "unchanged", "attributes": ["Account with the Partner record type"] }
+  ],
+  "connectors": [
+    { "from": "review", "to": "opp", "kind": "master-detail", "label": "review of" },
+    { "from": "review", "to": "user", "kind": "lookup", "label": "reviewed by" },
+    { "from": "reg", "to": "opp", "kind": "lookup", "label": "becomes" },
+    { "from": "reg", "to": "partner", "kind": "lookup-required", "label": "registered by" },
+    { "from": "opp", "to": "acc", "kind": "lookup", "label": "for" }
+  ]
+}

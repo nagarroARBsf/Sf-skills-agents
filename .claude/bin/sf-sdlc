@@ -11,12 +11,14 @@ const envfile = require('../hooks/envfile');
 const ops = require('../hooks/ops');
 const checks = require('../hooks/checks');
 const mcp = require('../hooks/mcp');
+const diagramLib = require('../hooks/diagram');
+const browserLib = require('../hooks/browser');
 
 const argv = process.argv.slice(2);
 const JSON_OUT = argv.includes('--json');
 const flags = {};
 const pos = [];
-const VALUE_FLAGS = new Set(['--jira', '--org', '--from', '--severity', '--job-id', '--run-id', '--tests', '--level', '--manifest', '--source-dir', '--wait', '--profile', '--tail', '--output', '--rule-selector', '--report', '--type']);
+const VALUE_FLAGS = new Set(['--jira', '--org', '--from', '--severity', '--job-id', '--run-id', '--tests', '--level', '--manifest', '--source-dir', '--wait', '--profile', '--tail', '--output', '--rule-selector', '--report', '--type', '--story', '--layer', '--title', '--format', '--alias', '--instance-url']);
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a.startsWith('--')) {
@@ -67,7 +69,7 @@ function doctorRows() {
   if (gh) add('gh signed in', lib.run('gh', ['auth', 'status'], { timeout: 30000 }).status === 0, '', 'Run `gh auth login` (browser), or put GITHUB_TOKEN in .env and run `sf-sdlc env gh-login`.', false);
   const est = envfile.status(root);
   const groups = Object.entries(est.groups).map(([n, g]) => `${n}: ${g.state}`).join(', ');
-  add('.env credentials (Jira, Confluence, GitHub tokens)', est.exists && est.gitignored, est.exists ? `${est.gitignored ? 'git-ignored' : 'NOT git-ignored'}; ${groups}` : 'no .env (only needed for token-based Jira/Confluence or GitHub)', est.exists ? 'Run `sf-sdlc init` to git-ignore .env.' : 'Run `sf-sdlc env init`, then fill the values in your editor.', false);
+  add('.env credentials (Salesforce login address, Jira, Confluence, GitHub tokens)', est.exists && est.gitignored, est.exists ? `${est.gitignored ? 'git-ignored' : 'NOT git-ignored'}; ${groups}` : 'no .env (only needed for token-based Jira/Confluence or GitHub)', est.exists ? 'Run `sf-sdlc init` to git-ignore .env.' : 'Run `sf-sdlc env init`, then fill the values in your editor.', false);
   const tokenJira = ['jira', 'confluence'].some((g) => est.groups[g].state === 'configured');
   if (tokenJira) add('uv or Docker (runs the token-based Jira/Confluence MCP server)', lib.has('uvx') || lib.has('docker'), lib.has('uvx') ? 'uvx' : lib.has('docker') ? 'docker' : 'neither found', 'Install uv: https://docs.astral.sh/uv/getting-started/installation/ (or Docker), then restart Claude Code.', false);
   if (lib.IS_PLUGIN) {
@@ -78,6 +80,10 @@ function doctorRows() {
     add('kit rules in .claude/rules/', fs.existsSync(path.join(rulesDir, lib.KIT_RULE_FILE)), '', 'Run `sf-sdlc init` to install the kit rules as project files.', false);
   }
   add('mermaid-cli (SVG diagrams for Jira/Confluence)', lib.has('mmdc'), '', 'npm install --global @mermaid-js/mermaid-cli', false);
+  const py = ['python3', 'python'].find((c) => { if (!lib.has(c)) return false; const v = lib.run(c, ['--version'], { timeout: 10000 }); return /Python 3/.test(v.stdout + v.stderr); });
+  add('Python 3 (draw.io skill scripts)', Boolean(py), py || 'not found', 'Install Python 3: https://www.python.org/downloads/', false);
+  const dio = diagramLib.findDrawio();
+  add('draw.io desktop (PNG/SVG/PDF of Salesforce-style diagrams)', Boolean(dio), dio ? dio.cmd : 'not found — .drawio files still open in draw.io web or the VS Code Draw.io extension', 'Install draw.io desktop (free): https://www.drawio.com', false);
   const proj = lib.sfdxProject(root);
   add('sfdx-project.json', Boolean(proj), proj ? `packages: ${lib.packageDirs(root, cfg).join(', ')}; API ${lib.apiVersion(root, cfg) || 'unset'}` : 'not a Salesforce DX project', 'Create the project with `sf project generate`, or run from the project root.', false);
   const v = lib.validateConfig(cfg);
@@ -97,8 +103,10 @@ function doctorRows() {
   const gi = fs.existsSync(path.join(root, '.gitignore')) ? fs.readFileSync(path.join(root, '.gitignore'), 'utf8') : '';
   add('.gitignore covers .sf/, .sfdx/, .sf-sdlc/', ['.sf/', '.sfdx/', '.sf-sdlc/'].every((p) => gi.includes(p)), '', 'Run `sf-sdlc init` to add the entries.');
   const sk = skillsState();
-  add('skill listing budget', sk.listingChars <= 8000, `${sk.installed.length} project skills, about ${sk.listingChars} description characters (Claude Code shares roughly 1% of the context window between all skill descriptions; about 8,000 characters on a 200k-token model)`, 'Remove skills the project does not need: `sf-sdlc skills remove <name>`.', false);
-  const IDS = [[/^node$/, 'node'], [/^git$/, 'git'], [/^sf CLI/, 'sf'], [/Code Analyzer \(/, 'code-analyzer'], [/^Java/, 'java'], [/^sfdx-git-delta/, 'sgd'], [/^Lightning Flow Scanner/, 'lfs'], [/^gh CLI/, 'gh'], [/^gh signed in/, 'gh-auth'], [/^\.env/, 'env'], [/^uv or Docker/, 'uv'], [/plugin enabled/, 'plugin-scope'], [/^kit rules/, 'rules'], [/^mermaid-cli/, 'mermaid'], [/^sfdx-project/, 'sfdx'], [/sf-sdlc\.json$/, 'config'], [/^default target org/, 'org'], [/hosted MCP/, 'mcp'], [/^\.gitignore/, 'gitignore'], [/^skill listing/, 'budget']];
+  add('skill listing budget', sk.onDemandChars <= 8000, `${sk.installed.length} project skills (${sk.installed.filter((x) => x.core).length} in the mandatory core set), about ${sk.listingChars} description characters, ${sk.onDemandChars} of them from on-demand skills. Claude Code shares roughly 1% of the context window between all skill descriptions (about 8,000 characters on a 200k-token model) and shortens or drops descriptions beyond that, so the large core set means some skills are found by name rather than by description`, 'Remove on-demand skills the project does not need: `sf-sdlc skills remove <name>`.', false);
+  const bs = browserLib.status(root, cfg);
+  add('browser for UI tests (Playwright MCP)', !bs.enabled || bs.ready, !bs.enabled ? 'turned off (browser.enabled is false)' : bs.ready ? `${bs.browser}${bs.headless ? ', headless' : ''}; sign-in kept in ${bs.profile}/${bs.profileExists ? '' : ' (created on first use)'}${bs.inUse ? ' — in use by another browser now' : ''}${bs.note ? `; ${bs.note}` : ''}` : bs.reason, 'Install Node.js 18+ (it brings npx), then restart Claude Code.', false);
+  const IDS = [[/^node$/, 'node'], [/^git$/, 'git'], [/^sf CLI/, 'sf'], [/Code Analyzer \(/, 'code-analyzer'], [/^Java/, 'java'], [/^sfdx-git-delta/, 'sgd'], [/^Lightning Flow Scanner/, 'lfs'], [/^gh CLI/, 'gh'], [/^gh signed in/, 'gh-auth'], [/^\.env/, 'env'], [/^uv or Docker/, 'uv'], [/plugin enabled/, 'plugin-scope'], [/^kit rules/, 'rules'], [/^mermaid-cli/, 'mermaid'], [/^draw\.io desktop/, 'drawio'], [/^Python 3/, 'python'], [/^sfdx-project/, 'sfdx'], [/sf-sdlc\.json$/, 'config'], [/^default target org/, 'org'], [/hosted MCP/, 'mcp'], [/^\.gitignore/, 'gitignore'], [/^skill listing/, 'budget'], [/^browser for UI/, 'browser']];
   for (const r of rows) r.id = (IDS.find(([re]) => re.test(r.name)) || [])[1] || r.name;
   return rows;
 }
@@ -160,6 +168,9 @@ function initRun() {
       else (f.result === 'updated' ? done : skipped).push(`${f.path} (${f.result})`);
     }
   }
+  const sample = envfile.ensureSample(root);
+  if (sample.result === 'created' || sample.result === 'updated') done.push(`.env.sample (${sample.result}: the settings list with no values; commit it)`);
+  else skipped.push(`.env.sample (${sample.result})`);
   const env = envfile.ensure(root);
   if (env.result === 'kept') skipped.push('.env (exists; values untouched)');
   else done.push(`.env (${env.result}${env.added ? ': ' + env.added.join(', ') : ''}; fill the values in your editor)`);
@@ -168,8 +179,8 @@ function initRun() {
 
 function init() {
   const { created: done, skipped } = initRun();
-  out({ ok: true, created: done, skipped, next: 'Fill .env in your editor if you use Jira/Confluence/GitHub tokens, edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run `sf-sdlc doctor` and `sf-sdlc skills recommend`. Restart Claude Code so new settings, rules and MCP servers load. `sf-sdlc setup` does all of this in one go.' },
-    () => `${done.map((d) => 'created  ' + d).concat(skipped.map((s) => 'kept     ' + s)).join('\n')}\n\nNext: fill .env in your editor if you use Jira/Confluence/GitHub tokens, edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run \`sf-sdlc doctor\` and \`sf-sdlc skills recommend\`. Restart Claude Code so new settings, rules and MCP servers load.`);
+  out({ ok: true, created: done, skipped, next: 'Fill .env in your editor (Salesforce login address and user name; Jira/Confluence/GitHub tokens if you use them; .env.sample lists every key), edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run `sf-sdlc doctor` and `sf-sdlc skills recommend`. Restart Claude Code so new settings, rules and MCP servers load. `sf-sdlc setup` does all of this in one go.' },
+    () => `${done.map((d) => 'created  ' + d).concat(skipped.map((s) => 'kept     ' + s)).join('\n')}\n\nNext: fill .env in your editor (Salesforce login address and user name; Jira/Confluence/GitHub tokens if you use them; .env.sample lists every key), edit .claude/sf-sdlc.json (org aliases, production aliases, Jira key), then run \`sf-sdlc doctor\` and \`sf-sdlc skills recommend\`. Restart Claude Code so new settings, rules and MCP servers load.`);
 }
 
 // Plugin users: the project's shared .claude/settings.json gets the kit's permissions and turns the
@@ -254,7 +265,7 @@ function envCmd() {
   if (sub === 'status') {
     const st = envfile.status(root);
     return out(st, () => `.env: ${st.exists ? 'present' : 'missing (run `sf-sdlc env init`)'}${st.exists && !st.gitignored ? ' — NOT git-ignored: run `sf-sdlc init`' : ''}\n` +
-      Object.values(st.groups).map((g) => `${g.state === 'configured' ? '✔' : g.state === 'partial' ? '!' : '•'} ${g.label}: ${g.state}` +
+      Object.values(st.groups).map((g) => `${g.state === 'configured' ? '✔' : g.state === 'partial' ? '!' : '•'} ${g.label}: ${g.state === 'default' ? 'defaults in use' : g.state}` +
         (g.state === 'partial' ? ` (missing: ${Object.entries(g.keys).filter(([, v]) => !v).map(([k]) => k).join(', ')})` : '')).join('\n') +
       '\n\nValues are never shown. Restart Claude Code after changing .env so MCP servers pick it up.');
   }
@@ -277,6 +288,58 @@ function envCmd() {
     return out({ ok: true, set: res.map((r) => r.key) }, `.env: set ${res.map((r) => r.key).join(', ')}. Tokens are still yours to type into .env in your editor.`);
   }
   fail('usage: sf-sdlc env status|init|set|gh-login');
+}
+
+// ------------------------------------------------------------------ browser
+
+// Browser for UI tests (Playwright MCP, server "sf-browser"). Never prints a session or a password:
+// `url` returns the org's instance address from the sf CLI org list, without a token.
+function browserCmd() {
+  const sub = pos[1] || 'status';
+  if (sub === 'status') {
+    const st = browserLib.status(root, cfg);
+    return out(st, () => [
+      `Browser for UI tests: ${!st.enabled ? 'off (browser.enabled is false)' : st.ready ? 'ready' : 'not ready — ' + st.reason}`,
+      `  browser  ${st.browser}${st.headless ? ' (headless)' : ' (a window you can see)'}${st.note ? ' — ' + st.note : ''}`,
+      `  server   ${st.package} (MCP server "sf-browser")`,
+      `  sign-in  kept in ${st.profile}/ ${st.profileExists ? '(exists)' : '(created on first use)'}${st.keepsSignIn ? ', also across restarts' : st.profileExists ? ', NOT across restarts yet (fixed on the next browser start)' : ''}${st.inUse ? ` — in use now${st.pid ? ` by process ${st.pid}` : ''}; another Claude session must wait until that browser closes` : ''}`,
+      '',
+      'First use: Claude opens the browser at your org; you sign in yourself in that window, once. Later sessions stay signed in.',
+      'Sign out everywhere: sf-sdlc browser reset',
+    ].join('\n'));
+  }
+  if (sub === 'url') {
+    const alias = lib.resolveOrg(flags['--org'] && flags['--org'] !== true ? String(flags['--org']) : (cfg.orgs.qa || cfg.orgs.dev || lib.defaultOrg(root)), cfg);
+    if (!alias) fail('no org: pass --org <role|alias> (qa, uat, dev or an alias).');
+    const c = lib.classifyOrg(alias, cfg, root);
+    if (!['sandbox', 'scratch', 'developer'].includes(c.kind)) fail(`org "${alias}" is ${c.kind}${c.kind === 'unknown' ? ` (${c.reason}; treated as production)` : ''}. UI tests run only in sandbox, scratch or developer orgs.`);
+    const o = (lib.orgList(root) || []).find((x) => String(x.alias || '').split(',').map((v) => v.trim()).includes(alias) || x.username === alias);
+    if (!o || !o.instanceUrl) fail(`no instance URL for "${alias}" in the sf CLI org list. Sign in with \`sf-sdlc org login --alias ${alias}\`.`);
+    const base = o.instanceUrl.replace(/\/$/, '');
+    return out({ org: alias, kind: c.kind, instanceUrl: base, lightning: `${base}/lightning/page/home` }, `${alias} (${c.kind}): ${base}/lightning/page/home\nOpen it with the sf-browser tools; if the login page shows, the person signs in in that window.`);
+  }
+  if (sub === 'reset') {
+    try { const r = browserLib.reset(root); return out(r, r.result === 'removed' ? `Removed ${browserLib.PROFILE_DIR}: the browser is signed out of every site. The next use asks the person to sign in again.` : 'Nothing to reset: no browser profile yet.'); } catch (e) { fail(e.message); }
+  }
+  fail('usage: sf-sdlc browser status|url [--org <role|alias>]|reset');
+}
+
+// `sf-sdlc org login`: sf org login web with the login address and alias from .env (SF_LOGIN_URL,
+// SF_ORG_ALIAS) or the flags. Opens a browser; the person signs in there. The values are not printed.
+function orgLogin() {
+  const vals = envfile.read(root) || {};
+  const alias = String(flags['--alias'] && flags['--alias'] !== true ? flags['--alias'] : vals.SF_ORG_ALIAS || 'dev').trim();
+  const url = String(flags['--instance-url'] && flags['--instance-url'] !== true ? flags['--instance-url'] : vals.SF_LOGIN_URL || '').trim();
+  if (!/^[A-Za-z0-9_.-]+$/.test(alias)) fail('the alias may contain letters, digits, dot, dash and underscore only.');
+  if (url) { let u = null; try { u = new URL(url); } catch { /* below */ } if (!u || u.protocol !== 'https:' || !/(^|\.)(salesforce|force)\.com$/i.test(u.hostname)) fail('SF_LOGIN_URL (or --instance-url) must be an https:// Salesforce address, e.g. https://test.salesforce.com or your My Domain.'); }
+  if (!lib.has('sf')) fail('the Salesforce CLI is not installed: run `sf-sdlc setup --install-tools` first.');
+  const args = ['org', 'login', 'web', '--alias', alias, ...(url ? ['--instance-url', url] : [])];
+  process.stderr.write(`Opening the Salesforce sign-in page in your browser for alias "${alias}"${url ? ' (address from .env)' : ''}. Sign in there; this waits until you finish.\n`);
+  const r = lib.run('sf', args, { cwd: root, timeout: 900000 });
+  if (r.status !== 0) fail(`sign-in did not complete: ${(r.stderr || r.stdout).replace(/\s+/g, ' ').trim().slice(0, 300)}`);
+  try { fs.rmSync(path.join(lib.stateDir(root), 'org-list.cache.json'), { force: true }); } catch { /* no cache */ }
+  const c = lib.classifyOrg(alias, cfg, root);
+  return out({ ok: true, alias, kind: c.kind }, `Signed in: ${alias} (${c.kind}). Next: sf-sdlc setup --org ${alias}`);
 }
 
 // The copy-in folder registers the hosted MCP servers in the project's .mcp.json (the plugin ships
@@ -366,20 +429,39 @@ function skillDescription(dir) {
   } catch { return ''; }
 }
 
+// The mandatory set every project gets (detection rules with when.core): named skills plus every
+// library skill matching a listed prefix (all official platform-* skills).
+function coreSkills() {
+  const rules = lib.readJson(path.join(lib.KIT_ROOT, 'catalog', 'detection-rules.json'));
+  const cat = lib.readJson(path.join(lib.KIT_ROOT, 'catalog', 'skills.json'));
+  const names = ((cat && cat.skills) || []).map((x) => x.name);
+  const set = new Set();
+  for (const r of (rules && rules.rules) || []) {
+    if (!(r.when && r.when.core)) continue;
+    for (const n of r.skills || []) set.add(n);
+    for (const pre of r.skillPrefixes || []) for (const n of names) if (n.startsWith(pre)) set.add(n);
+  }
+  return set;
+}
+
 function skillsState() {
   const lock = readLock();
   const installed = [];
   let listingChars = 0;
   let entries = [];
   try { entries = fs.readdirSync(projectSkills(), { withFileTypes: true }).filter((e) => e.isDirectory() && fs.existsSync(path.join(projectSkills(), e.name, 'SKILL.md'))); } catch { /* none */ }
+  const core = coreSkills();
+  let coreChars = 0;
   for (const e of entries) {
     const dir = path.join(projectSkills(), e.name);
     const locked = lock.skills[e.name];
     const state = !locked ? 'unmanaged' : lib.hashDir(dir) === locked.hash ? 'ok' : 'modified';
-    listingChars += Math.min(skillDescription(dir).length, 1536) + e.name.length;
-    installed.push({ name: e.name, state, source: locked && locked.source });
+    const c = Math.min(skillDescription(dir).length, 1536) + e.name.length;
+    listingChars += c;
+    if (core.has(e.name)) coreChars += c;
+    installed.push({ name: e.name, state, source: locked && locked.source, core: core.has(e.name) });
   }
-  return { installed, listingChars };
+  return { installed, listingChars, coreChars, onDemandChars: listingChars - coreChars };
 }
 
 function recommendData(profile) {
@@ -401,9 +483,10 @@ function recommendData(profile) {
     else if (w.packaging && d.packaging) evidence = 'packageAliases in sfdx-project.json';
     else if (w.mcpServers && w.mcpServers.some((n) => mcp.enabledServers(cfg).includes(n))) evidence = `hosted MCP server enabled in mcp.servers: ${w.mcpServers.filter((n) => mcp.enabledServers(cfg).includes(n)).join(', ')}`;
     if (!evidence) continue;
-    for (const s of rule.skills) {
+    const prefixed = (rule.skillPrefixes || []).flatMap((pre) => [...names].filter((n) => n.startsWith(pre)).sort());
+    for (const s of [...new Set([...(rule.skills || []), ...prefixed])]) {
       if (!names.has(s)) continue;
-      const p = picks.get(s) || { name: s, rule: rule.id, core: Boolean(w.core), primary: rule.skills[0] === s, kind: w.core ? 'core' : /^(Salesforce DX project|profile)/.test(evidence) ? 'base' : /^hosted MCP/.test(evidence) ? 'mcp' : 'code', reasons: [], installed: have.has(s) };
+      const p = picks.get(s) || { name: s, rule: rule.id, core: Boolean(w.core), primary: (rule.skills || [])[0] === s, kind: w.core ? 'core' : /^(Salesforce DX project|profile)/.test(evidence) ? 'base' : /^hosted MCP/.test(evidence) ? 'mcp' : 'code', reasons: [], installed: have.has(s) };
       p.reasons.push(`${rule.reason} [${evidence}]`);
       picks.set(s, p);
     }
@@ -705,12 +788,66 @@ function watchJobs() {
 
 function diagram() {
   const file = pos[2];
-  if (pos[1] !== 'render' || !file) fail('usage: sf-sdlc diagram render <file.mmd | file.md> [--output <file.svg>]');
+  const sub = pos[1];
+  if (sub === 'drawio') return diagramDrawio(file);
+  if (sub === 'export') return diagramExport(file);
+  if (sub === 'check') return diagramCheck(file);
+  if (sub !== 'render' || !file) fail('usage: sf-sdlc diagram render <file.mmd | file.md> | drawio <spec.json | components.json> | export <file.drawio> | check <file.drawio>');
   if (!lib.has('mmdc')) fail('mermaid-cli (mmdc) is not installed. Install with: npm install --global @mermaid-js/mermaid-cli. Mermaid blocks still render natively on GitHub.', 2);
   const output = flags['--output'] || file.replace(/\.(mmd|md)$/, '') + '.svg';
   const r = lib.run('mmdc', ['-i', file, '-o', output, '-b', 'transparent'], { cwd: root, timeout: 180000 });
   if (r.status !== 0) fail(`mmdc failed:\n${(r.stderr || r.stdout).split('\n').slice(-10).join('\n')}`);
   out({ ok: true, output }, `rendered ${output}`);
+}
+
+// A diagram spec (*.diagram.json) or the component model (components.json) -> an editable .drawio file.
+function diagramDrawio(file) {
+  if (!file) fail('usage: sf-sdlc diagram drawio <spec.json | components.json> [--type solution-architecture|data-model] [--story US-nn-mm] [--layer <layer>] [--title "..."] [--output <file.drawio>]');
+  const abs = path.resolve(root, file);
+  const input = lib.readJson(abs);
+  if (!input) fail(`${file} is missing or is not valid JSON`);
+  let spec = input;
+  if (Array.isArray(input)) {
+    try {
+      spec = diagramLib.specFromComponents(input, { type: flags['--type'], story: flags['--story'], layer: flags['--layer'], title: flags['--title'] });
+    } catch (e) { fail(e.message); }
+  }
+  const v = diagramLib.validateSpec(spec);
+  if (v.errors.length) fail(`the diagram spec has errors:\n${v.errors.map((e) => `  ✘ ${e}`).join('\n')}`);
+  const base = Array.isArray(input)
+    ? path.join(path.dirname(abs), 'diagrams', `${diagramLib.normaliseType(spec.type)}${flags['--story'] ? `-${flags['--story']}` : ''}`)
+    : abs.replace(/(\.diagram)?\.json$/, '');
+  const output = flags['--output'] ? path.resolve(root, flags['--output']) : `${base}.drawio`;
+  fs.mkdirSync(path.dirname(output), { recursive: true });
+  // Keep the generated spec next to the diagram: it is the editable source of the drawing.
+  if (Array.isArray(input)) fs.writeFileSync(output.replace(/\.drawio$/, '.diagram.json'), JSON.stringify(spec, null, 2) + '\n');
+  fs.writeFileSync(output, diagramLib.toDrawio(spec));
+  const check = diagramLib.checkDrawio(fs.readFileSync(output, 'utf8'));
+  const rel = path.relative(root, output);
+  out({ ok: true, output: rel, warnings: v.warnings.concat(check.warnings), problems: check.problems, stats: check.stats },
+    [`wrote ${rel} (${check.stats.cards} cards, ${check.stats.edges} connectors)`, ...v.warnings.concat(check.warnings).map((w) => `  • ${w}`), ...check.problems.map((p) => `  ✘ ${p}`),
+      `Image: sf-sdlc diagram export ${rel} --format png`].join('\n'));
+}
+
+function diagramExport(file) {
+  if (!file) fail('usage: sf-sdlc diagram export <file.drawio> [--format png|svg|pdf] [--output <file>]');
+  const abs = path.resolve(root, file);
+  if (!fs.existsSync(abs)) fail(`${file} not found`);
+  const r = diagramLib.exportDrawio(abs, { format: flags['--format'] || 'png', output: flags['--output'] && path.resolve(root, flags['--output']) });
+  if (!r.ok) fail(r.reason, 2);
+  out({ ok: true, output: path.relative(root, r.output), tool: r.tool }, `exported ${path.relative(root, r.output)}`);
+}
+
+function diagramCheck(file) {
+  if (!file) fail('usage: sf-sdlc diagram check <file.drawio>');
+  const abs = path.resolve(root, file);
+  if (!fs.existsSync(abs)) fail(`${file} not found`);
+  const r = diagramLib.checkDrawio(fs.readFileSync(abs, 'utf8'));
+  out({ ok: !r.problems.length, ...r }, () => [
+    ...r.problems.map((p) => `✘ ${p}`), ...r.warnings.map((w) => `• ${w}`),
+    r.problems.length ? `${r.problems.length} problem(s).` : `OK: ${r.stats.cards} cards, ${r.stats.edges} connectors, icons: ${(r.stats.salesforceIcons || []).join(', ') || 'none'}.`,
+  ].join('\n'));
+  if (r.problems.length) process.exit(1);
 }
 
 function audit() {
@@ -742,6 +879,15 @@ const AUTO_INSTALL = {
   sgd: ['sf', ['plugins', 'install', 'sfdx-git-delta']],
   lfs: ['sf', ['plugins', 'install', 'lightning-flow-scanner']],
 };
+
+// Diagram tools: installed on a yes where the package manager needs no administrator password
+// (Homebrew on macOS, winget on Windows). Linux package managers need sudo, so Linux gets the command.
+function diagramToolInstall(id) {
+  const accept = ['-e', '--accept-source-agreements', '--accept-package-agreements'];
+  if (process.platform === 'darwin' && lib.has('brew')) return { drawio: ['brew', ['install', '--cask', 'drawio']], python: ['brew', ['install', 'python']] }[id] || null;
+  if (process.platform === 'win32' && lib.has('winget')) return { drawio: ['winget', ['install', '--id', 'JGraph.Draw', ...accept]], python: ['winget', ['install', '--id', 'Python.Python.3.12', ...accept]] }[id] || null;
+  return null;
+}
 
 const LINKS = {
   atlassianToken: 'https://id.atlassian.com/manage-profile/security/api-tokens',
@@ -790,6 +936,13 @@ async function setupCmd() {
       const r = lib.run(cmd, args, { cwd: root, timeout: 600000, input: 'y\n' });
       installed.push({ id, ok: r.status === 0, detail: r.status === 0 ? 'installed now' : (r.stderr || r.stdout).replace(/\s+/g, ' ').trim().slice(-200) });
     }
+    for (const id of ['python', 'drawio']) {
+      const row = rows.find((r) => r.id === id);
+      const how = diagramToolInstall(id);
+      if (!row || row.ok || !how) continue;
+      const r = lib.run(how[0], how[1], { cwd: root, timeout: 900000 });
+      installed.push({ id, ok: r.status === 0, detail: r.status === 0 ? 'installed now' : (r.stderr || r.stdout).replace(/\s+/g, ' ').trim().slice(-200) });
+    }
     rows = doctorRows();
   }
   const os = process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : 'linux';
@@ -799,17 +952,20 @@ async function setupCmd() {
     java: { mac: 'brew install --cask temurin@17', win: 'winget install EclipseAdoptium.Temurin.17.JDK', linux: 'sudo apt-get install -y openjdk-17-jdk', url: LINKS.java },
     gh: { mac: 'brew install gh', win: 'winget install GitHub.cli', linux: 'sudo apt-get install -y gh', url: LINKS.gh },
     mermaid: { mac: 'npm install --global @mermaid-js/mermaid-cli', win: 'npm install --global @mermaid-js/mermaid-cli', linux: 'npm install --global @mermaid-js/mermaid-cli' },
+    drawio: { mac: 'brew install --cask drawio', win: 'winget install JGraph.Draw', linux: 'sudo snap install drawio', url: 'https://www.drawio.com' },
+    python: { mac: 'brew install python', win: 'winget install Python.Python.3.12', linux: 'sudo apt-get install -y python3', url: 'https://www.python.org/downloads/' },
   };
-  const toolLabel = { node: 'Node.js 18+', git: 'git', sf: 'Salesforce CLI (sf)', 'code-analyzer': 'Salesforce Code Analyzer', java: 'Java 11+ (Code Analyzer engines)', sgd: 'sfdx-git-delta (smaller deployments)', lfs: 'Lightning Flow Scanner', gh: 'GitHub CLI (gh)', mermaid: 'mermaid-cli (diagram images)' };
-  for (const id of ['node', 'git', 'sf', 'code-analyzer', 'java', 'sgd', 'lfs', 'gh', 'mermaid']) {
+  const toolLabel = { node: 'Node.js 18+', git: 'git', sf: 'Salesforce CLI (sf)', 'code-analyzer': 'Salesforce Code Analyzer', java: 'Java 11+ (Code Analyzer engines)', sgd: 'sfdx-git-delta (smaller deployments)', lfs: 'Lightning Flow Scanner', gh: 'GitHub CLI (gh)', mermaid: 'mermaid-cli (diagram images)', drawio: 'draw.io desktop (Salesforce-style diagram images)', python: 'Python 3 (draw.io skill scripts)' };
+  for (const id of ['node', 'git', 'sf', 'code-analyzer', 'java', 'sgd', 'lfs', 'gh', 'mermaid', 'python', 'drawio']) {
     const row = rows.find((r) => r.id === id);
     if (!row) continue;
     const did = installed.find((x) => x.id === id);
     const sfOnly = ['sf', 'code-analyzer', 'java', 'sgd', 'lfs'].includes(id);
     if (row.ok) add('Tools', toolLabel[id], 'done', did ? 'installed now' : row.detail);
+    else if (diagramToolInstall(id)) { const how = diagramToolInstall(id); add('Tools', toolLabel[id], 'claude', did ? `install failed: ${did.detail}` : 'not installed — needed to export architecture diagrams', { command: `${how[0]} ${how[1].join(' ')}`, auto: true }); }
     else if (sfOnly && !wantSf) add('Tools', toolLabel[id], 'skipped', 'not needed for requirements work');
     else if (AUTO_INSTALL[id] && (id === 'sf' ? lib.has('npm') : lib.has('sf'))) add('Tools', toolLabel[id], id === 'sf' || id === 'code-analyzer' ? 'claude' : 'optional', did ? `install failed: ${did.detail}` : 'not installed', { command: `${AUTO_INSTALL[id][0]} ${AUTO_INSTALL[id][1].join(' ')}`, auto: true });
-    else if (manual[id]) add('Tools', toolLabel[id], row.required || id === 'java' ? 'you' : 'optional', 'not installed', { command: manual[id][os], url: manual[id].url });
+    else if (manual[id]) add('Tools', toolLabel[id], row.required || ['java', 'python', 'drawio'].includes(id) ? 'you' : 'optional', 'not installed', { command: manual[id][os], url: manual[id].url });
     else add('Tools', toolLabel[id], 'optional', 'not installed', { command: row.fix });
   }
 
@@ -819,10 +975,14 @@ async function setupCmd() {
   const choices = orgs.filter((o) => o.alias).map((o) => ({ alias: String(o.alias).split(',')[0].trim(), username: o.username, kind: lib.classifyByFacts(o), instanceUrl: o.instanceUrl }))
     .filter((o, i, all) => all.findIndex((x) => x.alias === o.alias) === i);
   let projectOrg = null;
-  if (flags['--org'] && flags['--org'] !== true) {
-    const alias = String(flags['--org']);
+  const envVals = envfile.read(root) || {};
+  // No org chosen yet, but .env names the user: pick the signed-in org with that user name.
+  const byUser = !(flags['--org'] && flags['--org'] !== true) && !cfg.mcp.org && !cfg.orgs.dev && envVals.SF_USERNAME
+    ? choices.find((o) => o.username === envVals.SF_USERNAME) : null;
+  if ((flags['--org'] && flags['--org'] !== true) || byUser) {
+    const alias = byUser ? byUser.alias : String(flags['--org']);
     const c = lib.classifyOrg(alias, cfg, root);
-    if (c.kind === 'unknown' && !offline) add('Salesforce', `Project org "${alias}"`, 'you', `${c.reason}. Sign in first.`, { command: `sf org login web --alias ${alias}` });
+    if (c.kind === 'unknown' && !offline) add('Salesforce', `Project org "${alias}"`, 'claude', `${c.reason}. A browser window opens; you sign in.`, { command: `sf-sdlc org login --alias ${alias}`, then: `sf-sdlc setup --org ${alias}` });
     else {
       saveConfig((j) => {
         j.orgs = j.orgs || {}; j.mcp = j.mcp || {};
@@ -839,10 +999,13 @@ async function setupCmd() {
   if (lib.has('sf') || !wantSf) {
     if (projectOrg) {
       const c = lib.classifyOrg(projectOrg, cfg, root);
-      add('Salesforce', 'Project org', 'done', `${projectOrg} (${c.kind}${c.kind === 'production' ? ' — protected: every change asks first' : ''})`);
+      add('Salesforce', 'Project org', 'done', `${projectOrg} (${c.kind}${c.kind === 'production' ? ' — protected: every change asks first' : ''})${byUser && byUser.alias === projectOrg ? ' — matched SF_USERNAME in .env' : ''}`);
     } else if (!wantSf) add('Salesforce', 'Project org', 'skipped', 'not needed for requirements work');
     else if (choices.length) add('Salesforce', 'Project org', 'you', 'Which signed-in org is this project for?', { ask: 'org', choices: choices.map(({ alias, kind }) => ({ alias, kind })), command: 'sf-sdlc setup --org <alias>' });
-    else add('Salesforce', 'Project org', 'claude', 'No org is signed in. A browser window opens; you sign in and allow access.', { command: 'sf org login web --alias dev   (sandbox: add --instance-url https://test.salesforce.com)', then: 'sf-sdlc setup --org dev' });
+    else {
+      const alias = /^[A-Za-z0-9_.-]+$/.test(envVals.SF_ORG_ALIAS || '') ? envVals.SF_ORG_ALIAS : 'dev';
+      add('Salesforce', 'Project org', 'claude', `No org is signed in. A browser window opens at ${envVals.SF_LOGIN_URL ? 'the login address in .env (SF_LOGIN_URL)' : 'login.salesforce.com (for a sandbox, put SF_LOGIN_URL=https://test.salesforce.com or your My Domain in .env first — Claude can write it)'}; you sign in and allow access.`, { command: `sf-sdlc org login --alias ${alias}`, then: `sf-sdlc setup --org ${alias}` });
+    }
   }
 
   // 5. Skills: the core set always, then what the code shows, in priority order, inside the listing budget.
@@ -850,21 +1013,23 @@ async function setupCmd() {
   let rec = { d: detect(), ordered: [] };
   try { rec = recommendData(profile === 'ba' || (profile && rec.d.total === 0) ? profile : undefined); } catch { /* no catalog */ }
   const cost = (n) => Math.min(skillDescription(path.join(libraryDir(), n)).length, 1536) + n.length;
-  let used = skillsState().listingChars;
+  // The mandatory core set is installed whatever it costs; the budget applies to on-demand skills.
+  let used = skillsState().onDemandChars;
   const take = []; const later = [];
   // Priority: core, then the main skill for each kind of code found, then deploy and analysis, then the rest.
   const rank = (p) => p.core ? 0 : p.kind === 'code' && p.primary ? 1 : p.kind === 'base' ? (p.primary ? 2 : 3) : p.kind === 'code' ? 4 : 5;
   for (const p of rec.ordered.map((p, i) => ({ ...p, i })).sort((a, b) => rank(a) - rank(b) || a.i - b.i)) {
     if (p.installed) continue;
     const c = cost(p.name);
-    if (p.core || used + c <= BUDGET) { take.push(p.name); used += c; } else later.push(p.name);
+    if (p.core) take.push(p.name);
+    else if (used + c <= BUDGET) { take.push(p.name); used += c; } else later.push(p.name);
   }
   const res = take.length ? installSkills(take) : [];
   const now = skillsState();
   const d = rec.d;
   const found = d.total ? Object.entries(d.counts).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t, n]) => `${n} ${t}`).join(', ') : '';
   add('Project', 'Code explored', 'done', d.isSfdxProject ? (d.total ? `${d.total} components (${found})` : 'new Salesforce project, no metadata yet') : 'no Salesforce source here (documents and requirements still work)');
-  add('Skills', 'Skills for this project', 'done', `${now.installed.length} installed${res.filter((r) => r.result === 'installed').length ? ` (${res.filter((r) => r.result === 'installed').length} added now)` : ''}, chosen from the code`, { installed: now.installed.map((x) => x.name), added: res.filter((r) => r.result === 'installed').map((r) => r.name), availableLater: later });
+  add('Skills', 'Skills for this project', 'done', `${now.installed.length} installed${res.filter((r) => r.result === 'installed').length ? ` (${res.filter((r) => r.result === 'installed').length} added now)` : ''}: the mandatory core set (${now.installed.filter((x) => x.core).length} — draw.io, diagrams and every Salesforce platform skill; the sdlc-* skills come with the kit) plus what the code needs`, { installed: now.installed.map((x) => x.name), added: res.filter((r) => r.result === 'installed').map((r) => r.name), availableLater: later });
   if (later.length) add('Skills', `${later.length} more skills match the code`, 'optional', 'left out to keep Claude fast; add any by name when the work needs it', { command: `sf-sdlc skills install ${later.slice(0, 3).join(' ')}${later.length > 3 ? ' …' : ''}`, names: later });
 
   // 6. Salesforce hosted MCP servers
@@ -887,6 +1052,14 @@ async function setupCmd() {
     }
     add('Connections', 'Other Salesforce MCP servers', 'optional', `off by default: ${others.map((n) => `${n} (${mcp.HOSTED_SERVERS[n].summary})`).join('; ')}`, { command: 'sf-sdlc mcp enable <name>', names: others });
   }
+
+  // 6b. Browser for UI tests (Playwright MCP). Setup prepares the profile so the Salesforce sign-in
+  // survives restarts; nobody has to change a browser setting by hand.
+  let bs = browserLib.status(root, cfg);
+  if (bs.enabled && bs.ready && !bs.inUse) { try { lib.stateDir(root); browserLib.prepareProfile(root, bs.browser); bs = browserLib.status(root, cfg); } catch { /* reported below */ } }
+  if (!bs.enabled) add('Connections', 'Browser for UI tests', 'skipped', 'turned off (browser.enabled is false)');
+  else if (bs.ready) add('Connections', 'Browser for UI tests (Playwright)', 'done', `ready (${bs.browser}${bs.headless ? ', headless' : ''}). The first time Claude tests in the browser, a window opens at your org and you sign in once; the sign-in is kept in ${bs.profile}/ for later sessions${bs.keepsSignIn ? ', also after a restart, until Salesforce\'s session timeout' : ''}`);
+  else add('Connections', 'Browser for UI tests (Playwright)', 'you', bs.reason, { url: LINKS.node });
 
   // 7. Jira / Confluence and GitHub
   const est = envfile.status(root);
@@ -936,10 +1109,10 @@ const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
                                do everything that needs no decision (files, git, skills, checks) and print a
                                checklist: done, what Claude can do on a yes, what needs you (with links)
   doctor                       check tools, plugins, config and org setup
-  init                         create .claude/sf-sdlc.json, .gitignore entries, code-analyzer.yml, .env template;
+  init                         create .claude/sf-sdlc.json, .gitignore entries, code-analyzer.yml, .env and .env.sample;
                                plugin users also get project settings (plugin on at project scope) and .claude/rules/
-  env status|init|gh-login     .env credentials: which are set (never values), create the template, sign gh in
-  env set KEY=VALUE            write an address or user name into .env (never a token)
+  env status|init|gh-login     .env settings: which are set (never values), create the template, sign gh in
+  env set KEY=VALUE            write an address or user name into .env (never a token): SF_LOGIN_URL, SF_USERNAME, …
   config show|validate         show the merged configuration, or validate it
   detect                       what this project contains (metadata folders, counts, tooling)
   inventory                    existing-state inventory of the source tree, by metadata type
@@ -947,12 +1120,20 @@ const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
   skills recommend [--profile developer|admin|ba]
   skills install|remove <name...>, skills list [--all], skills sync [--dry-run]
   org classify [alias]         production | sandbox | scratch | developer | unknown
+  org login [--alias a] [--instance-url u]
+                               browser sign-in (sf org login web) using SF_ORG_ALIAS and SF_LOGIN_URL from .env
+  browser status|reset         browser for UI tests (Playwright MCP): ready?, where the sign-in is kept; reset signs out
+  browser url [--org role]     the org's Lightning address for the browser (sandbox/scratch/developer only, no token)
   analyze [--staged | --changed [ref] | <paths>] [--severity 1-5] [--report out.html,out.sarif]
                                official Salesforce Code Analyzer (sf code-analyzer run)
   check [files...]             fast offline source checks (default: files changed on this branch)
   deploy validate|quick|report|preview --org <role|alias> [--delta --from <ref>] [--manifest f] [--print]
   test run|report --org <role|alias> [--tests A,B.method] [--level RunLocalTests]
   diagram render <file>        Mermaid to SVG (needs mermaid-cli)
+  diagram drawio <spec.json | components.json> [--type solution|data-model] [--story US-nn-mm] [--output f.drawio]
+                               Salesforce-style draw.io diagram from a diagram spec or the component model
+  diagram export <file.drawio> [--format png|svg|pdf] [--output f]   image through draw.io desktop
+  diagram check <file.drawio>  structure, Salesforce icon names, header and key
   audit [--tail N]             local log of org-affecting commands
   mcp status|list [server...]  Salesforce hosted MCP servers: probe through the sf CLI login, or list
   mcp enable|disable <server>  add or remove a hosted server in mcp.servers
@@ -987,8 +1168,10 @@ function main() {
       return out(d, () => `Against ${d.base}:\n` + ['new', 'changed', 'removed'].map((k) => `${k.toUpperCase()} (${d[k].length})\n` + d[k].map((c) => `  ${c.type}: ${c.apiName}`).join('\n')).join('\n') + (d.manifestDir ? `\nmanifests written to ${d.manifestDir}/` : ''));
     }
     case 'skills': return skillsCmd();
+    case 'browser': return browserCmd();
     case 'org': {
-      if (pos[1] !== 'classify') fail('usage: sf-sdlc org classify [alias]');
+      if (pos[1] === 'login') return orgLogin();
+      if (pos[1] !== 'classify') fail('usage: sf-sdlc org classify [alias] | org login [--alias a] [--instance-url u]');
       const target = lib.resolveOrg(pos[2], cfg) || lib.defaultOrg(root);
       const c = lib.classifyOrg(target, cfg, root);
       return out(c, `${c.target || '(none)'}: ${c.kind} — ${c.reason}`);

@@ -35,7 +35,7 @@
         ]
       },
       {
-        "matcher": "mcp__.*sf-(headless-360|data360|sobject-all)__.*",
+        "matcher": "mcp__.*sf-(headless-360|data360|sobject-all)__.*|mcp__.*sf-browser__browser_navigate",
         "hooks": [
           {
             "type": "command",

@@ -20,6 +20,8 @@
       "Bash(sf-sdlc env status*)",
       "Bash(sf-sdlc env set*)",
       "Bash(sf-sdlc setup*)",
+      "Bash(sf-sdlc browser status*)",
+      "Bash(sf-sdlc browser url*)",
       "Bash(sf org list*)",
       "Bash(sf config get*)",
       "Bash(sf code-analyzer *)",
@@ -58,6 +60,7 @@
       "Read(./**/server.key)",
       "Read(./.env)",
       "Read(./**/.env)",
+      "Read(./.sf-sdlc/browser-profile/**)",
       "Bash(sf org display*--verbose*)",
       "Bash(sf org auth*)",
       "Bash(sf api request rest /ide/auth*)"
@@ -70,6 +73,7 @@
     "sf-data360",
     "sf-sobject-reads",
     "sf-sobject-all",
-    "atlassian-token"
+    "atlassian-token",
+    "sf-browser"
   ]
 }

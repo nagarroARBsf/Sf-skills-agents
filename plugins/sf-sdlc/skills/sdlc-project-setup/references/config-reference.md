@@ -93,6 +93,16 @@ keys when `deploy.pipeline` names them.
 | `paths.docs` | Root of the SDLC documents (BRD, backlog, architecture, QA, release) | `"docs/sdlc"` | Detected: an existing documents folder; otherwise keep the default |
 | `paths.specs` | Root of spec-driven development folders and the constitution | `"specs"` | Detected: an existing folder; otherwise keep the default |
 
+## browser
+Browser for UI tests (Playwright MCP server `sf-browser`). The sign-in is kept per project in
+`.sf-sdlc/browser-profile/`; it is not a config value.
+
+| Key | Meaning | Example | How to fill |
+|---|---|---|---|
+| `browser.enabled` | Start the browser server for this project | `true` | Keep true; set false where UI testing is not allowed |
+| `browser.browser` | `chrome`, `msedge`, `chromium` (Chrome for Testing, no admin rights needed), `firefox` or `webkit`. On Linux without Google Chrome, `chrome` falls back to `chromium` | `"chrome"` | Detected; change only on request |
+| `browser.headless` | Run without a visible window. The first sign-in needs a visible window | `false` | Keep false |
+
 ## hooks
 
 | Key | Meaning | Example | How to fill |
@@ -118,6 +128,8 @@ keys when `deploy.pipeline` names them.
 | `orgs.production must be an array` | Write it as a list, even for one alias |
 | `orgs.production is empty` | Ask the user for the production aliases; if they decline, report the risk |
 | `hooks.mode must be` | Use `off`, `observe` or `enforce` |
+| `browser.browser must be one of` | Use `chrome`, `msedge`, `chromium`, `firefox` or `webkit` |
+| `browser.enabled` / `browser.headless must be true or false` | Write `true` or `false` without quotes |
 | `unknown test level` | Use one of the test levels listed under `deploy.testLevel` |
 | `deploy.testLevel.production must not be NoTestRun` | Set `RunLocalTests` (or stricter) |
 | `quality.coverageTarget must be a number from 75 to 100` | Correct the value |

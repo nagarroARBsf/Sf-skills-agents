@@ -58,6 +58,13 @@
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/bin/sf-atlassian-mcp"
       ]
+    },
+    "sf-browser": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/bin/sf-browser-mcp"
+      ]
     }
   }
 }

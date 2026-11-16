@@ -20,6 +20,8 @@
       "Bash(node .claude/bin/sf-sdlc env status*)",
       "Bash(node .claude/bin/sf-sdlc env set*)",
       "Bash(node .claude/bin/sf-sdlc setup*)",
+      "Bash(node .claude/bin/sf-sdlc browser status*)",
+      "Bash(node .claude/bin/sf-sdlc browser url*)",
       "Bash(sf org list*)",
       "Bash(sf config get*)",
       "Bash(sf code-analyzer *)",
@@ -58,12 +60,13 @@
       "Read(./**/server.key)",
       "Read(./.env)",
       "Read(./**/.env)",
+      "Read(./.sf-sdlc/browser-profile/**)",
       "Bash(sf org display*--verbose*)",
       "Bash(sf org auth*)",
       "Bash(sf api request rest /ide/auth*)"
     ]
   },
-  "enabledMcpjsonServers": ["sf-metadata-experts", "sf-metadata-grounding", "sf-headless-360", "sf-data360", "sf-sobject-reads", "sf-sobject-all", "atlassian-token"],
+  "enabledMcpjsonServers": ["sf-metadata-experts", "sf-metadata-grounding", "sf-headless-360", "sf-data360", "sf-sobject-reads", "sf-sobject-all", "atlassian-token", "sf-browser"],
   "hooks": {
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" session-start", "timeout": 60 } ] }
@@ -71,7 +74,7 @@
     "PreToolUse": [
       { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-bash", "timeout": 900, "statusMessage": "sf-sdlc guard" } ] },
       { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-write", "timeout": 30 } ] },
-      { "matcher": "mcp__.*sf-(headless-360|data360|sobject-all)__.*", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-mcp", "timeout": 60 } ] }
+      { "matcher": "mcp__.*sf-(headless-360|data360|sobject-all)__.*|mcp__.*sf-browser__browser_navigate", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" pre-mcp", "timeout": 60 } ] }
     ],
     "PostToolUse": [
       { "matcher": "Write|Edit|MultiEdit", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/run.js\" post-write", "timeout": 30 } ] },

@@ -6,14 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is **not a Salesforce project** — it is the *kit that gets installed into* Salesforce projects,
 for Claude Code. It ships 10 SDLC agents, 22 commands, 11 always-available `sdlc-*` skills, a
-176-skill on-demand library, guard hooks, the `sf-sdlc` CLI, output styles and workflows, in two
+177-skill on-demand library, guard hooks, the `sf-sdlc` CLI, output styles and workflows, in two
 forms:
 
 - `.claude/` — the copy-in folder, and the **single source of truth**.
 - `plugins/sf-sdlc/` — the Claude Code plugin, **generated** from `.claude/` (marketplace `nagarro-sf`).
 
 Almost every tracked file is payload. The repo-owned code is: `.claude/hooks/*.js`,
-`.claude/bin/sf-sdlc`, `.claude/bin/sf-mcp-proxy`, `.claude/bin/sf-atlassian-mcp`, `.claude/workflows/*.js`, `scripts/*`, `tests/kit.test.js`, and the
+`.claude/bin/sf-sdlc`, `.claude/bin/sf-mcp-proxy`, `.claude/bin/sf-atlassian-mcp`, `.claude/bin/sf-browser-mcp`, `.claude/workflows/*.js`, `scripts/*`, `tests/kit.test.js`, and the
 hand-written plugin files listed under "Claude Code plugin". Work here is editing kit content,
 the Node tooling, or the generator.
 
@@ -112,13 +112,18 @@ They are `rmtree`d on every build. Two files inside `.claude/` are also generate
 `.claude/hooks/run.js <hook>` is the single dispatcher (`session-start`, `pre-bash`, `pre-write`,
 `pre-mcp`, `post-write`, `post-bash`, `bash-failure`, `stop`); `lib.js` holds config, command parsing
 and org classification; `ops.js` the Code Analyzer wrapper, inventory and delta; `checks.js` the
-source checks and secret patterns; `mcp.js` the Salesforce Hosted MCP routes (six servers; two on by default), JWT minting, probe and the no-tools handshake; `envfile.js` the
-project `.env` (template, parse, names-only status — never values).
+source checks and secret patterns; `mcp.js` the Salesforce Hosted MCP routes (six servers; two on by default), JWT minting, probe and the no-tools handshake; `diagram.js` the
+Salesforce-standard draw.io generator (spec → `.drawio`, checks, export through draw.io desktop); `envfile.js` the
+project `.env` and `.env.sample` (sections, template, parse, names-only status — never values);
+`browser.js` the Playwright MCP launch plan (pinned `@playwright/mcp`, persistent profile in
+`.sf-sdlc/browser-profile/`), the profile lock check and the `browser_navigate` guard.
 `.claude/bin/sf-sdlc` is the CLI over the same modules; `sf-sdlc setup` is the one-run setup (git, project
-files, skills chosen from the code inside the listing budget, every check) that prints the checklist
+files, the mandatory core skills — every `when.core` rule, including `skillPrefixes: ["platform-"]` —
+outside the budget, on-demand skills chosen from the code inside the listing budget, every check) that prints the checklist
 `/sdlc-setup` shows — the command runs in the main conversation, never in a subagent, because a
 subagent cannot ask the person anything; `.claude/bin/sf-atlassian-mcp` starts the
-community `mcp-atlassian` server with `.env` tokens (or serves no tools); `.claude/bin/sf-mcp-proxy <server>` is the
+community `mcp-atlassian` server with `.env` tokens (or serves no tools); `.claude/bin/sf-browser-mcp` starts the
+Playwright MCP server (`sf-browser`) for UI tests (or serves no tools); `.claude/bin/sf-mcp-proxy <server>` is the
 stdio MCP bridge Claude Code starts (registered in the plugin's `.mcp.json` and, for the copy-in
 folder, in the project `.mcp.json` that `sf-sdlc init` merges from `templates/mcp.json`).
 
@@ -138,19 +143,23 @@ Rules that must hold when changing them:
 - `sf-sdlc env set` writes only the non-secret keys in `PLAIN_KEYS` (`envfile.js`); never add a token key.
 - A hosted server whose tool names are unknown is marked `'*'` in `WRITE_TOOLS`: every tool asks unless
   its name is plainly a read.
+- The browser profile (`.sf-sdlc/browser-profile/`) holds live Salesforce session cookies: it stays
+  in `checks.js` `PROTECTED_PATH` and in `permissions.deny`, and no command prints or copies it.
+  `pre-mcp` asks before `browser_navigate` opens a production-class or unclassifiable Salesforce org.
+  `sf-sdlc browser url` returns an instance URL only (never a frontdoor/session URL).
 - Add a test in `tests/kit.test.js` for any new guard decision or check.
 
 ## Claude Code plugin
 
 Hand-written, never touched by the generator: `plugins/sf-sdlc/.claude-plugin/plugin.json`
-(including `userConfig` and `metadata.marketplace`, which `init` writes into project settings), `.mcp.json` (Atlassian remote server, `atlassian-token`, and the six `sf-*` hosted-MCP proxies), `monitors/monitors.json`,
+(including `userConfig` and `metadata.marketplace`, which `init` writes into project settings), `.mcp.json` (Atlassian remote server, `atlassian-token`, `sf-browser`, and the six `sf-*` hosted-MCP proxies), `monitors/monitors.json`,
 `themes/*.json`, `README.md`, `NOTICE`. Monitors and themes are experimental in Claude Code.
 A plugin `settings.json` is deliberately not shipped: it honours only `agent` and
 `subagentStatusLine`. Bump `version` in `plugin.json` when releasing, or installed copies will not
 update. `.claude-plugin/marketplace.json` carries a `renames` entry from the old plugin name
 `nagarro-sf-sdlc`.
 
-## Skill provenance — three kinds, three rules
+## Skill provenance — four kinds, four rules
 
 - **158 official** skills vendored from [forcedotcom/sf-skills](https://github.com/forcedotcom/sf-skills),
   Apache-2.0, pinned in `scripts/official-skills.lock`. **Do not hand-edit** —
@@ -159,12 +168,16 @@ update. `.claude-plugin/marketplace.json` carries a `renames` entry from the old
   plugin. Industry packs are deliberately excluded.
 - **18 community** `sf-*` skills from Clientell-Ai/salesforce-skills, Apache-2.0. Edited in place in
   `.claude/skill-library/`; mark changed files as changed (Apache-2.0 requirement).
+- **1 third-party** skill, `drawio-skill`, from Agents365-ai/drawio-skill (MIT), vendored unmodified
+  into `.claude/skill-library/drawio-skill/` at the commit named in `THIRD_PARTY_SKILLS` in the build
+  script. **Do not hand-edit**; to update, replace the folder from upstream and change the commit
+  there and in `NOTICE`. It is in the core set (every project) and needs Python 3.
 - **11 Nagarro SDLC** skills (`sdlc-*`), edited in place in `.claude/skills/`.
 
 All technical skills live in `skill-library/`; only `sdlc-*` skills are in `skills/` (a test
 enforces this). Which library skills a project gets is decided by
 `.claude/catalog/detection-rules.json` — add a rule there when adding a skill family. Attribution is
-in `NOTICE`; keep it current. Official skills bundle their own scripts and assets; none of that is
+in `NOTICE`; keep it current. Official and third-party skills bundle their own scripts and assets; none of that is
 this repo's code — do not refactor or lint it.
 
 Five official skills (`automation-flow-generate`, `platform-flexipage-generate`,
@@ -185,7 +198,8 @@ only a person fills in an approval record. Stages are decoupled by a shared ID s
 
 Integrations: Salesforce through the `sf` CLI, plus Salesforce Hosted MCP Servers (Metadata
 Grounding, Metadata Experts, optional Headless 360 and Data 360) through `sf-mcp-proxy`, signed in
-with the CLI login — no local Salesforce MCP package (`@salesforce/mcp` ended on 2 November 2026); Jira through the Atlassian remote MCP when connected, otherwise CSV; GitHub
+with the CLI login — no local Salesforce MCP package (`@salesforce/mcp` ended on 2 November 2026); the browser
+through the Playwright MCP server (`sf-browser`) for UI tests in non-production orgs; Jira through the Atlassian remote MCP when connected, otherwise CSV; GitHub
 through the `gh` CLI.
 
 `README.md` lists the known limitations honestly, including what has not been run against a real

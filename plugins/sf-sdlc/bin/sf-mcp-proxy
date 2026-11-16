@@ -82,7 +82,9 @@ async function main() {
   if (!mcp.enabledServers(cfg).includes(name)) return serveEmpty(`"${name}" is not listed in mcp.servers in .claude/sf-sdlc.json`);
   const org = mcp.mcpOrg(root, cfg);
   if (!org) return serveEmpty('no target org (set mcp.org in .claude/sf-sdlc.json or run `sf config set target-org <alias>`)');
-  const state = { root, org, url: mcp.serverUrl(name), jwt: null, session: null };
+  let url;
+  try { url = mcp.serverUrl(name, mcp.addressEnv(root)); } catch (e) { return serveEmpty(e.message); }
+  const state = { root, org, url, jwt: null, session: null };
   try { state.jwt = mcp.mintJwt(org, root); } catch (e) {
     mcp.recordHealth(root, name, { state: 'auth', detail: e.message, org });
     return serveEmpty(e.message);

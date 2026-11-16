@@ -5,7 +5,8 @@
 //   session-start   SessionStart              project facts (and, as a plugin, the project instructions)
 //   pre-bash        PreToolUse  Bash          org guard, commit gate, branch guard
 //   pre-write       PreToolUse  Write|Edit    secret and protected-path guard
-//   pre-mcp         PreToolUse  mcp__…sf-*    hosted MCP guard: tools that change the org always ask
+//   pre-mcp         PreToolUse  mcp__…sf-*    hosted MCP guard: tools that change the org always ask;
+//                                             browser guard: opening a production-class org page asks
 //   post-write      PostToolUse Write|Edit    fast Salesforce source checks, as feedback
 //   post-bash       PostToolUse Bash          audit log
 //   bash-failure    PostToolUseFailure Bash   audit log and failure triage
@@ -21,6 +22,7 @@ const lib = require('./lib');
 const ops = require('./ops');
 const checks = require('./checks');
 const mcp = require('./mcp');
+const browser = require('./browser');
 
 const SAFETY_HOOKS = new Set(['pre-bash', 'pre-write', 'pre-mcp']);
 
@@ -317,7 +319,9 @@ function mcpGuard(toolName, cfg, root, lookup) {
 }
 
 function preMcp(input, root, cfg) {
-  const d = mcpGuard(input.tool_name, cfg, root);
+  const d = browser.parseToolName(input.tool_name)
+    ? browser.navigateGuard(input.tool_name, input.tool_input, cfg, root)
+    : mcpGuard(input.tool_name, cfg, root);
   if (d.decision !== 'allow') preDecision(d.decision, d.reason);
 }
 

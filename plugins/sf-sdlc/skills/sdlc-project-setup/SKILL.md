@@ -1,6 +1,6 @@
 ---
 name: sdlc-project-setup
-description: "Set a Salesforce project up for the SDLC kit in one run, for technical and non-technical users: run sf-sdlc setup first (creates the project files, git repository and .env template, explores the code, installs the core skills plus those the code needs, checks tools, the Salesforce org, hosted MCP servers, Jira and GitHub), show a checklist of what is done, what Claude can do on a yes and what needs the person with the exact link, ask only what cannot be detected, then install tools, sign in and fill .claude/sf-sdlc.json. Never asks which skills or MCP servers to use; never reads a credential. TRIGGER when: user asks to set up, onboard or configure a project, connect Salesforce, Jira or GitHub, which skills or MCP servers to install, what a config key means, reports a failing doctor check, or runs /sf-sdlc:setup, /sf-sdlc:doctor or /sf-sdlc:skills. DO NOT TRIGGER when: the user wants architecture work (use sdlc-solution-architecture-generate) or a deployment (use sdlc-deploy-release)."
+description: "Set a Salesforce project up for the SDLC kit in one run, for technical and non-technical users: run sf-sdlc setup first (creates the project files, git repository, .env and .env.sample, explores the code, installs the mandatory core skills plus those the code needs, checks tools, the Salesforce org, hosted MCP servers, UI-test browser, Jira and GitHub), show a checklist of what is done, what Claude can do on a yes and what needs the person with the exact link, ask only what cannot be detected, then install tools, sign in and fill .claude/sf-sdlc.json. Never asks which skills or MCP servers to use; never reads a credential. TRIGGER when: user asks to set up, onboard or configure a project, connect Salesforce, Jira or GitHub, which skills or MCP servers to install, what a config key means, reports a failing doctor check, or runs /sf-sdlc:setup, /sf-sdlc:doctor or /sf-sdlc:skills. DO NOT TRIGGER when: the user wants architecture work (use sdlc-solution-architecture-generate) or a deployment (use sdlc-deploy-release)."
 metadata:
   version: "3.0"
   author: "Nagarro Salesforce CoE"
@@ -42,14 +42,18 @@ already said who they are; add `--org <alias>` when they already named the org).
 
 In one run it:
 - creates a git repository when there is none;
-- writes the project files: `.claude/sf-sdlc.json`, `.gitignore` entries, the `.env` template,
-  `code-analyzer.yml`, and for plugin users `.claude/settings.json` (plugin on for the whole team) and
+- writes the project files: `.claude/sf-sdlc.json`, `.gitignore` entries, `.env` (git-ignored) and
+  `.env.sample` (the same keys with no values, committed: Salesforce login address, user name and
+  alias; optional hosted MCP address overrides; Jira, Confluence and GitHub tokens), `code-analyzer.yml`, and for plugin users `.claude/settings.json` (plugin on for the whole team) and
   the coding rules in `${CLAUDE_PLUGIN_ROOT}/skills/salesforce-coding-rules/references/`;
-- explores the code and **installs the skills it calls for** into `.claude/skills/`: the core set
-  (diagrams, Salesforce documentation, SOQL, API context, environment check, org management) for
-  every project, then the main skill for each kind of code found, then deploy and analysis — as many
-  as fit Claude Code's skill listing budget. The rest are listed, not installed;
-- checks every tool, the Salesforce org, the hosted MCP servers, Jira and GitHub;
+- installs the **mandatory core set** into `.claude/skills/` for every project, whatever it contains:
+  `drawio-skill` and the other diagram skills, org management and **every official Salesforce
+  `platform-*` skill** (Apex, objects, fields, permissions, SOQL, metadata, deploy, documentation…).
+  The `sdlc-*` skills come with the kit itself. Then it explores the code and adds the **on-demand**
+  skills it calls for (LWC, Flow, OmniStudio, Experience Cloud, integration…) — as many as fit the
+  skill listing budget, which applies to on-demand skills only. The rest are listed, not installed;
+- checks every tool, the Salesforce org, the hosted MCP servers, the browser for UI tests
+  (Playwright), Jira and GitHub;
 - returns `steps[]`, each with `area`, `item`, `state`, `detail`, and where relevant `url`, `command`,
   `ask`, `choices`.
 
@@ -96,12 +100,16 @@ Do not ask about skills, MCP servers, branch names, API versions or anything in 
 Run each of these yourself and say in one line what happened:
 - **Org chosen:** `sf-sdlc setup --org <alias> --json`. It records the org for the
   project and for the MCP servers; a production org goes to `orgs.production` and stays protected.
-- **No org signed in:** `sf org login web --alias <alias>` (sandbox: add
-  `--instance-url https://test.salesforce.com`). Tell the person a browser window opens. Then
-  `setup --org <alias>`.
+- **No org signed in:** ask for the login address (production/Developer Edition, sandbox, or My
+  Domain) and alias, write them with `sf-sdlc env set SF_LOGIN_URL=… SF_ORG_ALIAS=…`
+  (add `SF_USERNAME=…` when they give it), then run `sf-sdlc org login`. Tell the
+  person a browser window opens. Then `setup --org <alias>`.
 - **Missing tools:** `sf-sdlc setup --install-tools --json` installs the Salesforce
-  CLI, Code Analyzer and the optional CLI plugins. Tools that need an administrator password (Node.js,
-  git, Java, GitHub CLI) stay under "Your turn" with the command for their system.
+  CLI, Code Analyzer and the optional CLI plugins, and — for the architecture diagrams — Python 3 and
+  draw.io desktop where that needs no administrator password (Homebrew on macOS, winget on Windows).
+  Tools that need an administrator password (Node.js, git, Java, GitHub CLI; Python and draw.io on
+  Linux) stay under "Your turn" with the command for their system. Under WSL, draw.io installed on
+  Windows is found automatically.
 - **GitHub:** `gh auth login --web --git-protocol https`.
 - **Jira, browser sign-in:** the person types `/mcp`, chooses `atlassian` (plugin users see
   `plugin:sf-sdlc:atlassian`), chooses **Authenticate**. Claude cannot do this step; say so.
@@ -127,9 +135,18 @@ Do not ask "which servers do you want". Say:
 - A server the kit does not list cannot be added through the kit. Say that plainly; do not guess a URL.
 Details: [references/environment-setup.md](references/environment-setup.md).
 
+## 5b. Browser for UI tests
+Say it in one line: "Claude can test your org in a real browser. The first time, a window opens at your
+org and you sign in yourself; the sign-in is kept for later sessions, even after a restart." Nothing
+to ask: setup already set the browser up to keep it. If the row is
+👉, it needs Node.js (npx). Never ask for or type the Salesforce password; never read
+`.sf-sdlc/browser-profile/`. Details: section 5 of
+[references/environment-setup.md](references/environment-setup.md).
+
 ## 6. Skills
-Setup already installed them. Report in two lines: how many, and the reason in plain words ("your
-project has Apex, Lightning components and Flows"). Then:
+Setup already installed them. Report in two lines: how many (the mandatory core set — draw.io and every
+Salesforce platform skill — plus the on-demand ones), and the reason for the on-demand ones in plain
+words ("your project has Lightning components and Flows"). Then:
 - skills left out for space are in the step's `availableLater`; install one when the work needs it:
   `sf-sdlc skills install <name>`;
 - org-only features the source cannot show (Experience Cloud, OmniStudio, Agentforce, Data Cloud):
@@ -185,7 +202,8 @@ Run `sf-sdlc setup --json` once more and print the checklist from section 2 agai
 this is the last thing the person sees. Under it, at most four lines:
 - what is still theirs to do, in order, each with its link;
 - "Restart Claude Code (or run `/reload-plugins`) so the new skills and connections load";
-- what to commit: `.claude/`, `.gitignore`, `code-analyzer.yml` — never `.env`;
+- what to commit: `.claude/`, `.gitignore`, `.env.sample`, `code-analyzer.yml` — never `.env` or
+  `.sf-sdlc/`;
 - the next step: `/sf-sdlc:brd` for new requirements, or `/sf-sdlc:specify` for build work.
 
 A project lead who wants the full audit: [references/setup-checklist.md](references/setup-checklist.md).

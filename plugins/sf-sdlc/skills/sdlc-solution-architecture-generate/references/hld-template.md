@@ -37,7 +37,18 @@ Constraints (`C-nn`) and assumptions (`A-nn`) that shape the design.
 {Add client-specific principles.}
 
 ## 4. Solution overview
-Narrative (one paragraph) plus the system landscape.
+Narrative (one paragraph) plus the system landscape. Every diagram in this document follows the
+same pattern: the Salesforce-standard image generated from its spec in `diagrams/`
+(`sdlc-architecture-diagram` skill), the caption, a link to the `.drawio` source, then the Mermaid
+text version.
+
+![System landscape](diagrams/system-landscape.png)
+
+*Caption: {the one question this diagram answers, and what is new or changed}.*
+Source: [diagrams/system-landscape.drawio](diagrams/system-landscape.drawio) (spec:
+`diagrams/system-landscape.diagram.json`).
+
+Text version:
 
 ```mermaid
 flowchart LR
@@ -99,7 +110,12 @@ Approach values: Standard · Configuration · Flow · Apex · LWC · Integration
 
 ## 7. Data architecture
 ### 7.1 Data model
-Use a `flowchart` so the change status of objects, fields and relationships is visible
+![Data model](diagrams/data-model.png)
+
+*Caption: {question answered; objects and fields added or changed}.* Source:
+[diagrams/data-model.drawio](diagrams/data-model.drawio).
+
+Text version: use a `flowchart` so the change status of objects, fields and relationships is visible
 (template 6 in `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-architecture-diagram/references/diagram-templates.md`).
 Add an `erDiagram` with full attributes only when the attribute listing is needed.
 

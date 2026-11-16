@@ -13,6 +13,8 @@ const ops = require(path.join(KIT, 'hooks', 'ops.js'));
 const checks = require(path.join(KIT, 'hooks', 'checks.js'));
 const hooks = require(path.join(KIT, 'hooks', 'run.js'));
 const mcp = require(path.join(KIT, 'hooks', 'mcp.js'));
+const browser = require(path.join(KIT, 'hooks', 'browser.js'));
+const envfile = require(path.join(KIT, 'hooks', 'envfile.js'));
 
 const cfg = (over = {}) => lib.merge(lib.DEFAULTS, over);
 const ORGS = [
@@ -217,7 +219,7 @@ test('CLI: init, skills install/sync/remove in a temp project', () => {
   assert.ok(created.includes('.github/workflows/sf-code-analyzer.yml'));
   assert.ok(created.some((c) => c.startsWith('.mcp.json')));
   const servers = JSON.parse(fs.readFileSync(path.join(dir, '.mcp.json'), 'utf8')).mcpServers;
-  assert.deepStrictEqual(Object.keys(servers).sort(), ['atlassian-token', 'sf-data360', 'sf-headless-360', 'sf-metadata-experts', 'sf-metadata-grounding', 'sf-sobject-all', 'sf-sobject-reads']);
+  assert.deepStrictEqual(Object.keys(servers).sort(), ['atlassian-token', 'sf-browser', 'sf-data360', 'sf-headless-360', 'sf-metadata-experts', 'sf-metadata-grounding', 'sf-sobject-all', 'sf-sobject-reads']);
   assert.ok(created.some((c) => c.startsWith('.env (created')), 'init creates the .env template');
   assert.ok(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8').split('\n').includes('.env'), '.env is git-ignored');
   assert.ok(!fs.existsSync(path.join(dir, '.claude', 'rules')), 'the copy-in folder already holds its rules; init does not write them');
@@ -227,7 +229,8 @@ test('CLI: init, skills install/sync/remove in a temp project', () => {
   const rec = cli('skills', 'recommend').json;
   assert.ok(rec.toInstall.includes('platform-apex-generate'));
   assert.ok(rec.toInstall.includes('platform-metadata-grounding-get'), 'grounding is recommended while metadata-grounding is enabled');
-  assert.ok(!rec.toInstall.includes('platform-headless-360-integrate'), 'headless-360 is opt-in');
+  assert.ok(rec.toInstall.includes('platform-headless-360-integrate') && rec.toInstall.includes('drawio-skill'), 'every platform-* skill and draw.io are mandatory');
+  assert.ok(!rec.toInstall.some((s) => s.startsWith('experience-portal')), 'other families stay on demand');
   assert.ok(!rec.toInstall.some((s) => s.startsWith('omnistudio-')));
   assert.strictEqual(cli('skills', 'install', 'platform-soql-query').json.results[0].result, 'installed');
   assert.strictEqual(cli('skills', 'list').json.installed[0].state, 'ok');
@@ -235,7 +238,9 @@ test('CLI: init, skills install/sync/remove in a temp project', () => {
   assert.strictEqual(cli('skills', 'list').json.installed[0].state, 'modified');
   assert.match(cli('skills', 'remove', 'platform-soql-query').json.results[0].result, /locally modified/);
   assert.strictEqual(cli('inventory').json.counts.ApexClass, 1);
-  const core = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'detection-rules.json'), 'utf8')).rules.find((r) => r.id === 'core').skills;
+  const coreRule = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'detection-rules.json'), 'utf8')).rules.find((r) => r.id === 'core');
+  const names = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'skills.json'), 'utf8')).skills.map((x) => x.name);
+  const core = [...new Set([...coreRule.skills, ...names.filter((n) => coreRule.skillPrefixes.some((p) => n.startsWith(p)))])];
   assert.deepStrictEqual(cli('skills', 'recommend', '--profile', 'ba').json.recommended.map((s) => s.name).sort(), [...core].sort(), 'a business analyst gets the core set only');
   assert.ok(core.every((s) => rec.recommended.some((r) => r.name === s)), 'every project gets the core set');
   fs.rmSync(dir, { recursive: true, force: true });
@@ -377,12 +382,18 @@ test('setup: one run creates files, picks skills from the code inside the budget
   assert.ok(fs.existsSync(path.join(dir, '.git')), 'setup creates the git repository');
   assert.ok(fs.existsSync(path.join(dir, '.claude', 'sf-sdlc.json')) && fs.existsSync(path.join(dir, '.env')));
   const sk = step(/^Skills for this project/);
-  const core = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'detection-rules.json'), 'utf8')).rules.find((r) => r.id === 'core').skills;
+  const coreRule = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'detection-rules.json'), 'utf8')).rules.find((r) => r.id === 'core');
+  const catalogNames = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'skills.json'), 'utf8')).skills.map((x) => x.name);
+  const core = [...coreRule.skills, ...catalogNames.filter((n) => coreRule.skillPrefixes.some((p) => n.startsWith(p)))];
+  assert.ok(core.includes('drawio-skill') && core.filter((n) => n.startsWith('platform-')).length > 40, 'the core set is draw.io plus every platform-* skill');
   assert.ok(core.every((n) => sk.installed.includes(n)), 'the core set is always installed');
+  assert.ok(fs.existsSync(path.join(dir, '.env.sample')), 'setup writes .env.sample for the team');
+  assert.strictEqual(step(/^Browser for UI tests/).state, lib.has('npx') ? 'done' : 'you');
   assert.ok(sk.installed.includes('platform-apex-generate') && sk.installed.includes('experience-lwc-generate'), 'the main skill for each kind of code comes before secondary skills');
-  assert.ok(sk.availableLater.length > 0, 'what does not fit is listed, not installed');
-  const listing = JSON.parse(cli('skills', 'list', '--json').out).listingChars;
-  assert.ok(listing <= 8000, `skills stay inside the listing budget (${listing})`);
+  assert.ok(Array.isArray(sk.availableLater), 'what does not fit is listed, not installed');
+  assert.ok(sk.installed.includes('experience-aura-lwc-migrate'), 'on-demand skills the code needs are still installed next to the large core set');
+  const listing = JSON.parse(cli('skills', 'list', '--json').out).onDemandChars;
+  assert.ok(listing <= 8000, `on-demand skills stay inside the listing budget (${listing})`);
   assert.ok(first.steps.every((x) => ['done', 'claude', 'you', 'optional', 'skipped'].includes(x.state)));
   const jira = step(/^Jira/);
   assert.strictEqual(jira.state, 'you');
@@ -439,4 +450,216 @@ test('sf-mcp-proxy answers the handshake with no tools when its server is not en
   assert.strictEqual(replies[2].error.code, -32601);
   assert.match(r.stderr, /not listed in mcp\.servers/);
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ------------------------------------------------------------------ Salesforce-standard draw.io diagrams
+
+const diagram = require(path.join(KIT, 'hooks', 'diagram.js'));
+const EXAMPLES = path.join(KIT, 'skills', 'sdlc-architecture-diagram', 'examples');
+
+test('diagram examples: one per Salesforce type, valid, and their .drawio files are up to date', () => {
+  const specs = fs.readdirSync(EXAMPLES).filter((f) => f.endsWith('.diagram.json'));
+  const types = new Set();
+  for (const f of specs) {
+    const spec = JSON.parse(fs.readFileSync(path.join(EXAMPLES, f), 'utf8'));
+    types.add(diagram.normaliseType(spec.type));
+    const v = diagram.validateSpec(spec);
+    assert.deepStrictEqual(v.errors, [], `${f}: ${v.errors.join('; ')}`);
+    const xml = diagram.toDrawio(spec);
+    const check = diagram.checkDrawio(xml);
+    assert.deepStrictEqual(check.problems, [], `${f}: ${check.problems.join('; ')}`);
+    assert.deepStrictEqual(check.warnings, [], `${f}: ${check.warnings.join('; ')}`);
+    const drawio = path.join(EXAMPLES, f.replace('.diagram.json', '.drawio'));
+    assert.strictEqual(fs.readFileSync(drawio, 'utf8'), xml, `${path.basename(drawio)} is stale: run sf-sdlc diagram drawio on ${f} (and export the PNG)`);
+    assert.ok(fs.existsSync(drawio.replace(/\.drawio$/, '.png')), `${f}: picture reference missing`);
+  }
+  assert.deepStrictEqual([...types].sort(), [...diagram.TYPES].sort());
+});
+
+test('diagram spec validation refuses what would draw wrong', () => {
+  const base = { type: 'solution', title: 'T', description: 'D.', groups: [{ id: 'g' }], cards: [{ id: 'a', title: 'A', group: 'g' }, { id: 'b', title: 'B', group: 'g' }] };
+  assert.deepStrictEqual(diagram.validateSpec(base).errors, []);
+  const errs = (over) => diagram.validateSpec({ ...base, ...over }).errors.join(' | ');
+  assert.match(errs({ type: 'mindmap' }), /type must be one of/);
+  assert.match(errs({ description: '' }), /description is required/);
+  assert.match(errs({ cards: [{ id: 'a', title: 'A', group: 'g', icon: 'agentforce' }] }), /unknown icon "agentforce"/);
+  assert.match(errs({ cards: [{ id: 'a', title: 'A', group: 'nope' }] }), /group "nope" is not defined/);
+  assert.match(errs({ connectors: [{ from: 'a', to: 'zz' }] }), /to "zz" is not a card id/);
+  assert.match(errs({ connectors: [{ from: 'a', to: 'b', kind: 'telepathy' }] }), /kind must be one of/);
+  assert.match(errs({ cards: Array.from({ length: 26 }, (_, i) => ({ id: `c${i}`, title: 'x', group: 'g' })) }), /at most 25/);
+  assert.match(errs({ type: 'roadmap', connectors: [{ from: 'a', to: 'b' }] }), /roadmaps have no connectors/);
+  assert.throws(() => diagram.toDrawio({ ...base, title: '' }), /title is required/);
+});
+
+test('diagram XML escapes text and uses only real Salesforce icons', () => {
+  const xml = diagram.toDrawio({ type: 'landscape', title: 'R&D <ops> "x"', description: 'A & B.', cards: [{ id: 'a', title: 'Q&A <b>', icon: 'sales', attributes: ['x < y & z'] }] });
+  for (const [, v] of xml.matchAll(/ (?:value|style|name|id)="([^"]*)"/g)) {
+    assert.doesNotMatch(v, /[<>]/, `raw angle bracket in attribute: ${v.slice(0, 60)}`);
+    assert.doesNotMatch(v, /&(?!(amp|lt|gt|quot|#xa);)/, `bare ampersand in attribute: ${v.slice(0, 60)}`);
+  }
+  assert.match(xml, /R&amp;amp;D &amp;lt;ops&amp;gt;/, 'user text is HTML-escaped inside the escaped label');
+  assert.match(xml, /shape=mxgraph\.salesforce\.sales2;/);
+  for (const m of xml.matchAll(/shape=mxgraph\.salesforce\.([^;]+);/g)) assert.ok(diagram.SF_ICONS[m[1]], m[1]);
+});
+
+test('diagram check finds edges that will not render and unknown icons', () => {
+  const xml = `<mxfile><diagram><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>
+    <mxCell id="a" style="shape=mxgraph.salesforce.agentforce;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="10" height="10" as="geometry"/></mxCell>
+    <mxCell id="e" edge="1" parent="1" source="a" target="zz"/>
+    <mxCell id="a" vertex="1" parent="nope"><mxGeometry as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>`;
+  const r = diagram.checkDrawio(xml);
+  const all = r.problems.join(' | ');
+  assert.match(all, /duplicate cell id "a"/);
+  assert.match(all, /edge "e" has no <mxGeometry/);
+  assert.match(all, /target "zz" does not exist/);
+  assert.match(all, /unknown Salesforce icon "agentforce"/);
+  assert.match(all, /parent "nope"/);
+  assert.match(r.warnings.join(' '), /no header/);
+  assert.match(diagram.checkDrawio('<mxfile><diagram>' + 'A'.repeat(60) + '</diagram></mxfile>').problems[0], /compressed/);
+});
+
+test('diagram from components.json: story scope, neighbours, child fields and statuses', () => {
+  const comps = [
+    { apiName: 'healthPanel', type: 'LightningComponentBundle', status: 'new', story: 'US-04-03', layer: 'ui', dependsOn: ['Ctl'], note: '' },
+    { apiName: 'Ctl', type: 'ApexClass', status: 'new', story: 'US-04-03', layer: 'automation', dependsOn: ['Opportunity.Score__c'], note: '' },
+    { apiName: 'Other', type: 'ApexClass', status: 'unchanged', story: '', layer: 'automation', dependsOn: [], note: 'in inventory' },
+    { apiName: 'Opportunity', type: 'CustomObject', status: 'changed', story: 'US-04-01', layer: 'data', dependsOn: [], note: '' },
+    { apiName: 'Opportunity.Score__c', type: 'CustomField', status: 'new', story: 'US-04-01', layer: 'data', dependsOn: ['Opportunity'], note: '' },
+  ];
+  const spec = diagram.specFromComponents(comps, { story: 'US-04-03' });
+  assert.deepStrictEqual(spec.cards.map((c) => c.id).sort(), ['Ctl', 'Opportunity', 'healthPanel']);
+  const opp = spec.cards.find((c) => c.id === 'Opportunity');
+  assert.deepStrictEqual(opp.attributes, ['+ Score__c']);
+  assert.strictEqual(opp.status, 'changed');
+  assert.deepStrictEqual(spec.connectors.map((e) => `${e.from}>${e.to}`).sort(), ['Ctl>Opportunity', 'healthPanel>Ctl']);
+  assert.deepStrictEqual(spec.groups.map((g) => g.id), ['ui', 'automation', 'data']);
+  assert.deepStrictEqual(diagram.checkDrawio(diagram.toDrawio(spec)).problems, []);
+  assert.throws(() => diagram.specFromComponents(comps, { type: 'roadmap' }), /only solution-architecture and data-model/);
+});
+
+test('diagram layout routes a connector that skips a column below the cards in the way', () => {
+  const spec = {
+    type: 'solution', title: 'T', description: 'D.',
+    groups: [{ id: 'g1' }, { id: 'g2' }, { id: 'g3' }],
+    cards: [{ id: 'a', title: 'A', group: 'g1' }, { id: 'm', title: 'Middle', group: 'g2' }, { id: 'z', title: 'Z', group: 'g3' }],
+    connectors: [{ from: 'a', to: 'z', label: 'skips' }],
+  };
+  const xml = diagram.toDrawio(spec);
+  const edge = /<mxCell id="edge-1"[\s\S]*?<\/mxCell>/.exec(xml)[0];
+  const ys = [...edge.matchAll(/<mxPoint x="[\d.]+" y="([\d.]+)"\/>/g)].map((m) => Number(m[1]));
+  const middle = /<mxCell id="card-m" [^>]*><mxGeometry x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/.exec(xml);
+  const group = /<mxCell id="group-g2" [^>]*><mxGeometry x="[\d.]+" y="([\d.]+)"/.exec(xml);
+  const bottom = Number(group[1]) + Number(middle[1]) + Number(middle[2]);
+  assert.strictEqual(ys.length, 4, 'highway route has four points');
+  assert.ok(Math.max(...ys) > bottom, 'the highway runs below the middle card');
+});
+
+test('draw.io desktop is found from SF_SDLC_DRAWIO, and a missing one is reported, not faked', () => {
+  const found = diagram.findDrawio({ SF_SDLC_DRAWIO: '/opt/x/drawio' }, (p) => p === '/opt/x/drawio');
+  assert.deepStrictEqual(found, { cmd: '/opt/x/drawio', wsl: false });
+  assert.deepStrictEqual(diagram.findDrawio({ SF_SDLC_DRAWIO: '/mnt/c/d/draw.io.exe' }, (p) => p === '/mnt/c/d/draw.io.exe'), { cmd: '/mnt/c/d/draw.io.exe', wsl: true });
+  assert.ok(Array.isArray(diagram.validateSpec({}).errors));
+});
+
+test('every project gets the draw.io skill, and the Salesforce picture references ship with the diagram skill', () => {
+  const rules = JSON.parse(fs.readFileSync(path.join(KIT, 'catalog', 'detection-rules.json'), 'utf8')).rules;
+  assert.ok(rules.find((r) => r.id === 'core').skills.includes('drawio-skill'));
+  const skill = fs.readFileSync(path.join(KIT, 'skill-library', 'drawio-skill', 'SKILL.md'), 'utf8');
+  assert.match(skill, /^name: drawio-skill$/m);
+  assert.ok(fs.existsSync(path.join(KIT, 'skill-library', 'drawio-skill', 'LICENSE')));
+  const gallery = path.join(KIT, 'skills', 'sdlc-architecture-diagram', 'references', 'salesforce-gallery');
+  const index = fs.readFileSync(path.join(gallery, 'README.md'), 'utf8');
+  for (const [, link] of index.matchAll(/\]\(([\w-]+\/[\w-]+\.png)\)/g)) assert.ok(fs.existsSync(path.join(gallery, link)), `missing ${link}`);
+  assert.ok((index.match(/\.png\)/g) || []).length >= 9);
+});
+
+test('browser guard: opening a production-class or unknown Salesforce org page asks; sandboxes and other sites pass', () => {
+  const nav = (url, c = cfg(), name = 'mcp__sf-browser__browser_navigate') => browser.navigateGuard(name, { url }, c, os.tmpdir(), lookup).decision;
+  assert.strictEqual(nav('https://acme--uat.sandbox.lightning.force.com/lightning/page/home'), 'allow');
+  assert.strictEqual(nav('https://acme--uat--c.sandbox.vf.force.com/apex/X'), 'allow', 'Visualforce domain maps to its sandbox');
+  assert.strictEqual(nav('https://x.scratch.lightning.force.com/'), 'allow');
+  assert.strictEqual(nav('https://acme.lightning.force.com/lightning/setup/SetupOneHome/home'), 'ask', 'production org');
+  assert.strictEqual(nav('https://acme.my.salesforce.com/', cfg(), 'mcp__plugin_sf-sdlc_sf-browser__browser_navigate'), 'ask', 'plugin tool name');
+  assert.strictEqual(nav('https://other.my.salesforce.com/'), 'ask', 'an org the CLI does not know is treated as production');
+  assert.strictEqual(nav('https://acme--uat.sandbox.my.salesforce.com/', cfg({ orgs: { production: ['uat'] } })), 'ask', 'orgs.production wins over the org type');
+  assert.strictEqual(nav('https://test.salesforce.com/'), 'allow', 'login pages carry no org');
+  assert.strictEqual(nav('https://example.com/'), 'allow');
+  assert.strictEqual(browser.navigateGuard('mcp__sf-browser__browser_click', {}, cfg(), os.tmpdir(), lookup).decision, 'allow');
+  assert.strictEqual(browser.navigateGuard('mcp__sf-browser__browser_navigate', { url: 'https://acme--uat.sandbox.my.salesforce.com/' }, cfg(), os.tmpdir(), () => null).decision, 'ask', 'no org list: never safe');
+  assert.strictEqual(browser.parseToolName('mcp__sf-headless-360__dispatch'), null);
+});
+
+test('browser: launch plan, persistent profile inside .sf-sdlc, secrets kept out of tool output', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-br-'));
+  const p = browser.plan(root, cfg(), { has: () => true, platform: 'darwin' });
+  assert.strictEqual(p.cmd, 'npx');
+  assert.ok(p.args.includes(browser.PACKAGE) && /@\d+\.\d+\.\d+$/.test(browser.PACKAGE), 'the server version is pinned');
+  assert.strictEqual(p.args[p.args.indexOf('--user-data-dir') + 1], path.join(root, '.sf-sdlc', 'browser-profile'));
+  assert.match(p.args[p.args.indexOf('--redact-url-params') + 1], /\bsid\b/);
+  assert.ok(!p.args.includes('--isolated') && !p.args.includes('--headless'));
+  assert.strictEqual(browser.plan(root, cfg({ browser: { enabled: true, browser: 'chrome', headless: false } }), { has: (c) => c === 'npx', platform: 'linux', exists: () => false }).browser, 'chromium', 'Linux without Chrome falls back to Chrome for Testing');
+  assert.ok(browser.plan(root, cfg({ browser: { enabled: true, browser: 'firefox', headless: true } }), { has: () => true }).args.includes('--headless'));
+  assert.match(browser.plan(root, cfg({ browser: { enabled: false, browser: 'chrome', headless: false } }), { has: () => true }).reason, /browser\.enabled/);
+  assert.match(browser.plan(root, cfg(), { has: () => false }).reason, /npx/);
+  assert.ok(checks.isProtectedPath('.sf-sdlc/browser-profile/Default/Cookies'), 'the profile is a credential store');
+  assert.ok(!checks.isProtectedPath('.sf-sdlc/audit.jsonl'));
+  const settings = JSON.parse(fs.readFileSync(path.join(KIT, 'settings.json'), 'utf8'));
+  assert.ok(settings.permissions.deny.includes('Read(./.sf-sdlc/browser-profile/**)'));
+  assert.ok(new RegExp(`^(${settings.hooks.PreToolUse.find((h) => /sf-browser/.test(h.matcher)).matcher})$`).test('mcp__plugin_sf-sdlc_sf-browser__browser_navigate'));
+  // Sign-in kept across restarts: the profile restores the last session, so Salesforce's session-only
+  // cookie survives; the browser's own Preferences are merged, not replaced.
+  assert.strictEqual(browser.prepareProfile(root, 'chrome').result, 'set');
+  assert.ok(browser.keepsSignIn(root, 'chrome'));
+  const prefsFile = path.join(browser.profileDir(root), 'Default', 'Preferences');
+  fs.writeFileSync(prefsFile, JSON.stringify({ session: { restore_on_startup: 4 }, profile: { exit_type: 'Crashed', name: 'Person 1' }, extensions: { x: 1 } }));
+  assert.strictEqual(browser.prepareProfile(root, 'msedge').result, 'set');
+  const prefs = JSON.parse(fs.readFileSync(prefsFile, 'utf8'));
+  assert.deepStrictEqual([prefs.session.restore_on_startup, prefs.profile.exit_type, prefs.profile.name, prefs.extensions.x], [1, 'Normal', 'Person 1', 1]);
+  assert.strictEqual(browser.prepareProfile(root, 'chrome').result, 'kept');
+  fs.writeFileSync(prefsFile, '{broken');
+  assert.match(browser.prepareProfile(root, 'chrome').result, /left alone/);
+  assert.strictEqual(browser.prepareProfile(root, 'firefox').result, 'set');
+  assert.ok(browser.keepsSignIn(root, 'firefox'));
+  assert.strictEqual(browser.prepareProfile(root, 'firefox').result, 'kept');
+  fs.rmSync(browser.profileDir(root), { recursive: true, force: true });
+  assert.strictEqual(browser.reset(root).result, 'nothing to reset');
+  fs.mkdirSync(browser.profileDir(root), { recursive: true });
+  assert.strictEqual(browser.reset(root).result, 'removed');
+  assert.ok(lib.validateConfig(cfg({ browser: { enabled: true, browser: 'opera', headless: false } })).errors.some((e) => /browser\.browser/.test(e)));
+});
+
+test('.env: Salesforce and MCP address sections, .env.sample with no values, appends only what is missing', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-env-'));
+  for (const k of ['SF_LOGIN_URL', 'SF_USERNAME', 'SF_ORG_ALIAS', 'SF_MCP_METADATA_EXPERTS_URL', 'JIRA_API_TOKEN']) assert.match(envfile.SAMPLE, new RegExp(`^${k}=$`, 'm'));
+  assert.ok(Object.keys(mcp.HOSTED_SERVERS).every((n) => envfile.ALL_KEYS.includes(mcp.urlKey(n))), 'every hosted server has an address key');
+  assert.strictEqual(envfile.ensureSample(root).result, 'created');
+  assert.strictEqual(envfile.ensureSample(root).result, 'kept');
+  fs.writeFileSync(path.join(root, '.env.sample'), 'TEAM_OWN=\n');
+  assert.strictEqual(envfile.ensureSample(root).result, 'exists, not managed by sf-sdlc');
+  fs.writeFileSync(path.join(root, '.env'), 'JIRA_URL=https://x.atlassian.net\n');
+  const r = envfile.ensure(root);
+  assert.strictEqual(r.result, 'appended');
+  assert.ok(r.added.includes('SF_LOGIN_URL') && !r.added.includes('JIRA_URL'));
+  const text = fs.readFileSync(path.join(root, '.env'), 'utf8');
+  assert.match(text, /^JIRA_URL=https:\/\/x\.atlassian\.net$/m, 'values are never changed');
+  assert.match(text, /# Salesforce org for this project/, 'appended keys keep their explanation');
+  assert.strictEqual(envfile.status(root).groups.mcp.state, 'default');
+  assert.strictEqual(envfile.status(root).groups.salesforce.state, 'empty');
+  envfile.setPlain(root, 'SF_LOGIN_URL', 'https://test.salesforce.com');
+  assert.strictEqual(envfile.status(root).groups.salesforce.state, 'configured');
+  assert.throws(() => envfile.setPlain(root, 'SF_MCP_SOBJECT_ALL_URL', 'https://x'), /cannot be set/);
+});
+
+test('hosted MCP: a per-server address override must stay on salesforce.com over https', () => {
+  const k = mcp.urlKey('metadata-experts');
+  assert.strictEqual(k, 'SF_MCP_METADATA_EXPERTS_URL');
+  assert.strictEqual(mcp.serverUrl('metadata-experts', { [k]: 'https://api.salesforce.com/platform/mcp/v1/platform/metadata-experts/' }), 'https://api.salesforce.com/platform/mcp/v1/platform/metadata-experts');
+  assert.throws(() => mcp.serverUrl('metadata-experts', { [k]: 'http://api.salesforce.com/x' }), /https/);
+  assert.throws(() => mcp.serverUrl('metadata-experts', { [k]: 'https://salesforce.com.evil.io/x' }), /salesforce\.com/);
+  assert.throws(() => mcp.serverUrl('metadata-experts', { [k]: 'https://u:p@api.salesforce.com/x' }), /salesforce\.com/);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-mcpenv-'));
+  fs.writeFileSync(path.join(root, '.env'), `${k}=https://pilot.salesforce.com/mcp/x\nJIRA_API_TOKEN=t0k\n`);
+  const env = mcp.addressEnv(root, {});
+  assert.strictEqual(mcp.serverUrl('metadata-experts', env), 'https://pilot.salesforce.com/mcp/x');
+  assert.strictEqual(env.JIRA_API_TOKEN, undefined, 'only address keys are read');
 });

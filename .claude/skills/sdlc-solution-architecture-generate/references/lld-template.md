@@ -40,9 +40,17 @@ Deployment order follows the table order. New and Changed rows form `package.xml
 form the destructive manifest.
 
 ### 3.1 Component diagram
-Solution architecture diagram for this story with the change-status overlay (template 3 in
-`.claude/skills/sdlc-architecture-diagram/references/diagram-templates.md`), generated from the
-rows above.
+Solution architecture diagram for this story, generated from the rows above:
+`node .claude/bin/sf-sdlc diagram drawio docs/sdlc/03-architecture/components.json --story US-nn-mm`,
+refined in its spec (pills, connector kinds), checked and exported.
+
+![Solution architecture US-nn-mm](../diagrams/solution-architecture-US-nn-mm.png)
+
+*Caption: {question answered}.* Source:
+[../diagrams/solution-architecture-US-nn-mm.drawio](../diagrams/solution-architecture-US-nn-mm.drawio).
+
+Text version with the change-status overlay (template 3 in
+`.claude/skills/sdlc-architecture-diagram/references/diagram-templates.md`).
 
 ## 4. Data model changes
 | Object | Field label | API name | Change | Type | Length/precision | Default | Required | Help text | FLS (read/edit) |

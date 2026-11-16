@@ -1,0 +1,34 @@
+{
+  "type": "solution-architecture",
+  "title": "Deal health score: solution architecture",
+  "description": "Which platform components calculate and show the deal health score, and what US-04-02 and US-04-03 add or change.",
+  "scope": "US-04-02, US-04-03",
+  "source": "components.json",
+  "groups": [
+    { "id": "ui", "label": "Experience", "icon": "apps" },
+    { "id": "automation", "label": "Automation and logic", "icon": "automation" },
+    { "id": "data", "label": "Data", "icon": "data" },
+    { "id": "integration", "label": "Integration", "icon": "integration" }
+  ],
+  "cards": [
+    { "id": "page", "title": "Opportunity_Record_Page", "subtitle": "Lightning page", "metadataType": "FlexiPage", "group": "ui", "status": "changed", "story": "US-04-03", "attributes": ["+ healthPanel in right region"] },
+    { "id": "panel", "title": "healthPanel", "subtitle": "Lightning web component", "metadataType": "LightningComponentBundle", "group": "ui", "status": "new", "story": "US-04-03" },
+    { "id": "ctrl", "title": "OpportunityHealthController", "subtitle": "Apex class", "metadataType": "ApexClass", "group": "automation", "status": "new", "story": "US-04-03", "attributes": ["getHealth(Id) cacheable"] },
+    { "id": "trg", "title": "OpportunityTrigger", "subtitle": "Apex trigger", "metadataType": "ApexTrigger", "group": "automation", "status": "unchanged" },
+    { "id": "handler", "title": "OpportunityTriggerHandler", "subtitle": "Apex class", "metadataType": "ApexClass", "group": "automation", "status": "changed", "story": "US-04-02", "attributes": ["~ afterUpdate calls the service"] },
+    { "id": "svc", "title": "OpportunityHealthService", "subtitle": "Apex class", "metadataType": "ApexClass", "group": "automation", "status": "new", "story": "US-04-02", "attributes": ["recalculate(Set<Id>) bulk-safe"] },
+    { "id": "opp", "title": "Opportunity", "subtitle": "Standard object", "metadataType": "CustomObject", "group": "data", "status": "changed", "story": "US-04-01", "attributes": ["+ Deal_Health_Score__c", "+ Discount_Percentage__c"] },
+    { "id": "rule", "title": "Health_Rule__mdt", "subtitle": "Custom metadata type", "metadataType": "CustomMetadata", "group": "data", "status": "new", "story": "US-04-02" },
+    { "id": "evt", "title": "Deal_Health_Changed__e", "subtitle": "Platform event", "icon": "stream", "group": "integration", "status": "new", "story": "US-04-04" }
+  ],
+  "connectors": [
+    { "from": "page", "to": "panel", "kind": "dependency" },
+    { "from": "panel", "to": "ctrl", "kind": "sync", "label": "@wire getHealth" },
+    { "from": "ctrl", "to": "svc", "kind": "dependency" },
+    { "from": "trg", "to": "handler", "kind": "dependency" },
+    { "from": "handler", "to": "svc", "kind": "dependency", "status": "new", "label": "recalculate" },
+    { "from": "svc", "to": "opp", "kind": "data", "label": "Update score" },
+    { "from": "svc", "to": "rule", "kind": "dependency", "label": "Read rules" },
+    { "from": "svc", "to": "evt", "kind": "async", "label": "Publish on band change" }
+  ]
+}

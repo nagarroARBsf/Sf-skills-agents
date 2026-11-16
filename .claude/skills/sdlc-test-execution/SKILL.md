@@ -1,6 +1,6 @@
 ---
 name: sdlc-test-execution
-description: "Execute Salesforce tests and close the loop: run Apex tests through the Salesforce CLI against a non-production org from the project config, run LWC Jest tests, read failures and per-class and org-wide coverage against the project targets, triage each failure (product defect, test defect, environment or data), record manual and UAT results reported by people, write the test-run report (TR), log defects (DEF) with steps, expected and actual results and evidence, create Jira bugs only after a preview and explicit yes, re-test fixes by re-running the failed and linked cases plus the regression set, and judge exit criteria. A defect is never closed without a cited passing run. TRIGGER when: user asks to run tests, check coverage, report results, log or triage a defect, re-test or verify a fix, record UAT results, or runs /sdlc-test-run or /sdlc-retest. DO NOT TRIGGER when: the user wants test cases designed (use sdlc-qa-test-case-generate) or a change reviewed (use sdlc-code-review)."
+description: "Execute Salesforce tests and close the loop: run Apex tests through the Salesforce CLI against a non-production org from the project config, run LWC Jest tests, run UI cases in a browser, read failures and per-class and org-wide coverage against the project targets, triage each failure (product defect, test defect, environment or data), record manual and UAT results reported by people, write the test-run report (TR), log defects (DEF) with steps, expected and actual results and evidence, create Jira bugs only after a preview and explicit yes, re-test fixes by re-running the failed and linked cases plus the regression set, and judge exit criteria. A defect is never closed without a cited passing run. TRIGGER when: user asks to run tests, check coverage, report results, log or triage a defect, re-test or verify a fix, record UAT results, or runs /sdlc-test-run or /sdlc-retest. DO NOT TRIGGER when: the user wants test cases designed (use sdlc-qa-test-case-generate) or a change reviewed (use sdlc-code-review)."
 metadata:
   version: "1.0"
   author: "Nagarro Salesforce CoE"
@@ -107,13 +107,22 @@ defect, however many tests it fails; if the story and the LLD disagree about the
 result, it is a suspected product defect for the PO and architect, not a choice for QA; QA does
 not change product code.
 
-### 6. Manual and UAT cases
-The agent cannot operate the UI. Manual results are **recorded, not produced**:
+### 6. UI cases in the browser, manual and UAT cases
+**UI cases you can run yourself.** When the `sf-browser` tools (Playwright MCP) are available, run the
+UI, persona and LWC cases in a real browser against the same non-production org, following
+[references/browser-testing.md](references/browser-testing.md): get the address with
+`node .claude/bin/sf-sdlc browser url --org <role> --json`; the person signs in in the browser window
+the first time (never type a password); act on snapshot references; check every expected result word
+for word; save a screenshot per verified result under `docs/sdlc/04-qa/test-runs/evidence/<TR-id>/`;
+record the executor as `Claude (browser, sf-browser)`; call `browser_close` at the end. Without the
+browser tools, those cases are manual cases.
+
+**Manual cases a person runs** are **recorded, not produced**:
 - Give the tester the cases in execution order with preconditions and data.
 - Record for each case what the named person reports: tester, date, org, per-step actual result,
   status, evidence reference (screenshot or recording file name, record URL without credentials).
-- Never mark a manual case `Passed` without a named person's reported result. Cases nobody
-  executed stay `Not run`.
+- Never mark a manual case `Passed` without a named person's reported result, or a browser case
+  without its screenshots. Cases nobody executed stay `Not run`.
 - UAT sign-off is the business owner's entry in the test run's approval record.
 
 ### 7. Write the test run and update status

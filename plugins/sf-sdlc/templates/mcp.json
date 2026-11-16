@@ -54,6 +54,13 @@
       "args": [
         "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-atlassian-mcp"
       ]
+    },
+    "sf-browser": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/bin/sf-browser-mcp"
+      ]
     }
   }
 }

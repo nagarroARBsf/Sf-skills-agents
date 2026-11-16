@@ -22,10 +22,33 @@ This product includes third-party material, redistributed under its original lic
    https://github.com/github/spec-kit
    See .claude/skills/sdlc-spec-driven-development/CREDITS.md.
 
+4. draw.io Salesforce shape names, sizes and fill colours — from the draw.io / diagrams.net shape
+   index (jgraph/drawio and jgraph/drawio-mcp, Apache License, Version 2.0), as the SF_ICONS table in
+   .claude/hooks/diagram.js. Diagrams refer to the shapes by name; no stencil file is included.
+
+5. drawio-skill — Agents365-ai/drawio-skill (MIT License, Copyright (c) 2026 Agents365-ai)
+   https://github.com/Agents365-ai/drawio-skill
+   Vendored without modification into .claude/skill-library/drawio-skill/ (and the generated copies)
+   from commit 6550495; licence text in that folder. Its data/shape-index.json.gz is from
+   jgraph/drawio-mcp (Apache License, Version 2.0; see data/SHAPE-INDEX-NOTICE.md there).
+   The draw.io XML authoring rules in
+   .claude/skills/sdlc-architecture-diagram/references/drawio-authoring.md are adapted from it.
+
+6. The Salesforce Diagrams conventions (header, cards, connectors, data model notation) are
+   summarised, with short quotations, from Salesforce's Architecture Center
+   (https://architect.salesforce.com). Nine of Salesforce's published reference diagrams are
+   included unmodified as picture references in
+   .claude/skills/sdlc-architecture-diagram/references/salesforce-gallery/; they are Salesforce
+   material, published without a stated licence, and remain Salesforce's property.
+
 "Salesforce", "Apex", "Lightning" and related names are trademarks of Salesforce, Inc. This product
 is not affiliated with or endorsed by Salesforce, Atlassian or GitHub. No Salesforce logo or product
-icon is included.
+icon file is included. The example diagram images in
+.claude/skills/sdlc-architecture-diagram/examples/*.png were made with draw.io and show icons from
+draw.io's built-in Salesforce shape library; those icons are Salesforce trademarks.
 
 Tools this product invokes but does not include (installed by the user under their own licences):
 Salesforce CLI (Apache-2.0), Salesforce Code Analyzer (BSD-3-Clause), sfdx-git-delta (MIT),
-Lightning Flow Scanner (MIT), mermaid-cli (MIT), GitHub CLI (MIT).
+Lightning Flow Scanner (MIT), mermaid-cli (MIT), GitHub CLI (MIT), draw.io desktop (Apache-2.0),
+Playwright MCP server @playwright/mcp by Microsoft (Apache-2.0; fetched by npx at a pinned version
+when the sf-browser MCP server starts) and the browser it downloads.
