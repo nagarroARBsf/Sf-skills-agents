@@ -1,0 +1,129 @@
+    <section id="browser-testing" data-tab="action">
+      <h2>Live UI testing with Playwright</h2>
+      <p class="lead">SF-SDLC ships the Playwright MCP server as <code>sf-browser</code>. The QA agent opens a real browser on your sandbox, clicks through the test case, checks what a user would see, such as whether a Lightning Web Component renders correctly on the Account page, and saves a screenshot as evidence. When the screenshot shows a problem, it becomes a defect, the fix is deployed to the sandbox, and the same check runs again.</p>
+
+      <div class="demo" id="browserDemo">
+        <div class="demo-bar">
+          <span style="font-size:13.5px;color:var(--muted)"><span class="live-dot"></span>Replay: find a layout bug, fix it, re-test · VS Code with the Claude Code extension</span>
+          <button type="button" class="demo-play" data-demo-toggle aria-pressed="false">Pause</button>
+        </div>
+        <div class="screen" role="img" aria-label="Animation: in VS Code, Claude Code runs a UI test case. Playwright opens the Account record page in a Salesforce sandbox. The Account Revenue Chart component is misaligned: it overflows its card and the month labels are offset. The agent takes a screenshot, fails the case and logs a defect. The developer agent fixes the component's CSS, deploys it to the sandbox, and the re-test shows the chart aligned and passes.">
+          <div class="vs">
+            <div class="vs-title">US-04-02 — acme-salesforce — Visual Studio Code</div>
+            <div class="vs-body">
+              <div class="vs-act"><i class="on"></i><i></i><i></i><i class="cc"></i></div>
+              <div class="vs-side">
+                <h6>EXPLORER</h6>
+                <div>▾ docs/sdlc/04-qa</div>
+                <div>&nbsp;&nbsp;▾ test-cases</div>
+                <div class="sel">&nbsp;&nbsp;&nbsp;&nbsp;US-04-02.md</div>
+                <div>&nbsp;&nbsp;▾ defects</div>
+                <div class="x-new x-pane2 add-file">&nbsp;&nbsp;&nbsp;&nbsp;DEF-012.md</div>
+                <div>▾ force-app/…/lwc</div>
+                <div>&nbsp;&nbsp;▾ accountRevenueChart</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;accountRevenueChart.html</div>
+                <div class="x-new x-pane2 sel">&nbsp;&nbsp;&nbsp;&nbsp;accountRevenueChart.css</div>
+                <div>▸ specs</div>
+              </div>
+              <div class="vs-ed">
+                <div class="ed-pane ed-default">
+                  <span class="tab">US-04-02.md</span><br>
+                  <span class="ln">1</span><span class="k">## TC-US-04-02-007</span> · Revenue chart on Account<br>
+                  <span class="ln">2</span><span class="c">Type: UI · Persona: Sales user · Org: uat</span><br>
+                  <span class="ln">3</span><br>
+                  <span class="ln">4</span><span class="k">### Steps</span><br>
+                  <span class="ln">5</span><span class="n">1.</span> Open an Account record page<br>
+                  <span class="ln">6</span><span class="n">2.</span> Wait for the <span class="s">"Account Revenue Chart"</span> card<br>
+                  <span class="ln">7</span><br>
+                  <span class="ln">8</span><span class="k">### Expected</span><br>
+                  <span class="ln">9</span>- 6 monthly bars, inside the card<br>
+                  <span class="ln">10</span>- Each month label under its bar<br>
+                  <span class="ln">11</span>- No error toast on the page
+                </div>
+                <div class="ed-pane ed-2">
+                  <span class="tab">accountRevenueChart.css</span><br>
+                  <span class="ln">1</span>.chart {<br>
+                  <span class="del"><span class="ln">2</span>-  width: <span class="n">120%</span>;</span>
+                  <span class="add"><span class="ln">2</span>+  width: <span class="n">100%</span>;</span>
+                  <span class="ln">3</span>&nbsp;&nbsp;display: flex;<br>
+                  <span class="ln">4</span>&nbsp;&nbsp;align-items: flex-end;<br>
+                  <span class="ln">5</span>}<br>
+                  <span class="ln">6</span>.axis {<br>
+                  <span class="del"><span class="ln">7</span>-  padding-left: <span class="n">24px</span>;</span>
+                  <span class="add"><span class="ln">7</span>+  padding-left: <span class="n">0</span>;</span>
+                  <span class="ln">8</span>&nbsp;&nbsp;display: flex;<br>
+                  <span class="del"><span class="ln">9</span>-  justify-content: flex-start;</span>
+                  <span class="add"><span class="ln">9</span>+  justify-content: space-around;</span>
+                  <span class="ln">10</span>}
+                </div>
+              </div>
+              <div class="vs-cc">
+                <div class="vs-cc-head"><span></span>Claude Code</div>
+                <div class="vs-cc-log">
+                  <div class="cc-msg cc-user" data-at="1">/sf-sdlc:test-run uat TC-US-04-02-007</div>
+                  <div class="cc-msg cc-agent" data-at="1"><b>sdlc-qa-test-agent</b> · subagent<small>runs the UI case in sandbox uat</small></div>
+                  <div class="cc-msg cc-tool" data-at="1"><b>Bash</b> sf-sdlc browser url --org uat<br>→ https://acme--uat.sandbox.lightning.force.com</div>
+                  <div class="cc-msg cc-tool" data-at="2"><b>sf-browser</b> · browser_navigate<br><span class="hook">pre-mcp · sandbox ✓ allowed</span></div>
+                  <div class="cc-msg cc-tool" data-at="5"><b>sf-browser</b> · browser_take_screenshot</div>
+                  <div class="cc-msg cc-fail" data-at="5"><b>✗ FAIL</b> TC-US-04-02-007 · the chart overflows its card and the month labels are offset from their bars.<br>Logged <code>DEF-012</code> with the screenshot.</div>
+                  <div class="cc-msg cc-user" data-at="6">Fix DEF-012, then re-test it</div>
+                  <div class="cc-msg cc-agent" data-at="6"><b>sdlc-developer-agent</b> · subagent<small>cause: fixed 120% width, stray axis padding</small></div>
+                  <div class="cc-msg cc-tool" data-at="6"><b>Edit</b> accountRevenueChart.css</div>
+                  <div class="cc-msg cc-tool" data-at="7"><b>Bash</b> sf project deploy start -o uat -m LightningComponentBundle:accountRevenueChart<br><span class="hook">pre-bash · uat is a sandbox ✓ allowed</span></div>
+                  <div class="cc-msg cc-tool" data-at="8"><b>sf-browser</b> · browser_navigate · re-test</div>
+                  <div class="cc-msg cc-tool" data-at="9"><b>sf-browser</b> · browser_take_screenshot</div>
+                  <div class="cc-msg cc-pass" data-at="9"><b>✓ PASS</b> re-test of TC-US-04-02-007 · chart inside its card, labels aligned.<br><code>DEF-012</code> → Fixed, citing the passing run.</div>
+                </div>
+                <div class="cc-input"><span data-cc-typing></span><span class="caret"></span></div>
+              </div>
+            </div>
+            <div class="vs-status"><span>⎇ feature/US-04-02</span><span>sf: uat (sandbox)</span><span>sf-sdlc · hooks enforce</span></div>
+          </div>
+
+          <div class="br">
+            <div class="br-tabs"><div class="br-tab"><i></i>Acme Corporation | Account | Salesforce</div><span class="br-auto">Controlled by Playwright MCP</span></div>
+            <div class="br-url"><span><i class="lock"></i>acme--uat.sandbox.lightning.force.com/lightning/r/Account/001Hn00001xYzAb/view</span></div>
+            <div class="br-load"></div>
+            <div class="sf">
+              <div class="sf-nav"><span class="cloud"></span><span class="app">Sales</span><span>Home</span><span>Opportunities</span><span class="on">Accounts</span><span>Contacts</span><span>Reports</span></div>
+              <div class="sf-page">
+                <div class="sf-head"><span class="ico"></span><div><small>Account</small><b class="skel">Acme Corporation</b></div><div class="btns"><i></i><i></i><i></i></div></div>
+                <div class="sf-card">
+                  <h6>Details</h6>
+                  <div class="sf-fields">
+                    <div><small>Account Owner</small><span class="skel">Dana Reyes</span></div>
+                    <div><small>Type</small><span class="skel">Customer - Direct</span></div>
+                    <div><small>Industry</small><span class="skel">Manufacturing</span></div>
+                    <div><small>Annual Revenue</small><span class="skel">$4,200,000</span></div>
+                    <div><small>Phone</small><span class="skel">(415) 555-0142</span></div>
+                    <div><small>Website</small><span class="skel">acme.example.com</span></div>
+                    <div><small>Billing City</small><span class="skel">San Francisco</span></div>
+                    <div><small>Rating</small><span class="skel">Hot</span></div>
+                  </div>
+                </div>
+                <div class="sf-card chart-card">
+                  <h6>Account Revenue Chart</h6>
+                  <div class="chart-tot">Last 6 months · <b>$1.84M</b></div>
+                  <div class="chart"><i style="--h:42%"></i><i style="--h:58%"></i><i style="--h:50%"></i><i style="--h:71%"></i><i style="--h:64%"></i><i style="--h:88%"></i></div>
+                  <div class="chart-x"><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span></div>
+                  <div class="pw-box"><span class="pw-tag bad">✗ overflows card · labels offset</span><span class="pw-tag good">✓ inside card · labels aligned</span></div>
+                </div>
+              </div>
+              <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l15 10-6.5 1.5L16 21l-3 1.3-3.4-7.4L4 19z" fill="#111" stroke="#fff" stroke-width="1.3"/></svg></div>
+            </div>
+          </div>
+          <div class="flash"></div>
+        </div>
+        <p class="demo-cap" data-demo-cap></p>
+      </div>
+
+      <h3>How a UI test runs</h3>
+      <div class="steps">
+        <div class="card step"><div><h3>Claude starts the browser</h3><p>When the QA agent needs a UI case, Claude Code starts <code>sf-browser</code> (<code>@playwright/mcp</code>, pinned, fetched by <code>npx</code>). It uses Google Chrome, or Chrome for Testing when Chrome is missing. Nothing to install beyond Node.js.</p></div></div>
+        <div class="card step"><div><h3>You sign in once</h3><p>The first time, the browser shows the Salesforce login page and you sign in yourself. The session is kept in <code>.sf-sdlc/browser-profile/</code>, so later sessions and laptop restarts reuse it until Salesforce's own timeout. Claude never sees or types a password.</p></div></div>
+        <div class="card step"><div><h3>The agent follows the test case</h3><p>It navigates, reads the page's accessibility snapshot, clicks and types only what the case says, and checks each expected result.</p></div></div>
+        <div class="card step"><div><h3>Evidence and defects</h3><p>One screenshot per verified expected result goes to <code>test-runs/evidence/&lt;TR-id&gt;/</code>. A failure becomes a <code>DEF-nnn</code> with steps, expected and actual results and the screenshot; <code>/sf-sdlc:retest</code> re-runs it after the fix.</p></div></div>
+      </div>
+      <div class="callout warn"><p><strong>Sandboxes only.</strong> <code>sf-sdlc browser url</code> returns an address only for sandbox, scratch and developer orgs, never a session link. The <code>pre-mcp</code> hook asks before the browser opens a production-class or unclassified org, session IDs and OAuth codes are redacted from what the browser returns, and the browser profile is blocked from Claude's file tools.</p></div>
+      <p>Commands: <code>sf-sdlc browser status</code> (ready, and where the sign-in is kept), <code>sf-sdlc browser url --org uat</code>, <code>sf-sdlc browser reset</code> (sign out everywhere). Settings: <code>browser.enabled</code>, <code>browser.browser</code> (<code>chrome</code>, <code>msedge</code>, <code>chromium</code>, <code>firefox</code>, <code>webkit</code>), <code>browser.headless</code>.</p>
+    </section>

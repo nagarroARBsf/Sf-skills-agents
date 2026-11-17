@@ -30,7 +30,7 @@ No separate storage is used. The app serves them under these paths:
 | `/` | `website/src/index.html` with its partials, sections and snippets |
 | `/styles/…`, `/scripts/…` | `website/src/styles/`, `website/src/scripts/` |
 | `/assets/…` | `website/assets/` (diagrams and images) |
-| `/assets/sf_sdlc_tutorial.mp4` | `website/media/sf_sdlc_tutorial.mp4` (about 60 MB; git-ignored) |
+| `/assets/sf_sdlc_tutorial.mp4` | `website/media/sf_sdlc_tutorial.mp4` (about 190 MB, 11 min, v3.1; git-ignored). Site total is about 215 MB of the 250 MB Free-plan limit, and 100 GB/month is about 530 full plays |
 | `/api/lead` | `website/api/lead/` (managed Azure Function, sign-up form) |
 | `/downloads/sf-sdlc-plugin.zip` | zip of `plugins/sf-sdlc/` |
 | `/downloads/claude-folder.zip` | zip of `.claude/` |

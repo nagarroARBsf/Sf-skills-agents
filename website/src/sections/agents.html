@@ -1,0 +1,155 @@
+    <section id="agents" data-tab="action">
+      <div class="eyebrow">In action</div>
+      <h2>The ten agents</h2>
+      <p class="lead">SF-SDLC splits delivery into ten specialist agents, one per lifecycle stage. Each one runs in its own context with only the tools and skills its job needs, writes a <strong>draft</strong>, and stops. A person approves the draft before the next agent picks it up.</p>
+      <p>Agents never call each other. They hand off through files in your repository, linked by one ID chain, so you can stop, review, edit or re-run any stage on its own and still trace a release back to the meeting it came from.</p>
+
+      <h3>How you use an agent</h3>
+      <div class="demo" id="agentDemo">
+        <div class="demo-bar">
+          <span style="font-size:13.5px;color:var(--muted)"><span class="live-dot"></span>Replay: transcript → BRD → approval → stories · VS Code with the Claude Code extension</span>
+          <button type="button" class="demo-play" data-demo-toggle aria-pressed="false">Pause</button>
+        </div>
+        <div class="screen" role="img" aria-label="Animation: in VS Code, a person runs /sf-sdlc:brd on a workshop transcript. Claude hands the work to the BRD agent, which reads the inputs and writes a draft BRD with traceable requirement IDs, then stops. The person fills in the approval record, then runs /sf-sdlc:stories; the Jira story agent checks the approval and writes a draft backlog and Jira import file.">
+          <div class="vs">
+            <div class="vs-title">acme-salesforce — Visual Studio Code</div>
+            <div class="vs-body">
+              <div class="vs-act"><i class="on"></i><i></i><i></i><i class="cc"></i></div>
+              <div class="vs-side">
+                <h6>EXPLORER</h6>
+                <div>▾ docs/sdlc</div>
+                <div>&nbsp;&nbsp;▾ 00-inputs</div>
+                <div class="sel">&nbsp;&nbsp;&nbsp;&nbsp;workshop-transcript.md</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;email-thread.md</div>
+                <div class="x-new x-brd">&nbsp;&nbsp;▾ 01-brd</div>
+                <div class="x-new x-brd add-file">&nbsp;&nbsp;&nbsp;&nbsp;BRD.md</div>
+                <div class="x-new x-backlog">&nbsp;&nbsp;▾ 02-backlog</div>
+                <div class="x-new x-backlog add-file">&nbsp;&nbsp;&nbsp;&nbsp;backlog.md</div>
+                <div class="x-new x-backlog add-file">&nbsp;&nbsp;&nbsp;&nbsp;jira-import.csv</div>
+                <div>▸ force-app</div>
+                <div>▸ .claude</div>
+              </div>
+              <div class="vs-ed">
+                <div class="ed-pane ed-default">
+                  <span class="tab">workshop-transcript.md</span><br>
+                  <span class="ln">1</span><span class="c">[00:04] Priya (Sales Ops):</span> Reps open five<br>
+                  <span class="ln">2</span>&nbsp;&nbsp;reports to see how an account is trending.<br>
+                  <span class="ln">3</span><span class="c">[00:06] Tom (Sales):</span> I just want revenue<br>
+                  <span class="ln">4</span>&nbsp;&nbsp;for the last six months on the account page.<br>
+                  <span class="ln">5</span><span class="c">[00:09] Priya:</span> And managers only see their<br>
+                  <span class="ln">6</span>&nbsp;&nbsp;team's accounts, same as today.<br>
+                  <span class="ln">7</span><span class="c">[00:12] Tom:</span> Ideally before the Q1 kickoff.<br>
+                  <span class="ln">8</span><span class="c">[00:15] Priya:</span> Which revenue field, though?
+                </div>
+                <div class="ed-pane ed-2">
+                  <span class="tab">BRD.md</span><br>
+                  <span class="ln">1</span><span class="k"># BRD · Account insights</span><br>
+                  <span class="ln">2</span><span class="k">## Approval</span><br>
+                  <span class="ln">3</span>Status: <span class="draft warn">Draft — awaiting review</span><span class="ok" data-type-at="5" data-text="Approved · BA lead · 2026-11-16"></span><br>
+                  <span class="ln">4</span><br>
+                  <span class="ln">5</span><span class="k">## Business requirements</span><br>
+                  <span class="ln">6</span><span class="s">BR-04</span> Sales sees account revenue at a glance <span class="c">(Must)</span><br>
+                  <span class="ln">7</span>&nbsp;&nbsp;<span class="s">FR-04.1</span> Last 6 months of revenue<br>
+                  <span class="ln">8</span>&nbsp;&nbsp;<span class="s">FR-04.2</span> Respect existing record access<br>
+                  <span class="ln">9</span>&nbsp;&nbsp;<span class="c">Source: workshop-transcript.md [00:06]</span><br>
+                  <span class="ln">10</span><span class="k">## Open questions</span><br>
+                  <span class="ln">11</span><span class="s">Q-01</span> Which revenue field is the source of truth?
+                </div>
+              </div>
+              <div class="vs-cc">
+                <div class="vs-cc-head"><span></span>Claude Code</div>
+                <div class="vs-cc-log">
+                  <div class="cc-msg cc-user" data-at="1">/sf-sdlc:brd docs/sdlc/00-inputs/</div>
+                  <div class="cc-msg cc-agent" data-at="1"><b>sdlc-brd-agent</b> · subagent<small>skill: sdlc-brd-generate · tools: Read, Write, Edit, Glob, Grep</small></div>
+                  <div class="cc-msg cc-tool" data-at="2"><b>Read</b> workshop-transcript.md<br><b>Read</b> email-thread.md</div>
+                  <div class="cc-msg cc-tool" data-at="3"><b>Write</b> docs/sdlc/01-brd/BRD.md<br>→ 14 BRs · 31 FRs · 3 open questions</div>
+                  <div class="cc-msg cc-say" data-at="4">Draft BRD ready for review. Fill in the approval record when you're happy; the stories stage waits until you do.</div>
+                  <div class="cc-msg cc-user" data-at="7">/sf-sdlc:stories</div>
+                  <div class="cc-msg cc-agent" data-at="7"><b>sdlc-jira-story-agent</b> · subagent<small>skill: sdlc-jira-story-generate</small></div>
+                  <div class="cc-msg cc-tool" data-at="7"><b>Read</b> BRD.md · approval ✓ Approved</div>
+                  <div class="cc-msg cc-tool" data-at="8"><b>Write</b> 02-backlog/backlog.md, jira-import.csv<br>→ 4 epics · 12 stories with Gherkin criteria</div>
+                  <div class="cc-msg cc-say" data-at="8">Draft backlog ready. Jira issues are created only after you preview them and say yes.</div>
+                </div>
+                <div class="cc-input"><span data-cc-typing></span><span class="caret"></span></div>
+              </div>
+            </div>
+            <div class="vs-status"><span>⎇ main</span><span>sf-sdlc · stage 1 → 2</span><span>hooks enforce</span></div>
+          </div>
+        </div>
+        <p class="demo-cap" data-demo-cap></p>
+      </div>
+
+      <div class="relay" id="agentRelay" aria-label="How a requirement travels through the agents">
+        <div class="demo-bar">
+          <strong style="font-size:14.5px">One requirement, end to end</strong>
+          <button type="button" class="demo-play" data-relay-toggle aria-pressed="false">Pause</button>
+        </div>
+        <div class="relay-track">
+          <div class="relay-step" data-agent="scout"><span class="rs-dot">0</span><span class="rs-id">baseline</span><span class="rs-who">Scout</span></div>
+          <div class="relay-step" data-agent="brd"><span class="rs-dot">1</span><span class="rs-id">BR-04</span><span class="rs-who">BRD</span></div>
+          <div class="relay-step" data-agent="stories"><span class="rs-dot">2</span><span class="rs-id">US-04-02</span><span class="rs-who">Stories</span></div>
+          <div class="relay-step" data-agent="architect"><span class="rs-dot">3</span><span class="rs-id">LLD-US-04-02</span><span class="rs-who">Architect</span></div>
+          <div class="relay-step" data-agent="plan"><span class="rs-dot">4</span><span class="rs-id">plan.md</span><span class="rs-who">Planner</span></div>
+          <div class="relay-step" data-agent="dev"><span class="rs-dot">5</span><span class="rs-id">tasks ✓</span><span class="rs-who">Developer</span></div>
+          <div class="relay-step" data-agent="review"><span class="rs-dot">6</span><span class="rs-id">review.md</span><span class="rs-who">Reviewer</span></div>
+          <div class="relay-step" data-agent="deploy"><span class="rs-dot">7</span><span class="rs-id">DEP-005</span><span class="rs-who">Deployment</span></div>
+          <div class="relay-step" data-agent="qa"><span class="rs-dot">8</span><span class="rs-id">TR · DEF</span><span class="rs-who">QA</span></div>
+          <div class="relay-step" data-agent="release"><span class="rs-dot">10</span><span class="rs-id">REL-1.4.0</span><span class="rs-who">Release</span></div>
+        </div>
+        <div class="relay-gate"><span class="gate-pill" data-relay-pill>Draft written</span><span data-relay-text>The project scout reads the code, git history and org, and records what already exists.</span></div>
+      </div>
+
+      <div class="agent-roster">
+        <article class="card agent-card" data-agent="scout">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><div><h3>Project scout</h3><span class="ag-stage">Stage 0 · Setup &amp; ground</span></div></header>
+          <p>Studies an existing codebase: source, git history, CI files and, through Metadata Grounding, the org itself.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:setup</code> <code>/sf-sdlc:skills</code></dd><dt>Writes</dt><dd>baseline inventory, <code>ontology.yaml</code>, <code>feature-map.md</code>, installed skills</dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="brd">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span><div><h3>BRD agent</h3><span class="ag-stage">Stage 1 · Business analyst</span></div></header>
+          <p>Turns meeting transcripts, notes and emails into a solution-neutral BRD with a Salesforce outline, citing every source.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:brd &lt;files&gt;</code></dd><dt>Writes</dt><dd><code>BRD.md</code> with <code>BR</code> / <code>FR</code> / <code>RULE</code> / <code>NFR</code> IDs</dd><dt>Tools</dt><dd><span class="ag-tag ro">files only</span>no shell, no org</dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="stories">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="10" rx="1.5"/></svg></span><div><h3>Jira story agent</h3><span class="ag-stage">Stage 2 · Product owner</span></div></header>
+          <p>Breaks the approved BRD into epics and INVEST stories with Gherkin acceptance criteria, estimates and dependencies.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:stories</code></dd><dt>Writes</dt><dd>backlog, Jira CSV; <span class="ag-tag yes">after yes</span>Jira issues</dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="architect">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 6.5h4a3 3 0 0 1 3 3V14"/></svg></span><div><h3>Solution architect</h3><span class="ag-stage">Stage 3 · Architecture</span></div></header>
+          <p>Designs the HLD, one LLD per story and ADRs, with draw.io diagrams to Salesforce's standard that mark every component New, Changed or Unchanged.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:architecture</code> <code>/sf-sdlc:diagram</code></dd><dt>Writes</dt><dd><code>HLD.md</code>, <code>LLD-US-*</code>, ADRs, <code>.drawio</code></dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="plan">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg></span><div><h3>Planner</h3><span class="ag-stage">Stage 4 · Spec &amp; plan</span></div></header>
+          <p>Writes the 12-section plan: root cause with file and line, metadata scope, impact, test plan. It never writes code.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:plan</code></dd><dt>Writes</dt><dd><code>specs/&lt;story&gt;/plan.md</code></dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="dev">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/></svg></span><div><h3>Developer</h3><span class="ag-stage">Stage 5 · Build</span></div></header>
+          <p>Implements approved tasks one at a time, tests first: Apex, triggers, LWC, Flows, objects, permission sets.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:implement</code></dd><dt>Writes</dt><dd>source and tests, evidence on each ticked task</dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="review">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><div><h3>Code reviewer</h3><span class="ag-stage">Stage 6 · Review</span></div></header>
+          <p>Checks the change against the spec, security, governor limits and test quality, and runs Code Analyzer. Every finding cites a file and line.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:review</code></dd><dt>Writes</dt><dd><code>review.md</code> verdict</dd><dt>Tools</dt><dd><span class="ag-tag ro">read-only</span>cannot edit what it reviews</dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="deploy">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span><div><h3>Deployment</h3><span class="ag-stage">Stage 7 · Release engineer</span></div></header>
+          <p>Classifies the target org, validates first with the right test level, then quick-deploys the validated job.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:deploy &lt;org&gt;</code> <span class="ag-tag person">person only</span></dd><dt>Writes</dt><dd><code>DEP-nnn.md</code> with a rollback plan</dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="qa">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/></svg></span><div><h3>QA</h3><span class="ag-stage">Stages 5 · 8 · 9 · Test and re-test</span></div></header>
+          <p>Designs test cases, runs Apex and Jest through the CLI and UI cases in a real browser, logs defects and re-tests fixes.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:test-cases</code> <code>/sf-sdlc:test-run</code> <code>/sf-sdlc:retest</code></dd><dt>Writes</dt><dd><code>TC-*</code>, <code>TR-*</code> with screenshots, <code>DEF-nnn</code></dd></dl>
+        </article>
+        <article class="card agent-card" data-agent="release">
+          <header><span class="ag-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span><div><h3>Release manager</h3><span class="ag-stage">Stage 10 · Release</span></div></header>
+          <p>Builds the go/no-go from evidence (traceability, reviews, test runs, open defects, approvals) and writes release notes.</p>
+          <dl><dt>Start</dt><dd><code>/sf-sdlc:release &lt;version&gt;</code> <span class="ag-tag person">person only</span></dd><dt>Writes</dt><dd>readiness, notes; <span class="ag-tag yes">after yes</span>Jira version, Git tag, GitHub release</dd></dl>
+        </article>
+      </div>
+      <div class="callout"><p><strong>Why separate agents?</strong> A fresh context per stage keeps each agent focused and stops one stage's assumptions leaking into the next. Narrow tool lists matter too: the reviewer cannot quietly fix what it is judging, and the BRD agent cannot touch an org. Each agent loads the <code>sdlc-*</code> method skill for its stage plus the Salesforce skills installed in your project.</p></div>
+    </section>

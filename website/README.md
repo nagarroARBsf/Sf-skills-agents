@@ -29,6 +29,7 @@ website/
 │       ├── explorer.js        renders the explorer
 │       ├── ui.js              tabs, copy buttons, theme, mobile menu, scroll spy
 │       ├── agents.js          install section: coding-agent card rail, coming-soon panel; pauses the emblem for reduced motion
+│       ├── showcase.js        "In action" tab: agent relay, hooks player, Playwright and Langfuse replays (styles in showcase.css)
 │       ├── analytics.js       visitor counting (Application Insights, no cookies)
 │       └── lead.js            sign-up dialog, download prompt, corner nudge
 ├── assets/                    images (logos, diagrams; sf-sdlc-emblem.svg is a standalone copy of the animated emblem)

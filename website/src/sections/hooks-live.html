@@ -1,0 +1,50 @@
+    <section id="hooks-live" data-tab="action">
+      <h2>Hooks in action</h2>
+      <p class="lead">Hooks are small Node.js programs that Claude Code runs at fixed points in a session: when it starts, before and after every tool call, and when Claude finishes. They see exactly what the agent is about to do and can allow it, ask you, block it, or add a note the agent must read.</p>
+      <p>Pick a scenario to watch one tool call travel through the hooks. The messages are shortened from the real ones.</p>
+
+      <div class="demo" id="hookDemo">
+        <div class="demo-bar">
+          <div class="demo-chips" role="group" aria-label="Scenario">
+            <button type="button" class="demo-chip" data-scn="start">Session starts</button>
+            <button type="button" class="demo-chip" data-scn="prod">Deploy to production</button>
+            <button type="button" class="demo-chip" data-scn="secret">Hard-coded token</button>
+            <button type="button" class="demo-chip" data-scn="soql">SOQL in a loop</button>
+            <button type="button" class="demo-chip" data-scn="push">Push to main</button>
+            <button type="button" class="demo-chip" data-scn="mcp">Hosted MCP write</button>
+            <button type="button" class="demo-chip" data-scn="fail">Deploy fails</button>
+          </div>
+          <button type="button" class="demo-play" data-hook-toggle aria-pressed="false">Pause</button>
+        </div>
+        <div class="hookplay">
+          <div class="hk-term" aria-live="polite">
+            <div class="hk-head"><i></i><i></i><i></i>&nbsp; Claude Code · sf-sdlc project</div>
+            <div data-hk-log></div>
+          </div>
+          <div class="hk-rail" aria-label="Hook events">
+            <div class="hk-ev" data-ev="SessionStart"><b>SessionStart</b><code>session-start</code><span class="hk-v"></span></div>
+            <div class="hk-ev" data-ev="PreToolUse"><b>PreToolUse</b><code data-ev-handler>pre-bash · pre-write · pre-mcp</code><span class="hk-v"></span></div>
+            <div class="hk-tool" data-ev="tool">the tool runs</div>
+            <div class="hk-ev" data-ev="PostToolUse"><b>PostToolUse</b><code data-ev-handler>post-write · post-bash</code><span class="hk-v"></span></div>
+            <div class="hk-ev" data-ev="PostToolUseFailure"><b>PostToolUseFailure</b><code>bash-failure</code><span class="hk-v"></span></div>
+            <div class="hk-ev" data-ev="Stop"><b>Stop</b><code>stop</code><span class="hk-v"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <h3>What each hook does</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Event</th><th>Handler</th><th>Runs when</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>SessionStart</td><td><code>session-start</code></td><td>A session opens</td><td>Gives Claude the project facts: DX project, config, default org and its class, branch, which artifacts exist, hook mode</td></tr>
+          <tr><td>PreToolUse · Bash</td><td><code>pre-bash</code></td><td>Before any <code>sf</code>, <code>git</code> or <code>sf-sdlc</code> command</td><td>Org guard (classifies the target org), branch guard, commit gate (secrets, then Code Analyzer on staged files)</td></tr>
+          <tr><td>PreToolUse · Write / Edit</td><td><code>pre-write</code></td><td>Before a file is written</td><td>Secret guard: blocks credential files and content that holds tokens or keys</td></tr>
+          <tr><td>PreToolUse · MCP</td><td><code>pre-mcp</code></td><td>Before a Hosted MCP or browser tool</td><td>Asks before a tool that can change the org, and before the browser opens a production-class org</td></tr>
+          <tr><td>PostToolUse · Write / Edit</td><td><code>post-write</code></td><td>After a file is written</td><td>Fast Salesforce source checks (SOQL/DML in loops, sharing, hard-coded IDs, <code>SeeAllData</code>, LWC <code>innerHTML</code>…) fed back to Claude</td></tr>
+          <tr><td>PostToolUse · Bash</td><td><code>post-bash</code></td><td>After a shell command</td><td>Writes org-affecting commands to the audit log <code>.sf-sdlc/audit.jsonl</code></td></tr>
+          <tr><td>PostToolUseFailure · Bash</td><td><code>bash-failure</code></td><td>When an <code>sf</code> command fails</td><td>Audit entry plus a likely cause: row locks, missing dependency, coverage, governor limits, duplicates</td></tr>
+          <tr><td>Stop</td><td><code>stop</code> (and Langfuse)</td><td>Claude finishes a turn</td><td>Evidence gate: no ticked task without evidence (<code>hooks.strictEvidence</code>). Also sends the turn to <a href="#tracing">Langfuse</a> when tracing is on</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><p>The org guard and the secret guard enforce in every mode. The others follow <code>hooks.mode</code>: <code>observe</code> reports what would be blocked, <code>enforce</code> blocks it. A hook that crashes asks you instead of silently allowing. The full list of guards is under <a href="#safety">Guards and hooks</a>.</p></div>
+    </section>
