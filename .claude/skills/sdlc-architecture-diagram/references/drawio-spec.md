@@ -39,6 +39,7 @@ node .claude/bin/sf-sdlc diagram export docs/sdlc/03-architecture/diagrams/lands
 | `cards` | yes | The properties: at most 25 |
 | `connectors` | no | Relationships, integrations or steps between cards |
 | `legend` | no | Extra key rows for footer icons: `[{ "icon": "workflow", "label": "Approval process" }]` |
+| `layout` | no | `columns` (default), `lanes` (process as swimlanes with `step` numbers), `tree` (a hierarchy: role hierarchy, org chart; connectors run parent → child), `stages` (roadmap as a release plan: stages left to right, joined automatically) |
 | `direction` | no | `LR` (default) or `TB` (default for capability maps: one band per group) |
 | `columns` | no | Groups per row before wrapping (LR), or grid columns when there are no groups |
 | `maxPerRow` | no | Cards per row inside a band (TB), default 5 |
@@ -53,9 +54,21 @@ node .claude/bin/sf-sdlc diagram export docs/sdlc/03-architecture/diagrams/lands
 
 `{ "id": "org", "label": "Salesforce org", "subtitle": "Production, Enterprise Edition", "icon": "platform" }`
 
-Rendered as a container card: icon, title, subtitle, rule, child cards. In a **roadmap** each group
-is a time period, in order (`"label": "Q1 2027", "subtitle": "January 1 - March 31"`). In a
-**process** each group is a lane (an actor or system), top to bottom.
+Rendered as a Salesforce container: a white card with a heavier border holding child cards — icon,
+title, subtitle, rule, child cards in even rows. Optional:
+
+| Field | Meaning |
+|---|---|
+| `attributes` | Lines of text under the title, before the child cards ("Shared customer data, single sign-on") |
+| `footer` | A full-width grey band at the bottom naming the shared capability ("Platform services", "Collect and unify customer data") |
+| `footerIcons` | A centred row of icons under the footer band; explain them in `legend` |
+| `boundary` | Draws the container dash-dot and names it in the key ("Einstein Trust Layer", "Org boundary", "Shield-encrypted") |
+| `columns` | Child cards per row inside this container |
+
+In a **roadmap** each group is a time period, in order (`"label": "Q1: January 1 - March 31"`). In a
+**process** each group is a participant (a person, a Salesforce product, an external system) drawn as
+a tall column with its cards inside, as in Salesforce's process flows; with `layout: lanes` it is a
+horizontal swimlane instead.
 
 ## Cards
 
@@ -89,7 +102,12 @@ is a time period, in order (`"label": "Q1 2027", "subtitle": "January 1 - March 
 | `data` | Dotted teal arrow, animated | ETL, batch jobs, nightly loads, Bulk API, file transfers |
 | `user` | Grey arrow, open head | A person or channel using a system |
 | `flow` | Solid navy arrow | The next step in a process |
+| `publish` | Solid dark arrow | Publish to an event bus or queue (Salesforce's Claim Check and Queuing diagrams) |
+| `subscribe` | Dashed dark arrow, animated | Subscriber receives from the bus or queue |
+| `native` | Solid navy, arrows both ends | Native connection between Salesforce products or a packaged connector (landscapes) |
+| `custom` | Dashed navy, arrows both ends, animated | Custom integration built for the project (landscapes) |
 | `dependency` | Thin grey arrow | Component uses or calls another (solution diagrams) |
+| `hierarchy` | Grey line, no arrow | Parent to child in a tree (default for `layout: tree`) |
 | `lookup` | Crow's foot + circle → circle + bar | Data model: lookup, parent optional |
 | `lookup-required` | Crow's foot + circle → double bar | Data model: lookup, parent required |
 | `master-detail` | Crow's foot + circle → diamond on the master | Data model: master-detail |
@@ -133,8 +151,10 @@ connected apps `integration`, reports and dashboards `analytics`, agents `bots`.
 | Capability map | One per business domain (bands, top to bottom) | Capabilities in business words, `icon: false` or a product icon; status per capability | None |
 | System landscape | Columns: external systems, integration hub, Salesforce org (or users / org / external) | Systems and clouds; `external: true` for non-Salesforce | `sync`, `async`, `data`, `user`; pills optional |
 | Solution architecture | Layers: Experience, Automation and logic, Data, Security, Integration, External | Components by API name with `metadataType`; changed fields as attributes | `dependency` plus `sync`/`async`/`data` with pills saying what flows |
-| Roadmap | Periods in order; plus `lanes` | Capabilities, components or features; `span`; "Depends on: …" attribute | None |
-| Process | Lanes: actors and systems | Steps with `step` numbers | `flow`, `sync`, `async`; numbered automatically |
+| Roadmap | Periods in order; plus `lanes` | Capabilities, components or features with `icon: false`; attributes "Start date", "End date", "Dependencies"; `span`; value tags as `footerIcons` explained in `legend` | None |
+| Process | Participants as columns (cards inside); `layout: lanes` for swimlanes with `step` | Steps or components | `flow`, `sync` (request and response as two connectors), `publish`/`subscribe`, `async`; numbered automatically |
+| Role hierarchy | None (`layout: tree`) | Roles with `icon: employees` (or `partners` for external users) | Parent → child (`hierarchy`) |
+| Release plan | None (`layout: stages`) | Stages: people as attributes, environment as `footer`, deliverables as `footerIcons` | Added automatically, stage to stage |
 | Data model | None (grid; `columns` sets the width) | Objects: `title` logical name, `subtitle` API name, `#`/`•` attributes, `entity` | `lookup`, `lookup-required`, `master-detail`, `many-to-many`; pill = relationship name |
 
 ## Layout behaviour worth knowing

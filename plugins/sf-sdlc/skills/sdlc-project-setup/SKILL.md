@@ -1,6 +1,6 @@
 ---
 name: sdlc-project-setup
-description: "Set a Salesforce project up for the SDLC kit in one run, for technical and non-technical users: run sf-sdlc setup first (creates the project files, git repository, .env and .env.sample, explores the code, installs the mandatory core skills plus those the code needs, checks tools, the Salesforce org, hosted MCP servers, UI-test browser, Jira and GitHub), show a checklist of what is done, what Claude can do on a yes and what needs the person with the exact link, ask only what cannot be detected, then install tools, sign in and fill .claude/sf-sdlc.json. Never asks which skills or MCP servers to use; never reads a credential. TRIGGER when: user asks to set up, onboard or configure a project, connect Salesforce, Jira or GitHub, which skills or MCP servers to install, what a config key means, reports a failing doctor check, or runs /sf-sdlc:setup, /sf-sdlc:doctor or /sf-sdlc:skills. DO NOT TRIGGER when: the user wants architecture work (use sdlc-solution-architecture-generate) or a deployment (use sdlc-deploy-release)."
+description: "Set a Salesforce project up for the SDLC kit in one run, for technical and non-technical users: run sf-sdlc setup first (creates the project files, git repository, .env and .env.sample, explores the code, installs the mandatory core skills plus those the code needs, checks tools, the Salesforce org, hosted MCP servers, UI-test browser, Jira and GitHub), show a checklist of what is done, what Claude can do on a yes and what needs the person with the exact link, ask only what cannot be detected, then install tools, sign in and fill .claude/sf-sdlc.json. Never asks which skills or MCP servers to use; never reads a credential. TRIGGER when: user asks to set up, onboard or configure a project, connect Salesforce, Jira or GitHub, which skills or MCP servers to install, what a config key means, reports a failing doctor check, or runs /sf-sdlc:setup, /sf-sdlc:doctor or /sf-sdlc:skills. DO NOT TRIGGER when: the user wants architecture work (use sdlc-architecture-diagram) or a deployment (use sdlc-deploy-release)."
 metadata:
   version: "3.0"
   author: "Nagarro Salesforce CoE"
@@ -166,7 +166,7 @@ can mark components New, Changed, Unchanged or Removed:
 1. `sf-sdlc inventory --json`.
 2. Write `docs/sdlc/03-architecture/baseline/inventory.md` (root from `paths.docs`) using the
    baseline template in
-   `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-solution-architecture-generate/references/baseline-template.md`:
+   `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-architecture-diagram/references/design/baseline-template.md`:
    classification, baseline commit, counts by metadata type, conventions found while reading the source (trigger
    framework, naming prefix, test data factory, logging), automation per object, gaps.
 3. State what the source tree cannot show (components created in Setup and never retrieved)

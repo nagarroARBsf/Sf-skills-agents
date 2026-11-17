@@ -1,6 +1,6 @@
 ---
 description: Draw a Salesforce architecture diagram to Salesforce's standard, showing new, changed and unchanged components
-argument-hint: "[landscape | solution | data-model | process | capability | roadmap] [story IDs or scope]"
+argument-hint: "[landscape | solution | data-model | process | capability | roadmap | release-plan | role-hierarchy] [story IDs, Jira key or scope]"
 ---
 <!-- Generated from .claude/commands/sdlc-diagram.md by scripts/build-claude-plugin.py. Edit the source in .claude/ and re-run the script; changes here are overwritten. -->
 Use the **sf-sdlc:sdlc-solution-architect-agent** subagent to draw the diagram.

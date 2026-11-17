@@ -60,6 +60,11 @@ const KINDS = {
   user: { label: 'User interaction', color: '#444444', width: 2, end: 'open' },
   flow: { label: 'Next step', color: '#032d60', width: 2, end: 'block' },
   dependency: { label: 'Uses or depends on', color: '#5c5c5c', width: 1.5, end: 'block' },
+  publish: { label: 'Publish', color: '#2e2e2e', width: 2, end: 'block' },
+  subscribe: { label: 'Subscribe', color: '#2e2e2e', width: 2, dash: '8 6', end: 'block', animate: true },
+  native: { label: 'Native connection', color: '#032d60', width: 2, end: 'block', both: true },
+  custom: { label: 'Custom integration', color: '#032d60', width: 2, dash: '8 6', end: 'block', both: true, animate: true },
+  hierarchy: { label: 'Reports to', color: '#5c5c5c', width: 1.5, end: 'none' },
   lookup: { label: 'Lookup (optional parent)', color: '#181818', width: 1.5, start: 'ERzeroToMany', end: 'ERzeroToOne', er: true },
   'lookup-required': { label: 'Lookup (required parent)', color: '#181818', width: 1.5, start: 'ERzeroToMany', end: 'ERmandOne', er: true },
   'master-detail': { label: 'Master-detail (diamond on the master)', color: '#181818', width: 1.5, start: 'ERzeroToMany', end: 'diamond', er: true },
@@ -124,6 +129,10 @@ const PAD = 20; // inside a container
 const GROUP_TOP = 66; // container title, subtitle and rule
 const ICON = 40; // card icon
 const MAX_CARDS = 25;
+// Layouts beyond each type's default: process `lanes` (swimlanes; default is participant columns as in
+// Salesforce's gallery), `tree` (hierarchies such as a role hierarchy), roadmap `stages` (release plan).
+const LAYOUTS = ['columns', 'lanes', 'tree', 'stages'];
+const BOUNDARY_DASH = '12 4 2 4'; // dash-dot: a boundary such as a trust layer, explained in the key
 
 // ------------------------------------------------------------------ helpers
 
@@ -180,6 +189,9 @@ function validateSpec(spec) {
   if (!spec.description) errors.push('description is required (one sentence: the message the diagram gives)');
   if (spec.direction && !['LR', 'TB'].includes(spec.direction)) errors.push('direction must be LR or TB');
   if (spec.cloud && !CLOUDS[spec.cloud]) errors.push(`cloud must be one of: ${Object.keys(CLOUDS).join(', ')}`);
+  if (spec.layout && !LAYOUTS.includes(spec.layout)) errors.push(`layout must be one of: ${LAYOUTS.join(', ')}`);
+  if (spec.layout === 'lanes' && type !== 'process') errors.push('layout "lanes" is for process diagrams');
+  if (spec.layout === 'stages' && type !== 'roadmap') errors.push('layout "stages" is for roadmaps (release plans)');
   const groups = Array.isArray(spec.groups) ? spec.groups : [];
   const lanes = Array.isArray(spec.lanes) ? spec.lanes : [];
   const cards = Array.isArray(spec.cards) ? spec.cards : [];
@@ -191,10 +203,13 @@ function validateSpec(spec) {
     else if (gIds.has(g.id)) errors.push(`duplicate group id: ${g.id}`);
     gIds.add(g.id);
     if (g.icon && !SF_ICONS[g.icon]) errors.push(`group ${g.id}: unknown icon "${g.icon}"`);
+    for (const f of g.footerIcons || []) if (!SF_ICONS[f]) errors.push(`group ${g.id}: unknown footer icon "${f}"`);
+    if (g.attributes && !Array.isArray(g.attributes)) errors.push(`group ${g.id}: attributes must be a list of strings`);
   }
+  if (spec.layout === 'tree' && groups.length) errors.push('a tree layout takes no groups: connectors from parent to child define it');
   const lIds = new Set(lanes.map((l) => l.id));
   for (const l of spec.legend || []) if (!SF_ICONS[l.icon]) errors.push(`legend: unknown icon "${l.icon}"`);
-  if (type === 'roadmap' && !groups.length) errors.push('a roadmap needs groups: one per time period (quarter, month or release), in order');
+  if (type === 'roadmap' && spec.layout !== 'stages' && !groups.length) errors.push('a roadmap needs groups: one per time period (quarter, month or release), in order');
   const cIds = new Set();
   for (const c of cards) {
     if (!c.id) { errors.push('every card needs an id'); continue; }
@@ -218,7 +233,7 @@ function validateSpec(spec) {
     if (e.kind && !KINDS[e.kind]) errors.push(`${where}: kind must be one of ${Object.keys(KINDS).join(', ')}`);
     if (e.status && !STATUS[e.status]) errors.push(`${where}: status must be new, changed, unchanged or removed`);
   });
-  if (type === 'roadmap' && connectors.length) errors.push('roadmaps have no connectors: write dependencies on the card as an attribute ("Depends on: ...")');
+  if (type === 'roadmap' && spec.layout !== 'stages' && connectors.length) errors.push('roadmaps have no connectors: write dependencies on the card as an attribute ("Depends on: ...")');
   if (type === 'capability-map' && connectors.length) warnings.push('capability maps normally have no connectors');
   if (type === 'data-model' && connectors.some((e) => KINDS[e.kind] && !KINDS[e.kind].er)) warnings.push('data model connectors are normally lookup, lookup-required, master-detail or many-to-many');
   if (type !== 'data-model' && connectors.some((e) => KINDS[e.kind] && KINDS[e.kind].er)) warnings.push('relationship connectors belong in data model diagrams');
@@ -366,25 +381,28 @@ function defaultCardWidth(type) {
 // Positions every group and card (absolute boxes; containers translate them to relative later).
 function layout(spec) {
   const type = spec.type;
-  if (type === 'roadmap') return layoutRoadmap(spec);
+  if (type === 'roadmap' && spec.layout !== 'stages') return layoutRoadmap(spec);
+  if (spec.layout === 'tree') return layoutTree(spec);
   const dir = spec.direction || (type === 'capability-map' ? 'TB' : 'LR');
   const cardW = spec.cardWidth || defaultCardWidth(type);
   const cards = spec.cards;
   const models = new Map(cards.map((c) => [c.id, cardModel(c, spec, cardW)]));
+  // Release-plan stages read as one row of equal cards.
+  if (spec.layout === 'stages') { const hMax = Math.max(...cards.map((c) => models.get(c.id).h)); cards.forEach((c) => { const m = models.get(c.id); const d = hMax - m.h; m.h = hMax; m.parts.forEach((p) => { if (p.id === 'footer' || p.id === 'status' || p.id === 'footer-text' || p.id.startsWith('footer-icon')) p.y += d; }); }); }
   const size = new Map(cards.map((c) => [c.id, { w: cardW, h: models.get(c.id).h }]));
   let groups = Array.isArray(spec.groups) && spec.groups.length ? spec.groups.map((g) => ({ ...g })) : null;
   const implicit = !groups;
   const owner = new Map();
   if (implicit) {
     // No groups: a grid of invisible columns.
-    const cols = spec.columns || Math.min(4, Math.max(1, Math.ceil(Math.sqrt(cards.length))));
+    const cols = spec.layout === 'stages' ? cards.length : (spec.columns || Math.min(4, Math.max(1, Math.ceil(Math.sqrt(cards.length)))));
     const perCol = Math.ceil(cards.length / cols);
     groups = Array.from({ length: cols }, (_, i) => ({ id: `__col${i}`, label: '', hidden: true }));
     cards.forEach((c, i) => owner.set(c.id, `__col${Math.floor(i / perCol)}`));
   } else cards.forEach((c) => owner.set(c.id, c.group));
   const members = new Map(groups.map((g) => [g.id, orderInGroup(cards.filter((c) => owner.get(c.id) === g.id), spec)]));
   const boxes = new Map();
-  if (type === 'process') return { ...layoutLanes(spec, groups, members, size, cardW, boxes), models };
+  if (type === 'process' && spec.layout === 'lanes') return { ...layoutLanes(spec, groups, members, size, cardW, boxes), models };
 
   const gapIn = GAP_X * 0.5;
   const inner = new Map();
@@ -394,11 +412,12 @@ function layout(spec) {
     const rows = [];
     list.forEach((c, i) => { const k = Math.floor(i / cols); (rows[k] = rows[k] || []).push(c); });
     const rowH = rows.map((row) => Math.max(...row.map((c) => size.get(c.id).h)));
-    const top = g.hidden ? 0 : GROUP_TOP;
     const pad = g.hidden ? 0 : PAD;
-    const w = cols * cardW + (cols - 1) * gapIn + 2 * pad;
-    const h = top + rowH.reduce((a, b) => a + b, 0) + Math.max(0, rows.length - 1) * GAP_Y + pad;
-    inner.set(g.id, { rows, rowH, w: Math.max(w, g.hidden ? 0 : 220), h: Math.max(h, g.hidden ? 0 : 120), top });
+    const w0 = cols * cardW + (cols - 1) * gapIn + 2 * pad;
+    const ga = groupExtras(g, Math.max(w0, 220));
+    const top = g.hidden ? 0 : GROUP_TOP + ga.attrH;
+    const h = top + rowH.reduce((a, b) => a + b, 0) + Math.max(0, rows.length - 1) * GAP_Y + pad + ga.footH;
+    inner.set(g.id, { rows, rowH, w: Math.max(w0, g.hidden ? 0 : 220, ga.minW), h: Math.max(h, g.hidden ? 0 : 120), top });
   }
   const perRow = dir === 'TB' ? 1 : (implicit ? groups.length : (spec.columns || groups.length));
   const placed = [];
@@ -414,7 +433,7 @@ function layout(spec) {
       const inn = inner.get(g.id);
       const w = dir === 'TB' ? fullW : colW[j];
       const h = dir === 'TB' ? inn.h : rowH;
-      boxes.set(g.id, { x, y, w, h, group: true, hidden: g.hidden });
+      boxes.set(g.id, { x, y, w, h, group: true, hidden: g.hidden, footH: groupExtras(g, w).footH });
       let cy = y + inn.top;
       inn.rows.forEach((cardsInRow, ri) => {
         const span = cardsInRow.length * cardW + (cardsInRow.length - 1) * gapIn;
@@ -430,6 +449,45 @@ function layout(spec) {
     y += Math.max(...row.map((g) => boxes.get(g.id).h)) + GAP_Y + 8;
   }
   return { boxes, groups, models };
+}
+
+// Container extras (Salesforce containers are cards too): an attribute list under the title, a grey
+// footer band with a capability name, and a row of footer icons under it.
+function groupExtras(g, w) {
+  const attrs = g.attributes || [];
+  const attrH = attrs.length ? 6 + attrs.reduce((n, a) => n + lines(a, w - 60, 7), 0) * 17 : 0;
+  const icons = (g.footerIcons || []).length;
+  const footH = (g.footer || icons ? 10 + 30 : 0) + (icons ? 44 : 0);
+  return { attrH, footH, minW: icons ? icons * 36 + 60 : 0 };
+}
+
+// Trees (a role hierarchy, an org chart): parents above children, joined from bottom centre to top
+// centre so siblings share one bus line. Connectors run from parent to child.
+function layoutTree(spec) {
+  const cardW = spec.cardWidth || 240;
+  const cards = spec.cards;
+  const models = new Map(cards.map((c) => [c.id, cardModel(c, spec, cardW)]));
+  const kids = new Map(cards.map((c) => [c.id, []]));
+  const hasParent = new Set();
+  for (const e of spec.connectors) if (kids.has(e.from) && kids.has(e.to) && !hasParent.has(e.to)) { kids.get(e.from).push(e.to); hasParent.add(e.to); }
+  const roots = cards.filter((c) => !hasParent.has(c.id)).map((c) => c.id);
+  const rowH = Math.max(...cards.map((c) => models.get(c.id).h)) + 70;
+  const GAP = 40;
+  const boxes = new Map();
+  let next = 0;
+  const seen = new Set();
+  const place = (id, depth) => {
+    if (seen.has(id)) return null;
+    seen.add(id);
+    const ch = kids.get(id).map((k) => place(k, depth + 1)).filter((x) => x !== null);
+    let x;
+    if (!ch.length) { x = next; next += cardW + GAP; } else x = (ch[0] + ch[ch.length - 1]) / 2;
+    boxes.set(id, { x, y: depth * rowH, w: cardW, h: models.get(id).h, parent: null });
+    return x;
+  };
+  for (const r0 of roots) place(r0, 0);
+  for (const c of cards) if (!seen.has(c.id)) place(c.id, 0); // cycles
+  return { boxes, groups: [], models, tree: true };
 }
 
 // Process diagrams: one horizontal lane per actor or system; numbered steps advance left to right.
@@ -519,6 +577,7 @@ function layoutRoadmap(spec) {
 // each its own channel in the corridor, and sends same-column connectors that would cross a card
 // round the column's right side.
 function ports(spec, boxes, ox = 0, oy = 0) {
+  if (spec.layout === 'tree') return spec.connectors.map(() => ({ exit: { x: 0.5, y: 1 }, entry: { x: 0.5, y: 0 } }));
   const ends = [];
   const center = (b) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
   const cardBoxes = spec.cards.map((c) => boxes.get(c.id));
@@ -636,8 +695,9 @@ function corridorWidth(spec) {
 
 // ------------------------------------------------------------------ connectors
 
-function defaultKind(type) {
-  if (type === 'process') return 'flow';
+function defaultKind(type, layout) {
+  if (layout === 'tree') return 'hierarchy';
+  if (type === 'process' || layout === 'stages') return 'flow';
   if (type === 'data-model') return 'lookup';
   if (type === 'system-landscape') return 'sync';
   return 'dependency';
@@ -664,7 +724,7 @@ function edgeStyle(kind, status, opts = {}) {
     dashed: removed || k.dash ? 1 : 0, dashPattern: removed ? STATUS.removed.dash : k.dash,
     flowAnimation: anim ? 1 : undefined,
     endArrow: k.end, endFill: k.er ? 0 : 1, endSize: k.er ? 12 : 8,
-    startArrow: opts.both ? k.end : (k.start || 'none'), startFill: opts.both ? 1 : 0, startSize: k.er ? 12 : 8,
+    startArrow: opts.both || k.both ? k.end : (k.start || 'none'), startFill: opts.both || k.both ? 1 : 0, startSize: k.er ? 12 : 8,
     labelBackgroundColor: 'none', fontSize: 11,
     sfRole: 'connector', sfKind: kind, sfStatus: status,
   });
@@ -686,6 +746,10 @@ function prepare(input) {
   spec.cards = spec.cards || [];
   spec.connectors = spec.connectors || [];
   spec.cards.forEach((c) => { c.status = c.status || 'unchanged'; });
+  // A release plan: stages left to right, each leading to the next.
+  if (spec.layout === 'stages' && !spec.connectors.length) {
+    spec.connectors = spec.cards.slice(1).map((c, i) => ({ from: spec.cards[i].id, to: c.id, kind: 'flow' }));
+  }
   return spec;
 }
 
@@ -700,8 +764,10 @@ function keySections(spec) {
   } else if (spec.cards.some((c) => c.external)) {
     sections.push([{ kind: 'system', external: false, label: 'Salesforce system' }, { kind: 'system', external: true, label: 'External system' }]);
   }
-  const kinds = [...new Set(spec.connectors.map((e) => e.kind || defaultKind(spec.type)))];
+  const kinds = [...new Set(spec.connectors.map((e) => e.kind || defaultKind(spec.type, spec.layout)))];
   if (kinds.length) sections.push(kinds.map((k) => ({ kind: 'line', k, label: KINDS[k].label + (KINDS[k].animate && spec.animate !== false ? ' (animated)' : '') })));
+  const bounds = (spec.groups || []).filter((g) => g.boundary).map((g) => g.boundary);
+  if (bounds.length) sections.push([...new Set(bounds)].map((b) => ({ kind: 'boundary', label: b })));
   if (spec.legend && spec.legend.length) sections.push(spec.legend.map((l) => ({ kind: 'icon', icon: l.icon, label: l.label })));
   // Even rows: wrap long sections into columns of at most five rows.
   const columns = [];
@@ -717,7 +783,7 @@ function toDrawio(input) {
   const { boxes, models } = lay;
   // Highways run below the cards: deepen the containers they pass through.
   const floor = ports(spec, boxes).floorNeeded;
-  if (floor) for (const b of boxes.values()) if (b.group && !b.hidden && b.y + b.h < floor) b.h = floor - b.y;
+  if (floor) for (const b of boxes.values()) if (b.group && !b.hidden && b.y + b.h - (b.footH || 0) < floor) b.h = floor - b.y + (b.footH || 0);
 
   // Key layout.
   const keyCols = keySections(spec);
@@ -775,7 +841,9 @@ function toDrawio(input) {
           vertex(id, '', cardStyle(fake, spec).replace(/shadow=1;|container=1;|sfRole=card;|sfStatus=unchanged;/g, ''), 'key', cx, y + 2, 34, 16);
         } else if (row.kind === 'line') {
           const ly = y + 10;
-          add(`<mxCell id="${id}" value="" style="${esc(edgeStyle(row.k, 'unchanged', { animate: spec.animate, cloud: spec.cloud }))}" edge="1" parent="key"><mxGeometry relative="1" as="geometry"><mxPoint x="${cx}" y="${ly}" as="sourcePoint"/><mxPoint x="${cx + 40}" y="${ly}" as="targetPoint"/></mxGeometry></mxCell>`);
+          add(`<mxCell id="${id}" value="" style="${esc(edgeStyle(row.k, 'unchanged', { animate: false, cloud: spec.cloud, both: KINDS[row.k].both }))}" edge="1" parent="key"><mxGeometry relative="1" as="geometry"><mxPoint x="${cx}" y="${ly}" as="sourcePoint"/><mxPoint x="${cx + 40}" y="${ly}" as="targetPoint"/></mxGeometry></mxCell>`);
+        } else if (row.kind === 'boundary') {
+          vertex(id, '', style({ rounded: 1, arcSize: 6, absoluteArcSize: 1, html: 1, fillColor: C.white, strokeColor: C.ink3, strokeWidth: 2, dashed: 1, dashPattern: BOUNDARY_DASH }), 'key', cx, y + 2, 34, 16);
         } else if (row.kind === 'icon') {
           const ic = circled(row.icon);
           vertex(id, '', iconStyle(ic), 'key', cx + 7, y, ...fit(ic, 20));
@@ -799,12 +867,24 @@ function toDrawio(input) {
       continue;
     }
     const icon = g.icon && SF_ICONS[g.icon] ? circled(g.icon) : null;
-    vertex(gid, '', style({ rounded: 1, arcSize: 18, absoluteArcSize: 1, html: 1, fillColor: C.grey95, strokeColor: C.ink3, strokeWidth: 2.5, container: 1, collapsible: 0, recursiveResize: 0, sfRole: 'group' }), '1', M + b.x, top + b.y, b.w, b.h);
+    // Salesforce containers: a white card with a heavier grey border; a boundary (for example a trust
+    // layer) is drawn dash-dot and named in the key.
+    vertex(gid, '', style({ rounded: 1, arcSize: 18, absoluteArcSize: 1, html: 1, fillColor: C.white, strokeColor: '#6b6b6b', strokeWidth: 2.5, dashed: g.boundary ? 1 : 0, dashPattern: g.boundary ? BOUNDARY_DASH : undefined, shadow: 1, container: 1, collapsible: 0, recursiveResize: 0, sfRole: 'group' }), '1', M + b.x, top + b.y, b.w, b.h);
     const gx = icon ? 14 + 34 + 12 : 18;
     if (icon) vertex(`${gid}-icon`, '', iconStyle(icon), gid, 14, 13, ...fit(icon, 34));
     const sub = g.subtitle ? `<div style="font-size:12px;color:${C.ink3};line-height:16px">${html(g.subtitle)}</div>` : '';
-    vertex(`${gid}-title`, `<div style="font-size:16px;font-weight:bold;color:${C.navy};line-height:21px">${html(g.label || g.id)}</div>${sub}`, style({ ...TEXT, verticalAlign: 'middle' }), gid, gx, 10, b.w - gx - 14, 40);
-    vertex(`${gid}-rule`, '', style({ rounded: 0, html: 1, fillColor: C.grey80, strokeColor: 'none' }), gid, gx, 54, b.w - gx - 2, 3);
+    vertex(`${gid}-title`, `<div style="font-size:16px;font-weight:bold;color:${C.ink};line-height:21px">${html(g.label || g.id)}</div>${sub}`, style({ ...TEXT, verticalAlign: 'middle' }), gid, gx, 10, b.w - gx - 14, 40);
+    vertex(`${gid}-rule`, '', style({ rounded: 0, html: 1, fillColor: C.grey90, strokeColor: 'none' }), gid, gx, 54, b.w - gx - 2, 3);
+    const ga = groupExtras(g, b.w);
+    if ((g.attributes || []).length) vertex(`${gid}-attributes`, g.attributes.map((a) => soft(a)).join('<br>'), style({ ...TEXT, fontSize: 12, fontColor: C.ink2 }), gid, gx, 64, b.w - gx - 20, ga.attrH);
+    const icons = (g.footerIcons || []).filter((f) => SF_ICONS[f]);
+    if (g.footer || icons.length) {
+      const fy = b.h - ga.footH + 10;
+      vertex(`${gid}-footer`, html(g.footer || ''), style({ rounded: 0, html: 1, fillColor: C.grey90, strokeColor: 'none', fontSize: 12, fontColor: C.ink, align: 'center', verticalAlign: 'middle', sfRole: 'footer' }), gid, 1.5, fy, b.w - 3, 30);
+      const sz = 30;
+      let fx = (b.w - (icons.length * sz + (icons.length - 1) * 8)) / 2;
+      icons.forEach((f, i) => { const ic = circled(f); vertex(`${gid}-footer-icon-${i + 1}`, '', iconStyle(ic), gid, fx, fy + 38, ...fit(ic, sz)); fx += sz + 8; });
+    }
   }
 
   // Cards.
@@ -820,7 +900,7 @@ function toDrawio(input) {
   // Connectors (process steps are numbered).
   const pin = ports(spec, boxes, M, top);
   spec.connectors.forEach((e, i) => {
-    const kind = e.kind || defaultKind(spec.type);
+    const kind = e.kind || defaultKind(spec.type, spec.layout);
     const status = e.status || edgeStatus(spec, e);
     const p = pin[i];
     const extra = p.exit && p.entry ? `exitX=${p.exit.x};exitY=${p.exit.y};exitDx=0;exitDy=0;entryX=${p.entry.x};entryY=${p.entry.y};entryDx=0;entryDy=0;` : '';

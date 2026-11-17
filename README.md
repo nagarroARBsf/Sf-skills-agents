@@ -11,7 +11,7 @@ deployment → QA testing → re-test → release → observe.**
 |---|---|
 | 10 agents | BRD, Jira stories, solution architect, planner, developer, code reviewer, QA, deployment, release manager, project scout |
 | 22 commands | One per lifecycle step, each stopping for human review |
-| 11 SDLC skills | The method, templates and checklists behind each step |
+| 10 SDLC skills | The method, templates and checklists behind each step |
 | 177 Salesforce and diagram skills | A library; setup installs only the ones your project needs |
 | Hosted MCP servers | Salesforce's Metadata Grounding and Metadata Experts servers (Headless 360 and Data 360 optional), signed in through your `sf` CLI login: no client ID, secret or token to store |
 | Guard hooks | Production-org guard, secret guard, branch guard, commit gate, write-time source checks, failure triage, audit log |
@@ -343,8 +343,8 @@ never overwrites a skill you edited. Starter sets: `--profile developer`, `admin
   near cards, so the agent is told to look at the PNG and split or reorder. draw.io's Salesforce icon
   library has no Agentforce, Data Cloud, MuleSoft, Slack or Tableau icons; the nearest generic icon
   is used. Animated connectors move only in draw.io and SVG, not in PNG or PDF.
-- **Nine Salesforce reference diagrams ship as picture references** in the architecture-diagram
-  skill. Salesforce publishes them without a stated licence; they are included unmodified with
+- **Salesforce's 25 reference diagrams (28 images) ship as picture references** in the
+  architecture-diagram skill. Salesforce publishes them without a stated licence; they are included unmodified with
   attribution in `NOTICE`, for the agent to study, not to paste into client documents.
 - **`drawio-skill` is vendored as published** (MIT). Its frontmatter sets `disable-model-invocation`,
   so a person starts it with `/drawio-skill`; agents read its files and run its scripts. Its scripts

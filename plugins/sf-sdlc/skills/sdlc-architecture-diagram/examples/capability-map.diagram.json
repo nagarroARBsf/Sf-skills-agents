@@ -1,27 +1,33 @@
 {
   "type": "capability-map",
-  "title": "Sales and partner capabilities, release 1.2",
-  "description": "Which business capabilities release 1.2 adds, improves or retires, grouped by business domain.",
+  "title": "Sales and partner capabilities",
+  "description": "Which business capabilities release 1.2 adds, improves or retires, from business drivers down to the platform.",
   "scope": "Release 1.2",
   "version": "1.2",
   "groups": [
+    { "id": "drivers", "label": "Business drivers" },
     { "id": "sales", "label": "Sales management", "icon": "sales" },
     { "id": "partner", "label": "Partner management", "icon": "partners" },
-    { "id": "service", "label": "Customer service", "icon": "service" },
-    { "id": "insight", "label": "Insight and reporting", "icon": "analytics" }
+    { "id": "platform", "label": "Salesforce platform", "icon": "platform", "attributes": ["Shared customer data, single sign-on, standard processes"], "footer": "Platform services", "footerIcons": ["workflow", "analytics", "data", "privacy", "bots"] }
   ],
   "cards": [
-    { "id": "pipeline", "title": "Pipeline management", "group": "sales", "status": "unchanged", "icon": false },
-    { "id": "dealreview", "title": "Deal review", "subtitle": "Discount approval moves into the deal review", "group": "sales", "status": "changed", "story": "BR-02", "icon": false },
-    { "id": "dealhealth", "title": "Deal health insight", "subtitle": "Score and risk flags on every open deal", "group": "sales", "status": "new", "story": "BR-04", "icon": false },
-    { "id": "forecast", "title": "Forecasting", "group": "sales", "status": "unchanged", "icon": false },
-    { "id": "onboard", "title": "Partner onboarding", "group": "partner", "status": "unchanged", "icon": false },
-    { "id": "dealreg", "title": "Deal registration", "subtitle": "Partners register deals on the portal", "group": "partner", "status": "new", "story": "BR-06", "icon": false },
-    { "id": "mdf", "title": "Fund requests by email", "subtitle": "Replaced by deal registration", "group": "partner", "status": "removed", "story": "BR-06", "icon": false },
-    { "id": "cases", "title": "Case management", "group": "service", "status": "unchanged", "icon": false },
-    { "id": "escalation", "title": "Key account escalation", "subtitle": "Escalations see deal health", "group": "service", "status": "changed", "story": "BR-05", "icon": false },
-    { "id": "pipereport", "title": "Pipeline reporting", "group": "insight", "status": "unchanged", "icon": false },
-    { "id": "healthdash", "title": "Deal health dashboard", "group": "insight", "status": "new", "story": "BR-04", "icon": false }
+    { "id": "d1", "title": "Revenue growth", "group": "drivers", "icon": false, "status": "unchanged" },
+    { "id": "d2", "title": "Faster deal approval", "group": "drivers", "icon": false, "status": "new", "story": "BR-02" },
+    { "id": "d3", "title": "Partner channel growth", "group": "drivers", "icon": false, "status": "unchanged" },
+    { "id": "pipeline", "title": "Pipeline management", "group": "sales", "icon": false, "attributes": ["Opportunities", "Forecasting"], "status": "unchanged" },
+    { "id": "dealreview", "title": "Deal review", "group": "sales", "icon": false, "attributes": ["Discount approval in the review"], "status": "changed", "story": "BR-02" },
+    { "id": "dealhealth", "title": "Deal health insight", "group": "sales", "icon": false, "attributes": ["Score and risk flags", "Health dashboard"], "status": "new", "story": "BR-04" },
+    { "id": "onboard", "title": "Partner onboarding", "group": "partner", "icon": false, "status": "unchanged" },
+    { "id": "dealreg", "title": "Deal registration", "group": "partner", "icon": false, "attributes": ["Partners register deals on the portal"], "status": "new", "story": "BR-06" },
+    { "id": "mdf", "title": "Fund requests by email", "group": "partner", "icon": false, "attributes": ["Replaced by deal registration"], "status": "removed", "story": "BR-06" },
+    { "id": "sc", "title": "Sales Cloud", "icon": "sales", "group": "platform", "status": "unchanged" },
+    { "id": "ec", "title": "Experience Cloud", "icon": "web", "group": "platform", "status": "changed", "story": "BR-06" }
   ],
-  "connectors": []
+  "legend": [
+    { "icon": "workflow", "label": "Automation" },
+    { "icon": "analytics", "label": "Analytics" },
+    { "icon": "data", "label": "Data" },
+    { "icon": "privacy", "label": "Security" },
+    { "icon": "bots", "label": "Agents" }
+  ]
 }

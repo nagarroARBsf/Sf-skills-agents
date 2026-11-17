@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 This is **not a Salesforce project** — it is the *kit that gets installed into* Salesforce projects,
-for Claude Code. It ships 10 SDLC agents, 22 commands, 11 always-available `sdlc-*` skills, a
+for Claude Code. It ships 10 SDLC agents, 22 commands, 10 always-available `sdlc-*` skills, a
 177-skill on-demand library, guard hooks, the `sf-sdlc` CLI, output styles and workflows, in two
 forms:
 
@@ -172,7 +172,7 @@ update. `.claude-plugin/marketplace.json` carries a `renames` entry from the old
   into `.claude/skill-library/drawio-skill/` at the commit named in `THIRD_PARTY_SKILLS` in the build
   script. **Do not hand-edit**; to update, replace the folder from upstream and change the commit
   there and in `NOTICE`. It is in the core set (every project) and needs Python 3.
-- **11 Nagarro SDLC** skills (`sdlc-*`), edited in place in `.claude/skills/`.
+- **10 Nagarro SDLC** skills (`sdlc-*`), edited in place in `.claude/skills/`.
 
 All technical skills live in `skill-library/`; only `sdlc-*` skills are in `skills/` (a test
 enforces this). Which library skills a project gets is decided by

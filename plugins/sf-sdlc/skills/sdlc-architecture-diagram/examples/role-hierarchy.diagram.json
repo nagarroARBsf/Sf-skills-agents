@@ -1,0 +1,26 @@
+{
+  "type": "system-landscape",
+  "layout": "tree",
+  "title": "Sales role hierarchy",
+  "description": "Which roles see whose deals: the role hierarchy for deal health record access after US-06-02.",
+  "scope": "US-06-02",
+  "cards": [
+    { "id": "ceo", "title": "CEO", "icon": "employees", "status": "unchanged" },
+    { "id": "vp", "title": "VP Sales", "icon": "employees", "status": "unchanged" },
+    { "id": "east", "title": "Regional Manager East", "icon": "employees", "status": "unchanged" },
+    { "id": "west", "title": "Regional Manager West", "icon": "employees", "status": "unchanged" },
+    { "id": "pm", "title": "Partner Manager", "icon": "partners", "status": "new", "story": "US-06-02" },
+    { "id": "repe", "title": "Sales Rep East", "icon": "employees", "status": "unchanged" },
+    { "id": "repw", "title": "Sales Rep West", "icon": "employees", "status": "unchanged" },
+    { "id": "pu", "title": "Partner User", "subtitle": "Experience Cloud", "icon": "partners", "external": true, "status": "new", "story": "US-06-02" }
+  ],
+  "connectors": [
+    { "from": "ceo", "to": "vp" },
+    { "from": "vp", "to": "east" },
+    { "from": "vp", "to": "west" },
+    { "from": "vp", "to": "pm" },
+    { "from": "east", "to": "repe" },
+    { "from": "west", "to": "repw" },
+    { "from": "pm", "to": "pu" }
+  ]
+}

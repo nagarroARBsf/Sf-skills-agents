@@ -1,33 +1,33 @@
 {
   "type": "system-landscape",
   "title": "Deal health system landscape",
-  "description": "Which systems take part in deal health and what flows between them after release 1.2.",
+  "description": "Which systems take part in deal health and how they connect after release 1.2.",
   "author": "Acme Corp",
   "scope": "Release 1.2",
   "groups": [
     { "id": "ext", "label": "Enterprise systems", "subtitle": "Owned by Acme IT" },
-    { "id": "int", "label": "Integration", "icon": "integration" },
-    { "id": "org", "label": "Salesforce org", "subtitle": "Production, Enterprise Edition", "icon": "platform" }
+    { "id": "int", "label": "MuleSoft Anypoint", "icon": "integration", "attributes": ["Experience, process and system APIs"], "footer": "Integrate and govern" },
+    { "id": "org", "label": "Salesforce", "subtitle": "Production org, Enterprise Edition", "icon": "platform", "footer": "Platform services", "footerIcons": ["workflow", "analytics", "privacy"] }
   ],
   "cards": [
     { "id": "erp", "title": "SAP S/4HANA", "attributes": ["Orders and invoices", "Credit limits"], "group": "ext", "external": true, "status": "unchanged" },
     { "id": "pricing", "title": "Pricing engine", "attributes": ["Discount guidance"], "group": "ext", "external": true, "status": "new", "story": "US-04-05" },
     { "id": "dwh", "title": "Snowflake", "attributes": ["Enterprise data warehouse"], "group": "ext", "external": true, "status": "unchanged" },
-    { "id": "mule", "title": "MuleSoft Anypoint", "icon": "integration", "attributes": ["System and process APIs", "API governance"], "footer": "Integrate and govern", "group": "int", "status": "unchanged" },
-    { "id": "sales", "title": "Sales Cloud", "icon": "sales", "attributes": ["+ Deal health score and bands", "~ Deal review approval"], "footerIcons": ["workflow", "analytics"], "group": "org", "status": "changed", "story": "US-04-01" },
-    { "id": "exp", "title": "Experience Cloud", "icon": "web", "attributes": ["Partner portal", "+ Deal registration page"], "footerIcons": ["partners"], "group": "org", "status": "changed", "story": "US-06-01" },
+    { "id": "api", "title": "Process APIs", "icon": false, "attributes": ["Credit check", "Discount guidance"], "group": "int", "status": "changed", "story": "US-04-05" },
+    { "id": "sales", "title": "Sales Cloud", "icon": "sales", "attributes": ["+ Deal health score and bands", "~ Deal review approval"], "group": "org", "status": "changed", "story": "US-04-01" },
+    { "id": "exp", "title": "Experience Cloud", "icon": "web", "attributes": ["Partner portal", "+ Deal registration page"], "group": "org", "status": "changed", "story": "US-06-01" },
     { "id": "events", "title": "Platform events", "icon": "stream", "attributes": ["Deal_Health_Changed__e"], "group": "org", "status": "new", "story": "US-04-04" }
   ],
   "connectors": [
-    { "from": "mule", "to": "erp", "kind": "sync", "label": "Credit check", "bidirectional": true },
-    { "from": "mule", "to": "pricing", "kind": "sync", "label": "Discount guidance" },
-    { "from": "sales", "to": "mule", "kind": "sync", "label": "REST" },
-    { "from": "events", "to": "mule", "kind": "async", "label": "Deal health changed" },
+    { "from": "api", "to": "erp", "kind": "custom", "label": "Credit check" },
+    { "from": "api", "to": "pricing", "kind": "custom", "label": "Guidance" },
+    { "from": "sales", "to": "api", "kind": "native", "label": "Connector" },
+    { "from": "events", "to": "api", "kind": "async", "label": "Deal health changed" },
     { "from": "sales", "to": "dwh", "kind": "data", "label": "Nightly extract" }
   ],
   "legend": [
-    { "icon": "workflow", "label": "Approval process" },
+    { "icon": "workflow", "label": "Approvals and flows" },
     { "icon": "analytics", "label": "Reports and dashboards" },
-    { "icon": "partners", "label": "Partner access" }
+    { "icon": "privacy", "label": "Sharing and permissions" }
   ]
 }

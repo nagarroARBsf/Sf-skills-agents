@@ -36,8 +36,8 @@ This product includes third-party material, redistributed under its original lic
 
 6. The Salesforce Diagrams conventions (header, cards, connectors, data model notation) are
    summarised, with short quotations, from Salesforce's Architecture Center
-   (https://architect.salesforce.com). Nine of Salesforce's published reference diagrams are
-   included unmodified as picture references in
+   (https://architect.salesforce.com). Salesforce's 25 published reference diagrams (28 images with
+   the platform variants of one) are included unmodified as picture references in
    .claude/skills/sdlc-architecture-diagram/references/salesforce-gallery/; they are Salesforce
    material, published without a stated licence, and remain Salesforce's property.
 

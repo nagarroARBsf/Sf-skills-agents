@@ -1,13 +1,13 @@
 {
   "type": "roadmap",
-  "title": "Deal health roadmap 2027",
-  "description": "When each deal health capability is delivered, by area, and what it depends on.",
+  "title": "Deal health capability roadmap 2027",
+  "description": "When each deal health capability is delivered, by area, what it depends on and the value it brings.",
   "scope": "Releases 1.1 to 1.4",
   "groups": [
-    { "id": "q1", "label": "Q1 2027", "subtitle": "January 1 - March 31" },
-    { "id": "q2", "label": "Q2 2027", "subtitle": "April 1 - June 30" },
-    { "id": "q3", "label": "Q3 2027", "subtitle": "July 1 - September 30" },
-    { "id": "q4", "label": "Q4 2027", "subtitle": "October 1 - December 31" }
+    { "id": "q1", "label": "Q1: January 1 - March 31" },
+    { "id": "q2", "label": "Q2: April 1 - June 30" },
+    { "id": "q3", "label": "Q3: July 1 - September 30" },
+    { "id": "q4", "label": "Q4: October 1 - December 31" }
   ],
   "lanes": [
     { "id": "sales", "label": "Sales" },
@@ -15,11 +15,18 @@
     { "id": "data", "label": "Data and AI" }
   ],
   "cards": [
-    { "id": "fields", "title": "Deal health score", "icon": "sales", "attributes": ["Release 1.1", "Depends on: none"], "group": "q1", "lane": "sales", "status": "new", "story": "EPIC-04" },
-    { "id": "review", "title": "Deal review approval", "icon": "workflow", "attributes": ["Release 1.2", "Depends on: Deal health score"], "group": "q2", "lane": "sales", "status": "changed", "story": "EPIC-02" },
-    { "id": "panel", "title": "Health panel and dashboard", "icon": "analytics", "attributes": ["Releases 1.2 to 1.3", "Depends on: Deal health score"], "group": "q2", "span": 2, "lane": "sales", "status": "new", "story": "EPIC-05" },
-    { "id": "dealreg", "title": "Partner deal registration", "icon": "partners", "attributes": ["Release 1.3", "Depends on: Experience Cloud licences"], "group": "q3", "lane": "partner", "status": "new", "story": "EPIC-06" },
-    { "id": "events", "title": "Health events to ERP", "icon": "stream", "attributes": ["Release 1.3", "Depends on: MuleSoft API"], "group": "q3", "lane": "data", "status": "new", "story": "EPIC-04" },
-    { "id": "ai", "title": "Predicted deal health", "icon": "bots", "attributes": ["Release 1.4", "Depends on: 6 months of score history"], "group": "q4", "lane": "data", "status": "new", "story": "EPIC-07" }
+    { "id": "fields", "title": "Deal health score", "icon": false, "attributes": ["Start date: January 15", "End date: March 20", "Dependencies: none"], "footerIcons": ["sales"], "group": "q1", "lane": "sales", "status": "new", "story": "EPIC-04" },
+    { "id": "review", "title": "Deal review approval", "icon": false, "attributes": ["Start date: April 1", "End date: May 30", "Dependencies: Deal health score"], "footerIcons": ["workflow"], "group": "q2", "lane": "sales", "status": "changed", "story": "EPIC-02" },
+    { "id": "panel", "title": "Health panel and dashboard", "icon": false, "attributes": ["Start date: April 15", "End date: August 30", "Dependencies: Deal health score"], "footerIcons": ["analytics", "sales"], "group": "q2", "span": 2, "lane": "sales", "status": "new", "story": "EPIC-05" },
+    { "id": "dealreg", "title": "Partner deal registration", "icon": false, "attributes": ["Start date: July 1", "End date: September 15", "Dependencies: Experience Cloud licences"], "footerIcons": ["partners"], "group": "q3", "lane": "partner", "status": "new", "story": "EPIC-06" },
+    { "id": "events", "title": "Health events to ERP", "icon": false, "attributes": ["Start date: July 15", "End date: September 30", "Dependencies: MuleSoft process API"], "footerIcons": ["workflow"], "group": "q3", "lane": "data", "status": "new", "story": "EPIC-04" },
+    { "id": "ai", "title": "Predicted deal health", "icon": false, "attributes": ["Start date: October 1", "End date: December 15", "Dependencies: 6 months of score history"], "footerIcons": ["bots", "analytics"], "group": "q4", "lane": "data", "status": "new", "story": "EPIC-07" }
+  ],
+  "legend": [
+    { "icon": "sales", "label": "Revenue generation" },
+    { "icon": "workflow", "label": "Operational efficiency" },
+    { "icon": "analytics", "label": "Better forecasting" },
+    { "icon": "partners", "label": "Partner growth" },
+    { "icon": "bots", "label": "AI assistance" }
   ]
 }

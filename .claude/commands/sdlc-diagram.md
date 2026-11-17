@@ -1,6 +1,6 @@
 ---
 description: Draw a Salesforce architecture diagram to Salesforce's standard, showing new, changed and unchanged components
-argument-hint: "[landscape | solution | data-model | process | capability | roadmap] [story IDs or scope]"
+argument-hint: "[landscape | solution | data-model | process | capability | roadmap | release-plan | role-hierarchy] [story IDs, Jira key or scope]"
 ---
 Use the **sdlc-solution-architect-agent** subagent to draw the diagram.
 

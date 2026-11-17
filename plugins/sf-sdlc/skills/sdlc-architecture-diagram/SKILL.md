@@ -1,237 +1,215 @@
 ---
 name: sdlc-architecture-diagram
-description: "Draw Salesforce architecture diagrams to Salesforce's own standard (Salesforce Diagrams): header with title, description and key; cards with icon, title, attributes and footer; containers; elbow connectors with pills; the data model notation. Each diagram is an editable draw.io file generated from a JSON spec with draw.io's built-in Salesforce icons, exported to PNG, SVG (animated connectors) or PDF, plus a Mermaid text version. Covers capability map, system landscape, solution architecture, roadmap, interaction/process/flow and data model, and marks every component NEW, CHANGED, UNCHANGED or REMOVED from components.json. TRIGGER when: user asks for an architecture, landscape, solution, data model, ERD, process, capability or roadmap diagram, a draw.io diagram, a before/after or impact diagram, or runs /sf-sdlc:diagram; or another sdlc-* skill needs a diagram. DO NOT TRIGGER when: the user wants the design document itself (use sdlc-solution-architecture-generate) or a chart of numeric data."
+description: "The one Salesforce architecture skill, design and diagrams together: baseline, High-Level Design, a Low-Level Design per story or Jira ticket, and ADRs, with Well-Architected and declarative-first rules; a component model (components.json) marking every component NEW, CHANGED, UNCHANGED or REMOVED; and every diagram drawn to Salesforce's own standard (Salesforce Diagrams) as an editable draw.io file, exported to PNG, SVG or PDF, plus a Mermaid text version. Capability maps, system landscapes, role hierarchies, solution architecture, process flows, roadmaps, release plans and data models, with Salesforce's 25 reference diagrams as picture references. TRIGGER when: user asks for solution architecture, HLD, LLD, the design or impact of a story or ticket, an ADR, ERD or data model, integration design, a baseline inventory, any architecture or draw.io diagram, or runs /sf-sdlc:architecture or /sf-sdlc:diagram. DO NOT TRIGGER when: user wants requirements, stories, test cases or code."
 metadata:
-  version: "2.0"
+  version: "3.0"
   author: "Nagarro Salesforce CoE"
 ---
 
 # sdlc-architecture-diagram
 
-A diagram in this lifecycle answers two questions at once: **how does it fit together** and
-**what does this change touch**. It is drawn the way Salesforce architects draw (the Salesforce
-Diagrams standard), it carries a change-status overlay, and every status comes from a checked
-component model, never from memory.
+Salesforce architecture in one place: **design** (baseline, HLD, LLD, ADR) and **diagrams**, drawn
+the way Salesforce's own architects draw them. Every component carries a change status — New,
+Changed, Unchanged or Removed — decided from a checked component model, never from memory.
+
+## What to produce for the request
+
+| The person asks for | Produce | Section |
+|---|---|---|
+| "Architecture", an HLD, a release design | Baseline, `components.json`, HLD with its diagrams, the list of stories that need an LLD | 1–6, 8 |
+| A design for one story or Jira ticket ("how do we build US-04-02", "impact of PROJ-123") | The LLD for it, its solution view and, when objects change, its data model view | Fast path |
+| One diagram (`/sf-sdlc:diagram landscape`, "draw the data model") | The spec, the `.drawio`, the PNG and the Mermaid text version | 9–12 |
+| A decision ("Flow or Apex?", "platform events or CDC?") | An ADR | 3 |
+
+Scope control: "architecture" means the baseline and the HLD plus the list of stories that need an
+LLD. Write LLDs for the stories named, or for the whole release when asked; above about eight, work
+in batches and report between batches.
 
 ## Inputs
-- The component model `docs/sdlc/03-architecture/components.json` (under `paths.docs`).
-  If it is missing, build it first (section 4).
-- The scope: a release, an epic, a story (`US-nn-mm`) or a domain, and the question the diagram
-  must answer.
-- For brownfield work: `docs/sdlc/03-architecture/baseline/inventory.md`.
+- BRD (`docs/sdlc/01-brd/BRD.md`, including Appendix D, the indicative Salesforce outline) and
+  backlog (`docs/sdlc/02-backlog/backlog.md`). Check their approval records; if not approved, say so
+  and continue only when the person confirms. For a single ticket, the story and its acceptance
+  criteria are enough (from the backlog, or from Jira when connected).
+- Project config: `sf-sdlc config show --json` (`salesforce.*`, `orgs.*`,
+  `deploy.pipeline`, `git.*`, `paths.docs`). Never hard-code what it defines.
+- The Salesforce project itself. **Read it before designing**; reuse its objects, trigger framework,
+  naming and utilities.
+- Grounding: `docs/sdlc/00-grounding/ontology.yaml` and `feature-map.md` when present; the Metadata
+  Grounding MCP tools when connected (say whether they were used).
 
-## Outputs (per diagram)
-1. **The Salesforce-standard diagram** in `docs/sdlc/03-architecture/diagrams/`:
-   `<name>.diagram.json` (the spec: the editable source), `<name>.drawio` (generated, opens in
-   draw.io), `<name>.png` (for documents, Jira, Confluence) and, when asked, `<name>.svg`
-   (animated connectors) or `<name>.pdf` (screen readers; sharing outside the team).
-2. **In the Markdown document** (HLD, LLD, plan section 5): the PNG
-   (`![<title>](diagrams/<name>.png)`), the one-sentence caption, a link to the `.drawio`, and a
-   Mermaid block as the text version (renders on GitHub, diffs in review, and is the fallback when
-   no image could be exported).
-3. An updated `components.json` when the diagram exposed a missing or wrong entry.
+## Outputs (under `docs/sdlc/03-architecture/`)
+- `baseline/inventory.md` — [design/baseline-template.md](references/design/baseline-template.md)
+- `components.json` — [components-schema.md](references/components-schema.md)
+- `HLD.md` — [design/hld-template.md](references/design/hld-template.md)
+- `LLD/US-nn-mm.md` — [design/lld-template.md](references/design/lld-template.md)
+- `ADR/ADR-nnn-{slug}.md` — [design/adr-template.md](references/design/adr-template.md)
+- `diagrams/<name>.diagram.json` (spec), `.drawio` (editable), `.png` (and `.svg`/`.pdf` on request)
 
-## 1. Choose the diagram type
+All documents are drafts for review; only a person fills in an approval record.
 
-Pick the type from the question, not from habit. One message per diagram; if it needs two
-sentences to state, draw two diagrams. Salesforce orders the types from big picture to detail
-(levels 1 to 4); never mix levels in one diagram.
+---
 
-| Type (`type`) | Answers | Audience | Level | Mermaid text version |
+## Part A — Design
+
+### 1. Establish the baseline (mandatory, before any design)
+1. `sf-sdlc detect --json` and `sf-sdlc inventory --json`. When
+   the Metadata Grounding tools are connected, search the org by meaning (`search_metadata`,
+   `describe_metadata`) before calling anything New: source misses what was built in Setup.
+2. Classify the scope. **Greenfield**: no Salesforce source for this scope and a new or empty org;
+   everything designed is New, standard objects used as they are are Unchanged, standard objects
+   that gain fields or rules are Changed. **Brownfield**: the inventory is the baseline and every
+   planned component is looked up in it. A project can be brownfield overall and greenfield for one
+   domain; say which.
+3. Write `baseline/inventory.md`: baseline reference (branch, commit, date), counts by type, the
+   components in the affected area, the conventions found (trigger framework, naming prefix, test
+   data factory, logging, API version), automation per object, known gaps.
+4. Org-only components: when the person names a non-production org, enrich with
+   `sf org list metadata --metadata-type <Type> --target-org <alias>`,
+   `sf sobject describe --sobject <ApiName> --target-org <alias>` and
+   `sf package installed list --target-org <alias>`. Without an org, list "org-only components not
+   verified" as a gap. Never query production unless the person names it.
+5. Refresh the inventory when it is older than the latest commit on `git.integrationBranch`.
+
+### 2. Understand
+Index BRs, NFRs, constraints, integrations, personas and volumes from the BRD; stories, acceptance
+criteria and feasibility notes from the backlog. BRD Appendix D is a set of leads to confirm or
+overturn (with the reason), not decisions.
+
+### 3. Decide
+Choose the approach per capability with [design/decision-guides.md](references/design/decision-guides.md):
+standard feature → configuration → declarative automation → Apex/LWC → AppExchange or off-platform.
+Record hard-to-reverse, cross-story or contested choices — and every resolved feasibility hit — as
+ADRs with options and consequences.
+
+### 4. Build the component model
+`components.json` holds one entry per component the solution creates, changes, removes or shows for
+context (`apiName`, `type`, `status`, `story`, `layer`, `dependsOn`, `note`). Statuses follow
+[change-status.md](references/change-status.md): planned and absent = new; planned and present =
+changed; present, verified and shown for context = unchanged; present and to be deleted = removed.
+**Never mark a component unchanged without having found it in the inventory or the org.** Once code
+exists, reconcile with `sf-sdlc delta --from <git-ref> --json`; the delta wins.
+
+### 5. Write the HLD
+Fill every section of the template. Component tables carry the Change column from the model. The
+HLD carries at least the **system landscape**, the **solution architecture** and the **data model**
+diagrams; add a **capability map** for business readers, a **roadmap** or **release plan** when
+delivery is phased, **process** diagrams for the key flows, and the **role hierarchy** when sharing
+depends on it. Keep the story-to-design map complete: every story maps to components and an LLD (or
+"no LLD needed — configuration only").
+
+### 6. Write LLDs
+Per story: metadata inventory with exact API names and status (they become `package.xml`, the
+destructive manifest and the plan's Metadata Scope), field specs, logic design, diagrams, security,
+limits, tests, deployment. For every Changed component say what changes and what must keep working;
+for every Removed one the replacement, the data consequence and the destructive step. Map every
+acceptance criterion to the design element that satisfies it; an AC without one is a gap.
+
+### 7. Review against Well-Architected
+Check with [design/well-architected-review.md](references/design/well-architected-review.md)
+(Trusted, Easy, Adaptable, governor limits). Record trade-offs in the HLD.
+
+### 8. Report
+Paths; greenfield or brownfield and the baseline reference; counts of New, Changed, Unchanged and
+Removed components; ADRs needing sign-off; stories whose design changes the story (raise them to the
+PO); feasibility hits resolved and open; baseline gaps; diagrams generated, checked and exported (or
+"image not exported" and why). Next: tech-lead review, then `/sf-sdlc:specify US-nn-mm` per story and
+`/sf-sdlc:test-cases`. LLD sections 3–9 are written so `/sf-sdlc:plan` references them instead of
+re-designing.
+
+### Fast path: one story or Jira ticket
+1. Read the story and its acceptance criteria (backlog, or Jira when connected) and the code it
+   touches; make sure the baseline exists (step 1, at least for the affected objects).
+2. Add or update the story's entries in `components.json`.
+3. Generate its solution view:
+   `sf-sdlc diagram drawio docs/sdlc/03-architecture/components.json --story US-nn-mm`,
+   then refine the spec (pills that say what flows, connector kinds, attributes) and generate again.
+   Add a data model view (`--type data-model`) when objects or fields change, and a process diagram
+   when the story is an interaction between systems or people.
+4. Write `LLD/US-nn-mm.md` (step 6) with the diagrams, and report (step 8).
+
+---
+
+## Part B — Diagrams
+
+### 9. Choose the type
+One message per diagram; if it needs two sentences, draw two. Never mix levels of detail.
+
+| Salesforce type (`type`) | Answers | Level | Salesforce layout | Picture references |
 |---|---|---|---|---|
-| Capability map (`capability-map`) | What can the business do, and which capabilities does this work add or improve? | Sponsors, BAs | 1 | `flowchart TB`, subgraph per domain |
-| System landscape (`system-landscape`) | Which systems exist and what flows between them? | Architects, integration and security teams | 1 | `flowchart LR` |
-| Solution architecture (`solution-architecture`) | Which platform components deliver this and how do they depend on each other? | Tech lead, developers, reviewers | 2 | `flowchart LR`, subgraph per layer |
-| Roadmap (`roadmap`) | When does each capability or component land, and what does it depend on? | Sponsors, release owner | — | `flowchart LR`, subgraph per release |
-| Interaction / process / flow (`process`) | What happens, in what order, between whom? | Developers, QA, BAs | 3 | `sequenceDiagram` or `flowchart` |
-| Data model (`data-model`) | Which objects and relationships exist, and which fields change? | Developers, data and reporting teams | 4 | `flowchart LR` with status; `erDiagram` otherwise |
+| Capability map (`capability-map`) | What can the business do; which capabilities does this add, improve or retire? | 1 | Bands top to bottom: drivers → capabilities → products and platform | [capability-map/](references/salesforce-gallery/capability-map/) |
+| System landscape (`system-landscape`) | Which systems exist and how do they connect? | 1 | Columns: external systems → integration hub → Salesforce; external systems shaded | [system-landscape/](references/salesforce-gallery/system-landscape/) |
+| Role hierarchy (`system-landscape`, `layout: tree`) | Who reports to whom; who sees whose records? | 1–2 | Org chart, parents above children | [salesforce-role-hierarchy.png](references/salesforce-gallery/system-landscape/salesforce-role-hierarchy.png) |
+| Solution architecture (`solution-architecture`) | Which components deliver this and what flows between them? | 2 | Products as containers; pills say what flows | [solution-architecture/](references/salesforce-gallery/solution-architecture/) |
+| Interaction / process flow (`process`) | What happens, in what order, between whom? | 3 | Participants as tall columns; numbered steps; publish solid, subscribe dashed | [interaction-process-flow/](references/salesforce-gallery/interaction-process-flow/) |
+| Roadmap (`roadmap`) | When does each capability, component or feature land, and on what does it depend? | — | Time grid with swimlanes; cards span their dates; dependencies written on cards | [roadmap/](references/salesforce-gallery/roadmap/) |
+| Release plan (`roadmap`, `layout: stages`) | Who is involved in each delivery stage, in which environment? | — | Stage cards left to right with an environment footer | [generative-ai-release-plan.png](references/salesforce-gallery/roadmap/generative-ai-release-plan.png) |
+| Data model (`data-model`) | Which objects and relationships exist; which fields change? | 4 | Entities with crow's-foot notation, coloured by focus cloud | Salesforce Data Model Gallery (link in the standard) |
 
-The rules, layouts and notation Salesforce uses for each type:
-[references/salesforce-diagram-standard.md](references/salesforce-diagram-standard.md).
+The rules and notation behind each type: [salesforce-diagram-standard.md](references/salesforce-diagram-standard.md).
 
-## 2. Look at the picture references first
+### 10. Look before you draw
+Before drawing a type for the first time in a session, open with the Read tool (they are images):
+1. **Salesforce's own diagrams of that type** — 25 in
+   [salesforce-gallery/](references/salesforce-gallery/README.md), with notes on what to take from each.
+2. **Our worked example of that type** — the render and its spec in [examples/](examples/):
+   `capability-map`, `system-landscape`, `role-hierarchy`, `solution-architecture`, `process`,
+   `roadmap`, `release-plan`, `data-model` (`.png` to look at, `.diagram.json` to start from).
 
-Before drawing a type for the first time in a session, open its example render with the Read tool
-(it is an image) and its spec:
+Match their structure: header and key, grouping, card anatomy, connector style. Do not paste
+Salesforce's images into project documents.
 
-| Type | Picture | Spec |
-|---|---|---|
-| Capability map | [examples/capability-map.png](examples/capability-map.png) | [capability-map.diagram.json](examples/capability-map.diagram.json) |
-| System landscape | [examples/system-landscape.png](examples/system-landscape.png) | [system-landscape.diagram.json](examples/system-landscape.diagram.json) |
-| Solution architecture | [examples/solution-architecture.png](examples/solution-architecture.png) | [solution-architecture.diagram.json](examples/solution-architecture.diagram.json) |
-| Roadmap | [examples/roadmap.png](examples/roadmap.png) | [roadmap.diagram.json](examples/roadmap.diagram.json) |
-| Interaction / process | [examples/process.png](examples/process.png) | [process.diagram.json](examples/process.diagram.json) |
-| Data model | [examples/data-model.png](examples/data-model.png) | [data-model.diagram.json](examples/data-model.diagram.json) |
-
-Then open Salesforce's own diagrams of that type: nine of them are in
-[references/salesforce-gallery/](references/salesforce-gallery/README.md) (capability maps,
-solution architectures, a process flow), with notes on what to take from each. They are references
-for structure and style; do not paste them into project documents.
-
-For work the spec generator does not cover — editing an existing `.drawio` someone drew by hand,
-turning a screenshot or whiteboard photo into a diagram, diagrams from Terraform, SQL or OpenAPI —
-use the `drawio-skill` when it is installed in `.claude/skills/` (setup installs it; it needs
-Python 3). A person starts it with `/drawio-skill`; an agent reads its `SKILL.md` and references and
-runs its scripts directly. Salesforce diagrams still go through the spec and `sf-sdlc diagram drawio`.
-
-## 3. Draw it
-
-1. **Update the model first.** Statuses come from `components.json` (section 4). Never set a status
-   in a spec that the model does not support.
-2. **Write the spec** in `docs/sdlc/03-architecture/diagrams/<name>.diagram.json`, following
-   [references/drawio-spec.md](references/drawio-spec.md):
-   - Solution architecture and data model: generate it from the model, then refine it:
-     `sf-sdlc diagram drawio docs/sdlc/03-architecture/components.json --story US-04-02`
-     (`--type data-model` for the ERD). Add pills that say what flows, connector kinds, icons,
-     logical names and relationship kinds, then generate again from the spec.
-   - Capability map, landscape, roadmap and process: write the spec, starting from the example of
-     that type.
+### 11. Draw it
+1. **Model first.** Statuses come from `components.json`; never set one the model does not support.
+2. **Write the spec** `docs/sdlc/03-architecture/diagrams/<name>.diagram.json` per
+   [drawio-spec.md](references/drawio-spec.md). Solution and data model views start from the model
+   (`diagram drawio components.json --story …` / `--type data-model`); the other types start from
+   the example of that type.
 3. **Generate**: `sf-sdlc diagram drawio docs/sdlc/03-architecture/diagrams/<name>.diagram.json`.
-   Fix every error it reports; read every warning.
+   Fix every error; read every warning.
 4. **Check**: `sf-sdlc diagram check docs/sdlc/03-architecture/diagrams/<name>.drawio`.
 5. **Export and look**: `sf-sdlc diagram export docs/sdlc/03-architecture/diagrams/<name>.drawio --format png`,
-   then open the PNG with the Read tool and check it against the review checklist: text cut off,
-   pills on top of cards, lines crossing cards, a crowded column. Fix the spec (split the diagram,
-   reorder groups so connectors join neighbouring columns, shorten labels, move a card to another
-   group) and generate again. Stop after two rounds and report what is left.
-   If draw.io desktop is not installed, `export` says so: report "image not exported", keep the
-   `.drawio` and the Mermaid block, and suggest installing draw.io (free) or opening the file in
-   the VS Code Draw.io extension.
-6. **Put it in the document** as described in Outputs, with the caption and the text version.
+   open the PNG with the Read tool and compare it with the Salesforce reference and the
+   [review checklist](references/diagram-review-checklist.md): text cut off, a pill on a card, a line
+   through a card, a crowded column. Fix the spec (split the diagram, reorder groups so connectors join
+   neighbouring columns, shorten pills) and generate again; stop after two rounds and report what is left.
+   Without draw.io desktop, `export` says so: report "image not exported", keep the `.drawio` and the
+   Mermaid block, and suggest installing draw.io (free) or opening the file in the VS Code Draw.io extension.
+6. **Put it in the document**: `![<title>](diagrams/<name>.png)`, the one-sentence caption, a link to
+   the `.drawio`, then the Mermaid text version ([mermaid-text-version.md](references/mermaid-text-version.md)).
 
-Do not hand-write the XML of a new diagram and do not place coordinates. Hand edits to a `.drawio`
-are lost when it is generated again; put lasting changes in the spec
-([references/drawio-authoring.md](references/drawio-authoring.md) covers the rare exception).
+Never hand-place coordinates or hand-write the XML of a new diagram: the generator lays out, routes
+connectors through the gaps between columns and applies Salesforce's styling. Lasting changes go in
+the spec. To polish or repair a `.drawio` someone drew by hand, or to turn a screenshot, Terraform,
+SQL or OpenAPI into a diagram, use the `drawio-skill` when installed (`/drawio-skill`; agents read
+its `SKILL.md` and run its scripts with Python 3) and [drawio-authoring.md](references/drawio-authoring.md).
 
-## 4. Salesforce diagram rules (both forms)
-
-1. **Header.** A title that reads at a glance, and a one-sentence description of message, scope
-   and purpose. The spec's `title`/`description`; in Mermaid the `title` front matter, `accTitle`,
-   `accDescr` and the caption.
-2. **Reading order.** Left to right, top to bottom. Users and entry points first, data and external
+### 12. Salesforce rules every diagram follows
+1. **Header**: a title read at a glance and a one-sentence description of message, scope and purpose;
+   at least 10% of the height and the full width; description at least half the title size.
+2. **Reading order**: left to right, top to bottom; users and entry points first, data and external
    systems last.
-3. **Cards.** Every property is a card with a title; attributes for details; the footer for
-   package, owner or capability. Icons from draw.io's Salesforce library only (no logos pasted in
-   as images, no emoji). Mermaid nodes stay text-only.
-4. **Connectors.** Elbow lines; the line style says the kind of connection, and the key explains
-   every style used. Pills say what flows, in a few words. Process steps are numbered.
-5. **Key.** Whenever colour, line style, icons or a badge carry meaning — in this kit always.
-6. **Contrast.** Text and its background at least 50 points apart in the Salesforce colour system
-   (4.5:1). The generator's palette meets this; do not override colours.
-7. **One level of detail.** Do not mix systems and fields, or capabilities and classes.
-8. **Real names.** Components by API name; systems by the name the client uses; capabilities in
-   business words. Never "Controller", "Service" or "Component" on its own.
-9. **Size.** At most 25 cards per diagram. Above that, split by domain, layer or story and add an
-   overview diagram.
+3. **Cards** for every property: title, then a rule, attributes, footer (package, owner, capability,
+   environment) and footer icons. Containers are cards that hold cards.
+4. **Connectors**: elbow lines, straight where possible; the line style names the kind of connection
+   and the key explains it; pills say what flows in a few words; process steps are numbered.
+5. **Key** whenever colour, line style, icons, shading or a badge carry meaning, in even rows.
+6. **Icons** only from draw.io's Salesforce library; footer icons explained in the key.
+7. **Contrast**: text and background at least 50 points apart in the Salesforce colour system (4.5:1).
+8. **Real names**: components by API name, systems by the client's name, capabilities in business
+   words. Never "Controller", "Service" or "Component" alone.
+9. **Size**: at most 25 cards; split by domain, layer or story and add an overview.
+10. **Change status** on every card, from the model ([change-status.md](references/change-status.md)).
 
-## 5. The change-status overlay
+### 13. Accessibility
+Colour is never the only signal (badge, prefix and border repeat it). Under every diagram, the caption
+and, for larger changes, a short list of what is new, changed and removed; the Mermaid block is the
+text version. Export a PDF when sharing outside the team (Salesforce: best for screen readers).
 
-Status is carried several ways at once, so it survives greyscale printing, colour-blind readers,
-screen readers and renderers that drop styles:
+### 14. Check before delivering
+Run [diagram-review-checklist.md](references/diagram-review-checklist.md). Report what was generated,
+checked and exported, and what was not.
 
-| Status | draw.io card | Badge (card footer) | Mermaid class | Mermaid prefix |
-|---|---|---|---|---|
-| New | Green border | `NEW · US-nn-mm` | `new` | `[NEW]` |
-| Changed | Amber dashed border | `CHANGED · US-nn-mm` | `changed` | `[CHG]` |
-| Unchanged | Grey border, no badge | — | `unchanged` | none |
-| Removed | Red dotted border, title struck through | `REMOVED · US-nn-mm` | `removed` | `[DEL]` |
-
-In a data model the border shows the entity kind (the Salesforce notation), so status is carried by
-the badge, the strike-through and the relationship colour (relationships the change adds are drawn
-in the focus-cloud colour).
-
-Connectors: `removed` if either end is removed; otherwise `new` if either end is new; otherwise
-`changed` only when the dependency itself is what changes (recorded in the component's `note`);
-otherwise unchanged. Labelled connectors get the prefix in their pill; new and changed lines are
-drawn thicker.
-
-Mermaid palette (use exactly; the Key subgraph with all four statuses is mandatory in flowcharts):
-
-```text
-classDef new fill:#dcfce7,stroke:#15803d,stroke-width:2px,color:#14532d
-classDef changed fill:#fef3c7,stroke:#b45309,stroke-width:2px,stroke-dasharray:6 3,color:#78350f
-classDef unchanged fill:#f1f5f9,stroke:#94a3b8,color:#334155
-classDef removed fill:#fee2e2,stroke:#b91c1c,stroke-dasharray:2 2,color:#7f1d1d
-```
-
-Mermaid edges: a new, changed or removed relationship carries the prefix in its label and a
-`linkStyle` (zero-based, in written order; `A --> B --> C` is two edges; recount after every edit):
-
-```text
-linkStyle <n> stroke:#15803d,stroke-width:2px
-linkStyle <n> stroke:#b45309,stroke-width:2px,stroke-dasharray:6 3
-linkStyle <n> stroke:#b91c1c,stroke-width:2px,stroke-dasharray:2 2
-```
-
-`sequenceDiagram` has no classes: prefix participants and messages, put a `rect` with the status
-fill around new or changed interactions, and a `Note over` line as the Key. Subgraphs and groups
-(layers, systems, releases) are containers and carry no status.
-
-## 6. Determine status
-
-Never assign a status from the story text alone.
-
-**Greenfield** (no existing Salesforce source for this scope, new org): every component the
-design creates is `new`. Standard objects, standard fields and platform services the solution
-uses but does not modify (for example `Account`, the standard `Name` field, Lightning Data
-Service) are `unchanged`; a standard object that receives custom fields, validation rules or
-record types is `changed`. Record "greenfield" and the evidence in `baseline/inventory.md`.
-
-**Brownfield** (an existing project or org):
-1. Baseline: `sf-sdlc inventory --json` lists what the source tree contains
-   today. Its summary is saved as `baseline/inventory.md`.
-2. Design time (nothing built yet): for each planned component, look it up in the inventory.
-   Planned and absent = `new`. Planned and present = `changed`. Present, not planned to change,
-   but shown for context = `unchanged`. Planned for deletion and present = `removed`.
-3. Once code exists: `sf-sdlc delta --from <git-ref> --json` buckets components
-   as new, changed and removed against the ref (the integration branch from `git.integrationBranch`,
-   or the release baseline tag). Reconcile `components.json` with it; where they disagree, the
-   delta is right and the design document is corrected.
-4. Org-only components (created in Setup, never retrieved) do not appear in the inventory. When
-   an org is connected, enrich with `sf org list metadata --metadata-type <Type> --target-org <alias>`
-   and `sf sobject describe --sobject <ApiName> --target-org <alias>`. Record the source of each
-   such entry in its `note`. Never query a production org without the user naming it.
-5. **Never mark a component `unchanged` without having found it in the inventory or the org.**
-   If it could not be checked, it is not drawn as unchanged: ask, or state the gap in the caption.
-
-A parent takes `changed` when a child changes: adding a field to `Opportunity` makes the
-`Opportunity` card changed, with the new fields listed as attributes (`+ Field__c`).
-
-## 7. The component model
-
-`components.json` is the single source of truth for status. Diagrams, the HLD component tables,
-the LLD metadata inventory and the plan's Metadata Scope all read from it. Schema and example:
-[references/components-schema.md](references/components-schema.md). Each entry: `apiName`,
-`type` (Metadata API type name), `status`, `story`, `layer`, `dependsOn[]`, `note`.
-
-Update the model first, then the specs, then regenerate; never hand-edit a status in a diagram.
-
-## 8. The Mermaid text version
-
-Worked Mermaid examples for all six types, with the overlay:
-[references/diagram-templates.md](references/diagram-templates.md). Syntax rules:
-- Quote every label: `A["[NEW] Deal_Review__c"]`; line breaks with `<br/>`.
-- Node IDs: letters and digits, starting with a letter, derived from the API name; never `end`.
-- Edge labels quoted: `A -->|"[NEW] publishes"| B`.
-- No `architecture-beta`, `C4Context` or other experimental types; no `click`, no HTML other than
-  `<br/>`, no icons or images.
-- `classDef` lines after nodes and edges; `linkStyle` lines last.
-- `erDiagram`, `classDiagram`, `stateDiagram-v2` and `gantt` cannot carry the overlay: use them only
-  for views with no change status
-  (`${CLAUDE_PLUGIN_ROOT}/skills/sdlc-solution-architecture-generate/references/mermaid-patterns.md`).
-- SVG of a Mermaid block: `sf-sdlc diagram render <file>` (needs mermaid-cli).
-
-## 9. Accessibility
-
-- Colour is never the only signal: the badge, prefix and border style repeat it.
-- Under every diagram, the caption and, for diagrams with more than a few changes, a short text
-  list of what is new, changed and removed. A reader who cannot see the diagram gets the same
-  message; the Mermaid block is the text version.
-- For sharing outside the team, export a PDF as well (Salesforce: PDF is the best format for
-  screen readers).
-
-## 10. Check before delivering
-
-Run [references/diagram-review-checklist.md](references/diagram-review-checklist.md). Report what
-was generated, checked and exported, and what was not ("image not exported: draw.io desktop not
-installed" is acceptable; implying an image that does not exist is not).
+## Technical skills
+Design draws on Flow, Apex, LWC, security and integration knowledge. When an installed skill under
+`.claude/skills/` covers the area (data model, permission sets, Flow, Apex, LWC, integration), use it
+for the detail; when it is missing, design from the references here and say `/sf-sdlc:skills` can install it.

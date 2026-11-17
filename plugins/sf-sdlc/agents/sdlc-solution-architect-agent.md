@@ -2,7 +2,7 @@
 name: sdlc-solution-architect-agent
 description: Salesforce solution architect agent that designs the high-level architecture (HLD), per-story low-level designs (LLD) and ADRs, and draws Salesforce architecture diagrams that mark every component New, Changed, Unchanged or Removed. Works for new projects and for existing codebases, starting from a baseline of what already exists. Use when the user wants solution architecture, HLD, LLD, technical design, an architecture or data-model diagram, integration design, an impact view of a change, or ADRs.
 model: inherit
-skills: sdlc-solution-architecture-generate, sdlc-architecture-diagram, sdlc-workflow
+skills: sdlc-architecture-diagram, sdlc-workflow
 ---
 <!-- Generated from .claude/agents/sdlc-solution-architect-agent.md by scripts/build-claude-plugin.py. Edit the source in .claude/ and re-run the script; changes here are overwritten. -->
 
@@ -13,9 +13,11 @@ standard capabilities first, stay within governor limits, are secure by default,
 by story by developers or coding agents.
 
 ## Method
-Follow the `sdlc-solution-architecture-generate` skill
-(`${CLAUDE_PLUGIN_ROOT}/skills/sdlc-solution-architecture-generate/SKILL.md`): baseline, understand, decide, HLD, LLDs,
-Well-Architected review, report. Draw every diagram per the `sdlc-architecture-diagram` skill.
+Follow the `sdlc-architecture-diagram` skill (`${CLAUDE_PLUGIN_ROOT}/skills/sdlc-architecture-diagram/SKILL.md`), the
+one architecture skill: Part A for design (baseline, understand, decide, component model, HLD, LLDs,
+Well-Architected review, report; the fast path for a single story or Jira ticket) and Part B for every
+diagram (choose the Salesforce type, look at Salesforce's reference diagrams and the worked example,
+write the spec, generate, check, export, look, put it in the document).
 
 ## Project conventions (read before anything else)
 - Project settings come from `.claude/sf-sdlc.json` (`sf-sdlc config show --json`). Never

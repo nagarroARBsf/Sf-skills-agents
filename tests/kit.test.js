@@ -663,3 +663,58 @@ test('hosted MCP: a per-server address override must stay on salesforce.com over
   assert.strictEqual(mcp.serverUrl('metadata-experts', env), 'https://pilot.salesforce.com/mcp/x');
   assert.strictEqual(env.JIRA_API_TOKEN, undefined, 'only address keys are read');
 });
+
+test('diagram layouts: process columns or lanes, role-hierarchy trees and release-plan stages', () => {
+  const cell = (xml, id) => new RegExp(`<mxCell id="${id}" [^>]*><mxGeometry x="([\\d.]+)" y="([\\d.]+)" width="([\\d.]+)" height="([\\d.]+)"`).exec(xml).slice(1).map(Number);
+  const proc = { type: 'process', title: 'T', description: 'D.', groups: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }], cards: [{ id: 'x', title: 'X', group: 'a' }, { id: 'y', title: 'Y', group: 'b' }], connectors: [{ from: 'x', to: 'y', label: 'go' }] };
+  const cols = diagram.toDrawio(proc);
+  assert.doesNotMatch(cols, /swimlane;/, 'Salesforce-style process: participants as columns');
+  assert.match(cols, /1\. go/, 'process steps are numbered');
+  assert.match(diagram.toDrawio({ ...proc, layout: 'lanes' }), /swimlane;/);
+  assert.match(diagram.validateSpec({ ...proc, type: 'solution', layout: 'lanes' }).errors.join(), /lanes" is for process/);
+
+  const tree = diagram.toDrawio({ type: 'landscape', layout: 'tree', title: 'T', description: 'D.', cards: [{ id: 'ceo', title: 'CEO' }, { id: 'a', title: 'A' }, { id: 'b', title: 'B' }], connectors: [{ from: 'ceo', to: 'a' }, { from: 'ceo', to: 'b' }] });
+  const [cx, cy, cw] = cell(tree, 'card-ceo');
+  const [ax, ay, aw] = cell(tree, 'card-a');
+  const [bx] = cell(tree, 'card-b');
+  assert.ok(ay > cy, 'children below the parent');
+  assert.ok(Math.abs((cx + cw / 2) - ((ax + aw / 2 + bx + aw / 2) / 2)) < 1, 'parent centred over its children');
+  assert.match(tree, /sfKind=hierarchy/);
+  assert.match(tree, /endArrow=none/);
+
+  const stages = diagram.toDrawio({ type: 'roadmap', layout: 'stages', title: 'T', description: 'D.', cards: [{ id: 's1', title: 'Define', attributes: ['a', 'b', 'c'] }, { id: 's2', title: 'Build', footer: 'Sandbox' }, { id: 's3', title: 'Release', footer: 'Production' }] });
+  assert.strictEqual((stages.match(/<mxCell id="edge-\d+"/g) || []).length, 2, 'stages are joined automatically');
+  assert.strictEqual(cell(stages, 'card-s1')[3], cell(stages, 'card-s3')[3], 'stage cards share one height');
+});
+
+test('diagram containers carry footers, icons and boundaries; two-way kinds draw both arrowheads', () => {
+  const xml = diagram.toDrawio({
+    type: 'landscape', title: 'T', description: 'D.',
+    groups: [{ id: 'g', label: 'Einstein', boundary: 'Einstein Trust Layer', attributes: ['Shared data'], footer: 'Platform services', footerIcons: ['workflow', 'data'] }, { id: 'h', label: 'Other' }],
+    cards: [{ id: 'a', title: 'A', group: 'g' }, { id: 'b', title: 'B', group: 'h' }],
+    connectors: [{ from: 'a', to: 'b', kind: 'native' }],
+  });
+  assert.match(xml, /id="group-g" [^>]*dashPattern=12 4 2 4/);
+  assert.match(xml, /id="group-g-footer" value="Platform services"/);
+  assert.match(xml, /id="group-g-footer-icon-2"/);
+  assert.match(xml, /id="group-g-attributes"/);
+  assert.match(xml, /value="Einstein Trust Layer"/, 'the boundary is named in the key');
+  assert.match(/<mxCell id="edge-1"[^>]*>/.exec(xml)[0], /startArrow=block;/);
+  assert.deepStrictEqual(diagram.checkDrawio(xml).problems, []);
+  assert.match(diagram.validateSpec({ type: 'landscape', title: 'T', description: 'D.', groups: [{ id: 'g', footerIcons: ['nope'] }], cards: [{ id: 'a', title: 'A', group: 'g' }] }).errors.join(), /unknown footer icon "nope"/);
+});
+
+test('one architecture skill, and the Salesforce gallery is filed in its five types', () => {
+  const skills = fs.readdirSync(path.join(KIT, 'skills'));
+  assert.ok(skills.includes('sdlc-architecture-diagram'));
+  assert.ok(!skills.some((s) => s !== 'sdlc-architecture-diagram' && /architect/.test(s)), 'design and diagrams live in one skill');
+  const ref = path.join(KIT, 'skills', 'sdlc-architecture-diagram', 'references');
+  for (const f of ['hld-template.md', 'lld-template.md', 'adr-template.md', 'baseline-template.md', 'decision-guides.md', 'well-architected-review.md']) assert.ok(fs.existsSync(path.join(ref, 'design', f)), f);
+  const gallery = path.join(ref, 'salesforce-gallery');
+  const types = fs.readdirSync(gallery).filter((d) => fs.statSync(path.join(gallery, d)).isDirectory()).sort();
+  assert.deepStrictEqual(types, ['capability-map', 'interaction-process-flow', 'roadmap', 'solution-architecture', 'system-landscape']);
+  const count = types.reduce((n, t) => n + fs.readdirSync(path.join(gallery, t)).filter((f) => f.endsWith('.png')).length, 0);
+  assert.ok(count >= 25, `${count} reference images`);
+  const all = fs.readFileSync(path.join(KIT, 'agents', 'sdlc-solution-architect-agent.md'), 'utf8') + fs.readFileSync(path.join(KIT, 'skills', 'sdlc-workflow', 'SKILL.md'), 'utf8');
+  assert.doesNotMatch(all, /sdlc-solution-architecture-generate/);
+});

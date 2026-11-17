@@ -206,7 +206,7 @@ its test class, and objects: about 10 nodes, no metadata type line.
 Question: in which release does each change land? One subgraph per release, in time order.
 Status is relative to the state before the first release shown. For dates and durations with no
 status, use a `gantt` (pattern 9 in
-`.claude/skills/sdlc-solution-architecture-generate/references/mermaid-patterns.md`).
+`.claude/skills/sdlc-architecture-diagram/references/design/mermaid-patterns.md`).
 
 ```mermaid
 ---
@@ -379,5 +379,5 @@ object; the legacy score object is deleted (destructive change, data export requ
 `Health_Rule__mdt` holds configuration and has no relationship to the other objects.*
 
 For a full attribute listing with no status, use `erDiagram` (pattern 4 in
-`.claude/skills/sdlc-solution-architecture-generate/references/mermaid-patterns.md`) next to
+`.claude/skills/sdlc-architecture-diagram/references/design/mermaid-patterns.md`) next to
 this diagram, not instead of it.

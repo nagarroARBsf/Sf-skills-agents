@@ -10,7 +10,7 @@
       "name": "sdlc-architecture-diagram",
       "location": "skills",
       "source": "nagarro",
-      "description": "Draw Salesforce architecture diagrams to Salesforce's own standard (Salesforce Diagrams): header with title, description and key; cards with icon, title, attributes and footer; containers; elbow connectors with pills; the data model notation. Each diagram is an editable draw.io file generated from a"
+      "description": "The one Salesforce architecture skill, design and diagrams together: baseline, High-Level Design, a Low-Level Design per story or Jira ticket, and ADRs, with Well-Architected and declarative-first rules; a component model (components.json) marking every component NEW, CHANGED, UNCHANGED or REMOVED; "
     },
     {
       "name": "sdlc-brd-generate",
@@ -47,12 +47,6 @@
       "location": "skills",
       "source": "nagarro",
       "description": "Design comprehensive manual and automation-ready test cases for Salesforce user stories: positive flows, negative scenarios, boundary/edge cases, persona and permission (profile, permission set, sharing, FLS) tests, bulk/governor-limit tests, integration failure tests, LWC UI/accessibility/mobile ch"
-    },
-    {
-      "name": "sdlc-solution-architecture-generate",
-      "location": "skills",
-      "source": "nagarro",
-      "description": "Design Salesforce solution architecture from a BRD and Jira backlog: establish the baseline first (greenfield or brownfield inventory), then a High-Level Design (system landscape, org footprint, capability map, data model, security and sharing, automation and integration architecture, environments) "
     },
     {
       "name": "sdlc-spec-driven-development",

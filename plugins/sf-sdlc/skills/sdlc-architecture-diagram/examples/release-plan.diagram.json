@@ -1,0 +1,21 @@
+{
+  "type": "roadmap",
+  "layout": "stages",
+  "title": "Deal health release plan",
+  "description": "Who is involved in each stage of the release 1.2 delivery, and in which environment it runs.",
+  "scope": "Release 1.2",
+  "cards": [
+    { "id": "define", "title": "Define", "icon": false, "attributes": ["Business analysts", "Architects", "Product owner"], "footer": "Documents", "footerIcons": ["learning", "builders"], "status": "unchanged" },
+    { "id": "build", "title": "Build and test", "icon": false, "attributes": ["Developers", "Admins", "QA"], "footer": "Sandbox", "footerIcons": ["builders", "workflow"], "status": "unchanged" },
+    { "id": "uat", "title": "User acceptance", "icon": false, "attributes": ["Sales managers", "Key users"], "footer": "UAT sandbox", "footerIcons": ["employees"], "status": "unchanged" },
+    { "id": "release", "title": "Release", "icon": false, "attributes": ["Release manager", "Support"], "footer": "Production", "footerIcons": ["privacy", "analytics"], "status": "unchanged" }
+  ],
+  "legend": [
+    { "icon": "learning", "label": "Requirements and design" },
+    { "icon": "builders", "label": "Build" },
+    { "icon": "workflow", "label": "Automated tests" },
+    { "icon": "employees", "label": "User testing" },
+    { "icon": "privacy", "label": "Approval" },
+    { "icon": "analytics", "label": "Monitoring" }
+  ]
+}
