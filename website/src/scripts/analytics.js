@@ -7,6 +7,7 @@
 //   section_view         each section the visitor stopped on for a second, once each
 //   download             a zip or video download link was clicked
 //   video_play / video_complete
+//   video_chapter        a chapter was picked in the tutorial player (scripts/video-player.js)
 //   outbound_click       a link to another site (GitHub, nagarro.com)
 //   lead_*               the sign-up form was shown / sent / dismissed (never its contents)
 //   page_exit            seconds the tab was visible, sent when the visitor leaves

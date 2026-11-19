@@ -22,22 +22,25 @@ The public site for the Nagarro Salesforce SDLC kit. The source is `website/` (l
 | Custom domain | Planned: `www.nagarro-salesforce-sdlc.com`. **Not attached yet.** Status: waiting for Nagarro IT to buy it. |
 
 ## How files are stored
-Everything except the videos is uploaded as static files inside the Static Web App. The two videos
-(marketing overview and setup tutorial) are on Google Drive and play inside the page through Drive's
-embedded player (2026-11-19); see the Videos section of [README.md](README.md). Site size is about 35 MB. The app serves them under these paths:
+Everything, including the two videos (marketing overview and setup tutorial, served from the site since
+2026-11-19), is uploaded as static files inside the Static Web App; see the Videos section of
+[README.md](README.md). Site size is about 100 MB with the videos. The app serves them under these paths:
 
 | URL path | Built from |
 |---|---|
 | `/` | `website/src/index.html` with its partials, sections and snippets |
 | `/styles/…`, `/scripts/…` | `website/src/styles/`, `website/src/scripts/` |
-| `/assets/…` | `website/assets/` (diagrams and images) |
+| `/assets/…` | `website/assets/` (diagrams, images, video posters) and the videos from `website/media/` |
 | `/api/lead` | `website/api/lead/` (managed Azure Function, sign-up form) |
 | `/downloads/sf-sdlc-plugin.zip` | zip of `plugins/sf-sdlc/` |
 | `/downloads/claude-folder.zip` | zip of `.claude/` |
 | `/staticwebapp.config.json` | `website/staticwebapp.config.json` (page fallback, MIME types, caching, headers, API runtime) |
 
-`website/media/` (git-ignored) is copied only for videos the page references as `assets/<name>.mp4`; none do now.
+`website/media/` (git-ignored) is copied only for videos the page references as `assets/<name>.mp4`, so
+**the videos must be in `website/media/` on the machine that builds**, or the build warns and they will not play.
 The build also prints the total size: the Free plan allows 250 MB per site and 100 GB of downloads a month.
+Video streaming counts toward that 100 GB: a full tutorial view is about 50 MB, so roughly 2,000 full views a
+month fit. Watch the `video_play` events (below) and move to the Standard plan if it gets close.
 
 ## Build and deploy
 
@@ -45,7 +48,7 @@ The build also prints the total size: the Free plan allows 250 MB per site and 1
 # 1. Regenerate the plugin if .claude/ changed
 python3 scripts/build-claude-plugin.py
 
-# 2. Build site/ (HTML, assets, both zips, config; videos are on Google Drive)
+# 2. Build site/ (HTML, assets, both videos from website/media/, both zips, config)
 python3 scripts/build-site.py
 
 # 3. Check that the Azure login works
@@ -89,7 +92,7 @@ union pageViews, customEvents
 | order by timestamp desc
 
 // downloads by file, video plays, sign-ups
-customEvents | where timestamp > ago(30d) and name in ("download", "video_play", "video_complete", "lead_submitted")
+customEvents | where timestamp > ago(30d) and name in ("download", "video_play", "video_complete", "video_chapter", "lead_submitted")
 | summarize count() by name, tostring(customDimensions.file)
 
 // which sections people read

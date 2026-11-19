@@ -2,13 +2,28 @@
       <h2>Video tutorial</h2>
       <p>Watch how to set up the SF-SDLC Framework plugin in VS Code, from installation to your first command.</p>
       <p class="muted">The tutorial may show an earlier release with more agents. Release 3.0 runs most stages as skills in the main conversation and keeps four agents (BRD, solution architect, code reviewer, QA); setup and the commands work as shown.</p>
-      <!-- Hosted on Google Drive ("Anyone with the link"), plays inside the page; not in the Azure package. -->
-      <figure class="video-card card">
-        <div class="video-frame">
-          <iframe src="https://drive.google.com/file/d/1B2ponagrq0XoRd-9kUpb6v48sMnEvQSV/preview" title="SF-SDLC Framework setup tutorial" loading="lazy" allow="fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      <!-- Served from the site itself: the file lives in website/media/ (git-ignored) and the build copies it to assets/.
+           Chapters: edit the <li data-t="m:ss"> rows below; scripts/video-player.js draws them on the progress bar. -->
+      <figure class="video-card card vp" data-player>
+        <div class="video-frame vp-stage">
+          <video src="assets/sf_sdlc_tutorial_v3.2.mp4" poster="assets/sf_sdlc_tutorial_v3.2_poster.jpg" data-duration="12:18" controls preload="metadata" playsinline title="SF-SDLC Framework setup tutorial"></video>
         </div>
         <figcaption>
-          <span><strong>Set up the SF-SDLC Framework in VS Code</strong><small>Tutorial &middot; v3.2</small></span>
+          <span><strong>Set up the SF-SDLC Framework in VS Code</strong><small>Tutorial &middot; v3.2 &middot; 12:18 &middot; 9 chapters</small></span>
         </figcaption>
+        <div class="vp-panel">
+          <h3 class="vp-panel-h">Chapters</h3>
+          <ol class="vp-chapters">
+            <li data-t="0:00"><span class="vp-ct">0:00</span> Introduction: why the harness matters</li>
+            <li data-t="0:44"><span class="vp-ct">0:44</span> What NSDLC is and the plan</li>
+            <li data-t="1:18"><span class="vp-ct">1:18</span> Setup: tools, MCP servers and the plugin</li>
+            <li data-t="3:15"><span class="vp-ct">3:15</span> Inside the .claude folder: agents and commands</li>
+            <li data-t="5:02"><span class="vp-ct">5:02</span> Skills and the Salesforce skill library</li>
+            <li data-t="5:49"><span class="vp-ct">5:49</span> Rules, hooks and output styles</li>
+            <li data-t="7:46"><span class="vp-ct">7:46</span> The kit at work: BRD, stories and architecture</li>
+            <li data-t="9:10"><span class="vp-ct">9:10</span> Development, review and testing</li>
+            <li data-t="10:57"><span class="vp-ct">10:57</span> Tracing a session, cost dashboard and wrap-up</li>
+          </ol>
+        </div>
       </figure>
     </section>

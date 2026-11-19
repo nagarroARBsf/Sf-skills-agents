@@ -74,24 +74,38 @@ python3 -m http.server -d site 8000        # then open http://localhost:8000
 The build stops with an error if an include is missing. It adds `?v=<hash>` to every style and
 script link, so visitors get changed files at once even though they are cached for a year.
 The local preview has no `/api/lead`, so the sign-up form shows an error there; that is expected.
+Python's `http.server` does not answer byte-range requests, so in the local preview the videos play but
+cannot seek: chapter clicks and dragging the progress bar jump back to 0:00. Azure serves ranges, so the
+deployed site seeks normally.
 
 ## Videos
 
-Both videos are hosted on Google Drive (shared "Anyone with the link") and play inside the page
-through Drive's embedded player, so they are not part of the Azure package:
+Both videos are served from the site itself. The MP4s are **not in git** (too large): keep them in
+`website/media/`, and the build copies each one the page references as `src="assets/<name>.mp4"` into
+the package. Posters (`*_poster.jpg`) are small and live in `assets/`.
 
-| Video | Where on the page | Drive file |
-|---|---|---|
-| Marketing overview (`sf_sdlc_marketing_v2.2_preview.mp4`) | top of `sections/overview.html` | `1vgA5suHOTlm1-1MWTMMORPRYk_bOVFHc` |
-| Setup tutorial (`sf_sdlc_tutorial_v3.2.mp4`) | `sections/tutorial.html` | `1B2ponagrq0XoRd-9kUpb6v48sMnEvQSV` |
+| Video | Where on the page | File in `website/media/` | Player |
+|---|---|---|---|
+| Marketing overview | top of `sections/overview.html` | `sf_sdlc_marketing_v2.2.mp4` (13 MB) | the browser's own controls |
+| Setup tutorial | `sections/tutorial.html` | `sf_sdlc_tutorial_v3.2.mp4` (~50 MB) | chapter player (`scripts/video-player.js`, `styles/video-player.css`) |
 
-To replace a video, upload the new file to Drive, share it as "Anyone with the link", and change the
-file ID in the iframe's `https://drive.google.com/file/d/<id>/preview`. If the Drive file stops being
-shared, visitors see a Google sign-in box instead of the video. Do not add `autoplay` to the iframe.
+The tutorial player works like YouTube's: the progress bar is split into one segment per chapter, hovering
+shows the chapter title and time, the current chapter shows next to the time, and the chapter list under the
+video jumps to a chapter and follows playback. Keys while the player has focus: space or `k` play/pause,
+arrows ±5 s, `j`/`l` ±10 s, `m` mute, `f` full screen. Without JavaScript the browser's own controls appear
+and the chapter list is plain text.
 
-A video in `website/media/` (git-ignored) is copied into the package only if the page references it as
-`src="assets/<name>.mp4"`. Azure Blob Storage is not an option: Nagarro policy denies storage accounts
-open to the internet.
+- **Change chapters**: edit the `<li data-t="m:ss">` rows in `sections/tutorial.html` (time in the
+  attribute and in the `vp-ct` span). Order does not matter; the player sorts them.
+- **Replace a video**: make a web copy (H.264, `-movflags +faststart` so it starts before it has fully
+  downloaded; the tutorial was encoded at about 470 kb/s two-pass, which keeps text readable at 1080p),
+  put it in `website/media/`, change `src`, `poster` and, for the tutorial, `data-duration` and the
+  chapter times. Keep the whole site under the 250 MB Free-plan limit; the build prints the total.
+- Do not add `autoplay`. Azure Blob Storage is not an option: Nagarro policy denies storage accounts open
+  to the internet.
+
+Clicking a chapter is recorded as `video_chapter` (with the chapter title) alongside `video_play` and
+`video_complete`.
 
 ## What the site records
 
