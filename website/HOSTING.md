@@ -22,21 +22,21 @@ The public site for the Nagarro Salesforce SDLC kit. The source is `website/` (l
 | Custom domain | Planned: `www.nagarro-salesforce-sdlc.com`. **Not attached yet.** Status: waiting for Nagarro IT to buy it. |
 
 ## How files are stored
-Everything, including the zips and the video, is uploaded as static files inside the Static Web App.
-No separate storage is used. The app serves them under these paths:
+Everything except the videos is uploaded as static files inside the Static Web App. The two videos
+(marketing overview and setup tutorial) are on Google Drive and play inside the page through Drive's
+embedded player (2026-11-19); see the Videos section of [README.md](README.md). Site size is about 35 MB. The app serves them under these paths:
 
 | URL path | Built from |
 |---|---|
 | `/` | `website/src/index.html` with its partials, sections and snippets |
 | `/styles/…`, `/scripts/…` | `website/src/styles/`, `website/src/scripts/` |
 | `/assets/…` | `website/assets/` (diagrams and images) |
-| `/assets/sf_sdlc_tutorial.mp4` | `website/media/sf_sdlc_tutorial.mp4` (about 190 MB, 11 min, v3.1; git-ignored). Site total is about 215 MB of the 250 MB Free-plan limit, and 100 GB/month is about 530 full plays |
 | `/api/lead` | `website/api/lead/` (managed Azure Function, sign-up form) |
 | `/downloads/sf-sdlc-plugin.zip` | zip of `plugins/sf-sdlc/` |
 | `/downloads/claude-folder.zip` | zip of `.claude/` |
 | `/staticwebapp.config.json` | `website/staticwebapp.config.json` (page fallback, MIME types, caching, headers, API runtime) |
 
-Videos live in `website/media/`, which is git-ignored. The build warns if a video the page uses is missing.
+`website/media/` (git-ignored) is copied only for videos the page references as `assets/<name>.mp4`; none do now.
 The build also prints the total size: the Free plan allows 250 MB per site and 100 GB of downloads a month.
 
 ## Build and deploy
@@ -45,7 +45,7 @@ The build also prints the total size: the Free plan allows 250 MB per site and 1
 # 1. Regenerate the plugin if .claude/ changed
 python3 scripts/build-claude-plugin.py
 
-# 2. Build site/ (HTML, assets, video, both zips, config)
+# 2. Build site/ (HTML, assets, both zips, config; videos are on Google Drive)
 python3 scripts/build-site.py
 
 # 3. Check that the Azure login works

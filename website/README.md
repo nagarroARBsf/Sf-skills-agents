@@ -77,10 +77,21 @@ The local preview has no `/api/lead`, so the sign-up form shows an error there; 
 
 ## Videos
 
-Videos are kept out of git. Put them in `website/media/` (for example `sf_sdlc_tutorial.mp4`);
-the build copies them to `site/assets/`. The Free hosting plan allows 250 MB for the whole site and
-100 GB of downloads per month, so before adding more videos consider hosting them elsewhere
-(YouTube or Azure Blob Storage) and linking to them. The build prints the site size.
+Both videos are hosted on Google Drive (shared "Anyone with the link") and play inside the page
+through Drive's embedded player, so they are not part of the Azure package:
+
+| Video | Where on the page | Drive file |
+|---|---|---|
+| Marketing overview (`sf_sdlc_marketing_v2.1.mp4`, 1:12) | top of `sections/overview.html` | `1afyGrqBLys6jbcJ0p9bd7uwJYXq1Xhn3` |
+| Setup tutorial (`sf_sdlc_tutorial_v3.2.mp4`, 12:18) | `sections/tutorial.html` | `1DsP2swkd32meCzgK4f1KUX7cRQr68h26` |
+
+To replace a video, upload the new file to Drive, share it as "Anyone with the link", and change the
+file ID in the iframe's `https://drive.google.com/file/d/<id>/preview`. If the Drive file stops being
+shared, visitors see a Google sign-in box instead of the video. Do not add `autoplay` to the iframe.
+
+A video in `website/media/` (git-ignored) is copied into the package only if the page references it as
+`src="assets/<name>.mp4"`. Azure Blob Storage is not an option: Nagarro policy denies storage accounts
+open to the internet.
 
 ## What the site records
 

@@ -6,7 +6,7 @@
   website/src/styles/, scripts/  copied; links get ?v=<hash> so browsers pick up changes
   website/site.config.json   analytics and sign-up settings, exposed as window.SFSDLC_CONFIG
   website/assets/            images, copied to site/assets/
-  website/media/             videos (git-ignored), copied to site/assets/
+  website/media/             videos (git-ignored), copied to site/assets/ only if the page references them
   website/staticwebapp.config.json  Azure Static Web Apps settings
   site/downloads/*.zip       the plugin (plugins/sf-sdlc/) and the copy-in folder (.claude/)
 
@@ -101,11 +101,6 @@ def main():
     for d in ("styles", "scripts"):
         shutil.copytree(SRC / d, SITE / d)
     shutil.copytree(WEB / "assets", SITE / "assets")
-    media = sorted(p for p in (WEB / "media").glob("*") if p.is_file() and p.suffix.lower() in {".mp4", ".webm"}) if (WEB / "media").is_dir() else []
-    for v in media:
-        shutil.copy(v, SITE / "assets" / v.name)
-        print(f"video {v.name}: {v.stat().st_size / 1e6:.1f} MB")
-
     html = include((SRC / "index.html").read_text(encoding="utf-8"))
     for marker, value in (("<!-- @snippets -->", snippets()), ("<!-- @config -->", config_script())):
         if marker not in html:
@@ -113,8 +108,13 @@ def main():
         html = html.replace(marker, value)
     if "<!-- @" in html:
         fail(f"unknown marker: {html[html.index('<!-- @'):][:60]}")
-    for ref in re.findall(r'src="assets/([\w.-]+\.(?:mp4|webm))"', html):
-        if not (SITE / "assets" / ref).is_file():
+    # Only videos the page references are copied; videos hosted elsewhere (Google Drive) stay out of the package.
+    for ref in sorted(set(re.findall(r'src="assets/([\w.-]+\.(?:mp4|webm))"', html))):
+        v = WEB / "media" / ref
+        if v.is_file():
+            shutil.copy(v, SITE / "assets" / ref)
+            print(f"video {ref}: {v.stat().st_size / 1e6:.1f} MB")
+        else:
             print(f"WARNING: assets/{ref} is used by the page but not in website/media/; the video will not play")
     (SITE / "index.html").write_text(fingerprint(html), encoding="utf-8")
     shutil.copy(WEB / "staticwebapp.config.json", SITE / "staticwebapp.config.json")
