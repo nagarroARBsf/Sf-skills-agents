@@ -82,8 +82,8 @@ through Drive's embedded player, so they are not part of the Azure package:
 
 | Video | Where on the page | Drive file |
 |---|---|---|
-| Marketing overview (`sf_sdlc_marketing_v2.1.mp4`, 1:12) | top of `sections/overview.html` | `1afyGrqBLys6jbcJ0p9bd7uwJYXq1Xhn3` |
-| Setup tutorial (`sf_sdlc_tutorial_v3.2.mp4`, 12:18) | `sections/tutorial.html` | `1DsP2swkd32meCzgK4f1KUX7cRQr68h26` |
+| Marketing overview (`sf_sdlc_marketing_v2.2_preview.mp4`) | top of `sections/overview.html` | `1vgA5suHOTlm1-1MWTMMORPRYk_bOVFHc` |
+| Setup tutorial (`sf_sdlc_tutorial_v3.2.mp4`) | `sections/tutorial.html` | `1B2ponagrq0XoRd-9kUpb6v48sMnEvQSV` |
 
 To replace a video, upload the new file to Drive, share it as "Anyone with the link", and change the
 file ID in the iframe's `https://drive.google.com/file/d/<id>/preview`. If the Drive file stops being
