@@ -1,4 +1,4 @@
-# sf-sdlc — Salesforce delivery lifecycle for Claude Code
+# sf-sdlc — Salesforce delivery lifecycle for Claude Code (Enterprise Edition 3.0)
 
 Agents, commands, guard hooks and Salesforce skills that take a project from meeting transcripts to
 a production release: BRD → Jira stories → architecture → spec and plan → build → code review →
@@ -49,17 +49,17 @@ with the `code-analyzer` plugin and Java 11+. Full guide: `SETUP.md` in the repo
 
 | Part | Contents |
 |---|---|
-| `agents/` | Project scout, BRD, Jira story, solution architect, plan, developer, code review (read-only), QA test, deployment, release |
-| `commands/` | `setup` `doctor` `skills` · `brd` `stories` `architecture` `diagram` · `constitution` `specify` `clarify` `plan` `tasks` `implement` `verify` · `review` `analyze` · `test-cases` `test-run` `retest` · `deploy` `release` · `trace` |
-| `skills/` | 11 SDLC process skills and `salesforce-coding-rules` |
-| `skill-library/` | 176 Salesforce skills, not loaded; `sf-sdlc skills install` copies the chosen ones into the project |
+| `agents/` | Four: BRD, solution architect and QA test (including browser UI tests), where a stage reads large inputs, and the code reviewer (Code Analyzer plus the coding rules, read-only, independent of the author). Planning and development are your coding agent's own plan mode and editing, in the spec-driven format. Every other stage runs in the main conversation under its skill |
+| `commands/` | `setup` `doctor` `skills` · `brd` `stories` `architecture` `diagram` · `constitution` `specify` `clarify` `plan` `tasks` `implement` `verify` · `review` `analyze` · `test-cases` `test-run` `ui-test` `retest` · `deploy` `release` · `trace` |
+| `skills/` | 10 SDLC process skills, `sf-sdlc-setup` (the kit's setup skill) and `salesforce-coding-rules` (Apex, tests, LWC, Flow, metadata, SDLC documents, spec-driven development) |
+| `skill-library/` | 177 Salesforce and diagram skills, not loaded; `sf-sdlc skills install` copies the chosen ones into the project |
 | `hooks/` | Session facts; production-org, secret, branch, commit and hosted-MCP guards; source checks on write; failure triage; audit log |
-| `bin/sf-sdlc` | `doctor`, `init`, `env status\|init\|gh-login`, `config`, `detect`, `inventory`, `delta`, `skills`, `org classify`, `analyze`, `check`, `deploy`, `test`, `diagram`, `audit`, `mcp status` |
+| `bin/sf-sdlc` | `doctor`, `init`, `env status\|init\|gh-login`, `config`, `detect`, `inventory`, `delta`, `skills`, `templates list\|copy`, `org classify`, `analyze`, `check`, `deploy`, `test`, `diagram`, `audit`, `mcp status` |
 | `bin/sf-atlassian-mcp` | Starts the community `mcp-atlassian` server with the Jira/Confluence tokens from the project's `.env` (uv or Docker); an empty server while they are unset |
 | `bin/sf-mcp-proxy` | stdio bridge to one Salesforce Hosted MCP Server, signed in through the `sf` CLI; never stores or prints a token |
 | `workflows/` | `sdlc-review-changes`, `sdlc-stories-fanout`, `sdlc-release-readiness` |
 | `monitors/` | `deploy-watch`, `test-watch` (experimental in Claude Code) |
-| `output-styles/` | Salesforce Delivery Lead (plain English), Salesforce Engineer (terse, evidence-led) |
+| `output-styles/` | Salesforce Business Analyst, Salesforce Developer (terse, evidence-led), Salesforce Manager (high-level status, risks, decisions) |
 | `themes/` | SF SDLC Dark, SF SDLC Light (experimental in Claude Code) |
 | `.mcp.json` | Atlassian remote MCP server for Jira and Confluence (sign in once with `/mcp`), `atlassian-token` (the same through API tokens in `.env`), and the Salesforce Hosted MCP Servers `sf-metadata-grounding`, `sf-metadata-experts`, `sf-headless-360`, `sf-data360` through `bin/sf-mcp-proxy`, signed in with your `sf` CLI login. Turn them on in Setup → MCP Servers; choose them with `mcp.servers`; check with `sf-sdlc mcp status` |
 

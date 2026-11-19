@@ -181,12 +181,13 @@ test('catalog and detection rules are consistent', () => {
   const missing = rules.flatMap((r) => r.skills).filter((s) => !names.has(s));
   assert.deepStrictEqual([...new Set(missing)], [], 'detection rules name skills that are not in the catalog');
   for (const s of catalog.skills) assert.ok(fs.existsSync(path.join(KIT, s.location, s.name, 'SKILL.md')), s.name);
-  // Always-loaded skills are the SDLC process skills only.
-  assert.deepStrictEqual(catalog.skills.filter((s) => s.location === 'skills' && !s.name.startsWith('sdlc-')), []);
+  // Always-loaded skills are the SDLC process skills plus the kit's own setup skill.
+  assert.deepStrictEqual(catalog.skills.filter((s) => s.location === 'skills' && !s.name.startsWith('sdlc-') && s.name !== 'sf-sdlc-setup').map((s) => s.name), []);
 });
 
 test('agents and commands reference things that exist', () => {
   const skills = new Set(fs.readdirSync(path.join(KIT, 'skills')));
+  const workflows = fs.readdirSync(path.join(KIT, 'workflows')).map((f) => f.replace(/\.js$/, ''));
   const agents = fs.readdirSync(path.join(KIT, 'agents')).map((f) => f.replace(/\.md$/, ''));
   for (const a of agents) {
     const text = fs.readFileSync(path.join(KIT, 'agents', a + '.md'), 'utf8');
@@ -198,11 +199,85 @@ test('agents and commands reference things that exist', () => {
     const text = fs.readFileSync(path.join(KIT, 'commands', f), 'utf8');
     const m = /Use the \*\*([\w-]+)\*\* subagent/.exec(text);
     if (m) assert.ok(agents.includes(m[1]), `${f} routes to missing agent ${m[1]}`);
-    for (const s of text.match(/`sdlc-[a-z-]+`/g) || []) {
+    for (const s of text.match(/`(sf-)?sdlc-[a-z-]+`/g) || []) {
       const n = s.replace(/`/g, '');
-      assert.ok(skills.has(n) || agents.includes(n), `${f} names unknown skill or agent ${n}`);
+      assert.ok(skills.has(n) || agents.includes(n) || workflows.includes(n), `${f} names unknown skill, agent or workflow ${n}`);
     }
   }
+});
+
+test('kit 3.0: four agents (BRD, architect, code review, QA); the other stages are skills run in the main conversation', () => {
+  const agents = fs.readdirSync(path.join(KIT, 'agents')).map((f) => f.replace(/\.md$/, '')).sort();
+  assert.deepStrictEqual(agents, ['sdlc-brd-agent', 'sdlc-code-review-agent', 'sdlc-qa-test-agent', 'sdlc-solution-architect-agent']);
+  const removed = lib.OBSOLETE_KIT_FILES.filter((f) => f.startsWith('agents/')).map((f) => path.basename(f, '.md'));
+  assert.ok(removed.length === 6 && !removed.includes('sdlc-code-review-agent'));
+  const scan = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (e.name === 'skill-library' ? [] : scan(path.join(dir, e.name))) : /\.(md|js|json)$/.test(e.name) ? [path.join(dir, e.name)] : []));
+  for (const f of scan(KIT)) {
+    if (f.endsWith(path.join('hooks', 'lib.js'))) continue; // the obsolete-file list names them on purpose
+    const text = fs.readFileSync(f, 'utf8');
+    for (const r of [...removed, 'sdlc-project-setup']) assert.ok(!text.includes(r), `${path.relative(KIT, f)} still mentions ${r}`);
+  }
+  for (const c of ['sdd-plan', 'sdd-implement', 'sdlc-deploy', 'sdlc-release', 'sdlc-stories', 'sdlc-skills', 'sdlc-setup']) {
+    const body = fs.readFileSync(path.join(KIT, 'commands', c + '.md'), 'utf8').split(/^---\s*$/m)[2];
+    assert.doesNotMatch(body, /subagent to/, `${c} runs in the main conversation`);
+  }
+  for (const c of ['sdlc-deploy', 'sdlc-release']) assert.match(fs.readFileSync(path.join(KIT, 'commands', c + '.md'), 'utf8'), /^disable-model-invocation: true$/m, `${c} is started by a person only`);
+  const qa = fs.readFileSync(path.join(KIT, 'agents', 'sdlc-qa-test-agent.md'), 'utf8');
+  assert.match(qa, /^skills:.*\bsdlc-ui-testing\b/m, 'the QA agent preloads the UI testing skill');
+  assert.match(fs.readFileSync(path.join(KIT, 'commands', 'sdlc-ui-test.md'), 'utf8'), /Use the \*\*sdlc-qa-test-agent\*\* subagent/);
+  // The reviewer is independent and read-only: its own context, no file-writing tools, Code Analyzer run.
+  const review = fs.readFileSync(path.join(KIT, 'agents', 'sdlc-code-review-agent.md'), 'utf8');
+  assert.match(review, /^tools: Read, Glob, Grep, Bash$/m, 'the review agent cannot write files');
+  assert.match(review, /^skills:.*\bsdlc-code-review\b/m);
+  assert.match(review, /sf-sdlc analyze --changed/);
+  assert.match(fs.readFileSync(path.join(KIT, 'commands', 'sdlc-review.md'), 'utf8'), /Use the \*\*sdlc-code-review-agent\*\* subagent/);
+});
+
+test('plan mode follows the spec-driven plan format', () => {
+  const md = fs.readFileSync(path.join(KIT, 'CLAUDE.md'), 'utf8');
+  assert.match(md, /plan mode is on/);
+  assert.match(md, /12 sections/);
+  assert.match(fs.readFileSync(path.join(KIT, 'skills', 'sdlc-spec-driven-development', 'SKILL.md'), 'utf8'), /## Plan mode and planning requests/);
+});
+
+test('output styles: business analyst, developer, manager', () => {
+  const styles = fs.readdirSync(path.join(KIT, 'output-styles')).sort();
+  assert.deepStrictEqual(styles, ['sf-business-analyst.md', 'sf-developer.md', 'sf-manager.md']);
+  for (const s of styles) {
+    const text = fs.readFileSync(path.join(KIT, 'output-styles', s), 'utf8');
+    assert.match(text, /^name: Salesforce (Business Analyst|Developer|Manager)$/m, s);
+    assert.match(text, /^keep-coding-instructions: true$/m, s);
+  }
+});
+
+test('paths.* must stay inside the project', () => {
+  assert.ok(lib.validateConfig(cfg()).ok);
+  assert.match(lib.validateConfig(cfg({ paths: { docs: 'docs/sdlc', specs: 'specs', templates: '../shared' } })).errors.join(), /paths\.templates must stay inside/);
+  assert.match(lib.validateConfig(cfg({ paths: { docs: '', specs: 'specs', templates: 't' } })).errors.join(), /paths\.docs must be a folder/);
+});
+
+test('CLI: templates list and copy into paths.templates, never overwriting; doctor names stale 2.x files', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-tpl-'));
+  const cli = (...a) => JSON.parse(spawnSync('node', [path.join(KIT, 'bin', 'sf-sdlc'), ...a, '--json'], { cwd: dir, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: dir } }).stdout);
+  const list = cli('templates', 'list');
+  assert.strictEqual(list.folder, 'docs/sdlc/templates');
+  const ids = list.templates.map((x) => x.id);
+  for (const id of ['jira/jira-process-template.md', 'jira/story-template.md', 'jira/jira-csv-import.md', 'brd/brd-template.md', 'spec/plan-template.md', 'release/release-notes-template.md']) assert.ok(ids.includes(id), id);
+  assert.ok(list.templates.every((x) => !x.overridden));
+  const first = cli('templates', 'copy', 'jira');
+  assert.strictEqual(first.copied.length, 4);
+  const f = path.join(dir, 'docs/sdlc/templates/jira/jira-process-template.md');
+  fs.writeFileSync(f, 'our process');
+  const again = cli('templates', 'copy', 'jira/jira-process-template.md');
+  assert.deepStrictEqual(again.copied, []);
+  assert.strictEqual(fs.readFileSync(f, 'utf8'), 'our process', 'a team copy is never overwritten');
+  assert.ok(cli('templates', 'list').templates.find((x) => x.id === 'jira/jira-process-template.md').overridden);
+  assert.strictEqual(cli('templates', 'copy', 'nope').ok, false);
+  assert.deepStrictEqual(lib.obsoleteKitFiles(dir), []);
+  fs.mkdirSync(path.join(dir, '.claude/agents'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '.claude/agents/sdlc-plan-agent.md'), 'x');
+  assert.deepStrictEqual(lib.obsoleteKitFiles(dir), [path.join('.claude', 'agents', 'sdlc-plan-agent.md')]);
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('CLI: init, skills install/sync/remove in a temp project', () => {
@@ -343,7 +418,7 @@ test('hosted MCP: routes, tool names, replies and config', () => {
   assert.strictEqual(mcp.classifyStatus(401, ''), 'auth');
   assert.strictEqual(mcp.classifyStatus(202, ''), 'ok');
   assert.strictEqual(mcp.classifyStatus(500, ''), 'unreachable');
-  assert.deepStrictEqual(mcp.enabledServers(cfg()), ['metadata-experts', 'metadata-grounding']);
+  assert.deepStrictEqual(mcp.enabledServers(cfg()), ['metadata-experts', 'metadata-grounding', 'sobject-reads']);
   assert.deepStrictEqual(mcp.enabledServers(cfg({ mcp: { servers: ['headless-360', 'bogus'] } })), ['headless-360']);
   const c = cfg({ orgs: { dev: 'my-dev' }, mcp: { org: 'dev' } });
   assert.strictEqual(mcp.mcpOrg(os.tmpdir(), c, {}), 'my-dev');
@@ -419,8 +494,8 @@ test('setup: one run creates files, picks skills from the code inside the budget
   assert.doesNotMatch(env, /secret/);
   assert.match(env, /^CONFLUENCE_URL=$/m);
   // mcp enable / disable edit mcp.servers and refuse unknown names.
-  assert.deepStrictEqual(cli('mcp', 'enable', 'sobject-reads', '--json').json.servers, ['metadata-experts', 'metadata-grounding', 'sobject-reads']);
-  assert.deepStrictEqual(cli('mcp', 'disable', 'metadata-grounding', '--json').json.servers, ['metadata-experts', 'sobject-reads']);
+  assert.deepStrictEqual(cli('mcp', 'enable', 'headless-360', '--json').json.servers, ['metadata-experts', 'metadata-grounding', 'sobject-reads', 'headless-360']);
+  assert.deepStrictEqual(cli('mcp', 'disable', 'metadata-grounding', '--json').json.servers, ['metadata-experts', 'sobject-reads', 'headless-360']);
   assert.notStrictEqual(cli('mcp', 'enable', 'made-up', '--json').status, 0);
   assert.ok(cli('config', 'validate', '--json').json.ok);
   fs.rmSync(dir, { recursive: true, force: true });

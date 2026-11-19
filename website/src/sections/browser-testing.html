@@ -1,13 +1,13 @@
     <section id="browser-testing" data-tab="action">
       <h2>Live UI testing with Playwright</h2>
-      <p class="lead">SF-SDLC ships the Playwright MCP server as <code>sf-browser</code>. The QA agent opens a real browser on your sandbox, clicks through the test case, checks what a user would see, such as whether a Lightning Web Component renders correctly on the Account page, and saves a screenshot as evidence. When the screenshot shows a problem, it becomes a defect, the fix is deployed to the sandbox, and the same check runs again.</p>
+      <p class="lead">SF-SDLC ships the Playwright MCP server as <code>sf-browser</code>. Run <code>/sf-sdlc:ui-test</code> with a component, page, story or test case IDs, and the QA agent opens a real browser on your sandbox, clicks through the test case, checks what a user would see, such as whether a Lightning Web Component renders correctly on the Account page, and saves a screenshot as evidence. When the screenshot shows a problem, it becomes a defect, the fix is deployed to the sandbox, and the same check runs again.</p>
 
       <div class="demo" id="browserDemo">
         <div class="demo-bar">
           <span style="font-size:13.5px;color:var(--muted)"><span class="live-dot"></span>Replay: find a layout bug, fix it, re-test · VS Code with the Claude Code extension</span>
           <button type="button" class="demo-play" data-demo-toggle aria-pressed="false">Pause</button>
         </div>
-        <div class="screen" role="img" aria-label="Animation: in VS Code, Claude Code runs a UI test case. Playwright opens the Account record page in a Salesforce sandbox. The Account Revenue Chart component is misaligned: it overflows its card and the month labels are offset. The agent takes a screenshot, fails the case and logs a defect. The developer agent fixes the component's CSS, deploys it to the sandbox, and the re-test shows the chart aligned and passes.">
+        <div class="screen" role="img" aria-label="Animation: in VS Code, Claude Code runs a UI test case. Playwright opens the Account record page in a Salesforce sandbox. The Account Revenue Chart component is misaligned: it overflows its card and the month labels are offset. The QA agent takes a screenshot, fails the case and logs a defect. Claude, in the main conversation, fixes the component's CSS, deploys it to the sandbox, and the re-test shows the chart aligned and passes.">
           <div class="vs">
             <div class="vs-title">US-04-02 — acme-salesforce — Visual Studio Code</div>
             <div class="vs-body">
@@ -60,14 +60,14 @@
               <div class="vs-cc">
                 <div class="vs-cc-head"><span></span>Claude Code</div>
                 <div class="vs-cc-log">
-                  <div class="cc-msg cc-user" data-at="1">/sf-sdlc:test-run uat TC-US-04-02-007</div>
+                  <div class="cc-msg cc-user" data-at="1">/sf-sdlc:ui-test TC-US-04-02-007 uat</div>
                   <div class="cc-msg cc-agent" data-at="1"><b>sdlc-qa-test-agent</b> · subagent<small>runs the UI case in sandbox uat</small></div>
                   <div class="cc-msg cc-tool" data-at="1"><b>Bash</b> sf-sdlc browser url --org uat<br>→ https://acme--uat.sandbox.lightning.force.com</div>
                   <div class="cc-msg cc-tool" data-at="2"><b>sf-browser</b> · browser_navigate<br><span class="hook">pre-mcp · sandbox ✓ allowed</span></div>
                   <div class="cc-msg cc-tool" data-at="5"><b>sf-browser</b> · browser_take_screenshot</div>
                   <div class="cc-msg cc-fail" data-at="5"><b>✗ FAIL</b> TC-US-04-02-007 · the chart overflows its card and the month labels are offset from their bars.<br>Logged <code>DEF-012</code> with the screenshot.</div>
                   <div class="cc-msg cc-user" data-at="6">Fix DEF-012, then re-test it</div>
-                  <div class="cc-msg cc-agent" data-at="6"><b>sdlc-developer-agent</b> · subagent<small>cause: fixed 120% width, stray axis padding</small></div>
+                  <div class="cc-msg cc-skill" data-at="6"><b>main conversation</b> · fix<small>cause: fixed 120% width, stray axis padding</small></div>
                   <div class="cc-msg cc-tool" data-at="6"><b>Edit</b> accountRevenueChart.css</div>
                   <div class="cc-msg cc-tool" data-at="7"><b>Bash</b> sf project deploy start -o uat -m LightningComponentBundle:accountRevenueChart<br><span class="hook">pre-bash · uat is a sandbox ✓ allowed</span></div>
                   <div class="cc-msg cc-tool" data-at="8"><b>sf-browser</b> · browser_navigate · re-test</div>
@@ -119,11 +119,12 @@
 
       <h3>How a UI test runs</h3>
       <div class="steps">
-        <div class="card step"><div><h3>Claude starts the browser</h3><p>When the QA agent needs a UI case, Claude Code starts <code>sf-browser</code> (<code>@playwright/mcp</code>, pinned, fetched by <code>npx</code>). It uses Google Chrome, or Chrome for Testing when Chrome is missing. Nothing to install beyond Node.js.</p></div></div>
+        <div class="card step"><div><h3>Claude starts the browser</h3><p>When the QA agent needs a browser (<code>/sf-sdlc:ui-test</code>, or the UI cases of <code>test-run</code> and <code>retest</code>), Claude Code starts <code>sf-browser</code> (<code>@playwright/mcp</code>, pinned, fetched by <code>npx</code>). It uses Google Chrome, or Chrome for Testing when Chrome is missing. Nothing to install beyond Node.js.</p></div></div>
         <div class="card step"><div><h3>You sign in once</h3><p>The first time, the browser shows the Salesforce login page and you sign in yourself. The session is kept in <code>.sf-sdlc/browser-profile/</code>, so later sessions and laptop restarts reuse it until Salesforce's own timeout. Claude never sees or types a password.</p></div></div>
-        <div class="card step"><div><h3>The agent follows the test case</h3><p>It navigates, reads the page's accessibility snapshot, clicks and types only what the case says, and checks each expected result.</p></div></div>
+        <div class="card step"><div><h3>The agent follows the test case</h3><p>It finds where the component is placed, navigates, reads the page's accessibility snapshot, clicks and types only what the case says, and checks each expected result. A component with no test cases gets a <strong>component check</strong> derived from its source and acceptance criteria: states, data, interactions, messages, permissions per persona, keyboard accessibility, mobile width, console errors and failed server calls.</p></div></div>
         <div class="card step"><div><h3>Evidence and defects</h3><p>One screenshot per verified expected result goes to <code>test-runs/evidence/&lt;TR-id&gt;/</code>. A failure becomes a <code>DEF-nnn</code> with steps, expected and actual results and the screenshot; <code>/sf-sdlc:retest</code> re-runs it after the fix.</p></div></div>
       </div>
       <div class="callout warn"><p><strong>Sandboxes only.</strong> <code>sf-sdlc browser url</code> returns an address only for sandbox, scratch and developer orgs, never a session link. The <code>pre-mcp</code> hook asks before the browser opens a production-class or unclassified org, session IDs and OAuth codes are redacted from what the browser returns, and the browser profile is blocked from Claude's file tools.</p></div>
-      <p>Commands: <code>sf-sdlc browser status</code> (ready, and where the sign-in is kept), <code>sf-sdlc browser url --org uat</code>, <code>sf-sdlc browser reset</code> (sign out everywhere). Settings: <code>browser.enabled</code>, <code>browser.browser</code> (<code>chrome</code>, <code>msedge</code>, <code>chromium</code>, <code>firefox</code>, <code>webkit</code>), <code>browser.headless</code>.</p>
+      <p>In Claude Code: <code>/sf-sdlc:ui-test &lt;component | page | story | TC IDs&gt; [org]</code>, for example <code>/sf-sdlc:ui-test accountRevenueChart qa</code>. It follows the <code>sdlc-ui-testing</code> skill and writes a <code>TR-*</code> report with screenshots and any <code>DEF-nnn</code>. For LWC projects, setup also recommends the <code>experience-accessibility-validate</code> library skill.</p>
+      <p>CLI: <code>sf-sdlc browser status</code> (ready, and where the sign-in is kept), <code>sf-sdlc browser url --org uat</code>, <code>sf-sdlc browser reset</code> (sign out everywhere). Settings: <code>browser.enabled</code>, <code>browser.browser</code> (<code>chrome</code>, <code>msedge</code>, <code>chromium</code>, <code>firefox</code>, <code>webkit</code>), <code>browser.headless</code>.</p>
     </section>

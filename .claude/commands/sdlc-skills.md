@@ -2,7 +2,7 @@
 description: Recommend, install, remove or update the Salesforce skills this project needs
 argument-hint: "[recommend | install <names> | remove <names> | list | sync]"
 ---
-Use the **sdlc-project-scout-agent** subagent to manage this project's skills.
+Follow the `sf-sdlc-setup` skill, section "Skill requests", in this conversation.
 
 Request from the user: $ARGUMENTS
 

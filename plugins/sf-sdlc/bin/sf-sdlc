@@ -79,6 +79,8 @@ function doctorRows() {
     const rulesDir = path.join(root, '.claude', 'rules');
     add('kit rules in .claude/rules/', fs.existsSync(path.join(rulesDir, lib.KIT_RULE_FILE)), '', 'Run `sf-sdlc init` to install the kit rules as project files.', false);
   }
+  const stale = lib.obsoleteKitFiles(root);
+  add('no files left over from an older kit version', stale.length === 0, stale.length ? stale.join(', ') : '', `Delete these (kit 3.0 replaced them with skills and new output styles): ${stale.join(' ')}`, false);
   add('mermaid-cli (SVG diagrams for Jira/Confluence)', lib.has('mmdc'), '', 'npm install --global @mermaid-js/mermaid-cli', false);
   const py = ['python3', 'python'].find((c) => { if (!lib.has(c)) return false; const v = lib.run(c, ['--version'], { timeout: 10000 }); return /Python 3/.test(v.stdout + v.stderr); });
   add('Python 3 (draw.io skill scripts)', Boolean(py), py || 'not found', 'Install Python 3: https://www.python.org/downloads/', false);
@@ -1103,6 +1105,70 @@ async function setupCmd() {
   ].join('\n'));
 }
 
+// ------------------------------------------------------------------ templates
+
+// Document and Jira templates a team may replace with its own. The project copy lives in
+// <paths.templates>/<area>/<file> and wins over the kit's copy in the skill's references/.
+const TEMPLATE_AREAS = {
+  brd: 'sdlc-brd-generate',
+  jira: 'sdlc-jira-story-generate',
+  architecture: 'sdlc-architecture-diagram',
+  spec: 'sdlc-spec-driven-development',
+  qa: 'sdlc-qa-test-case-generate',
+  testing: 'sdlc-test-execution',
+  review: 'sdlc-code-review',
+  release: 'sdlc-deploy-release',
+  workflow: 'sdlc-workflow',
+};
+const TEMPLATE_EXTRAS = { jira: ['jira-csv-import.md'], review: ['review-checklist.md'] };
+
+function templateList() {
+  const base = cfg.paths.templates || 'docs/sdlc/templates';
+  const rows = [];
+  for (const [area, skill] of Object.entries(TEMPLATE_AREAS)) {
+    const refs = path.join(lib.KIT_ROOT, 'skills', skill, 'references');
+    if (!fs.existsSync(refs)) continue;
+    const found = [];
+    lib.walk(refs, (full, e, isDir) => { if (!isDir) found.push(path.relative(refs, full)); });
+    const files = found.filter((f) => /\.(md|ya?ml|csv)$/.test(f) && (/-template\.[a-z]+$/.test(path.basename(f)) || (TEMPLATE_EXTRAS[area] || []).includes(path.basename(f))));
+    for (const rel of files.sort()) {
+      const name = path.basename(rel);
+      const project = path.join(base, area, name);
+      rows.push({ id: `${area}/${name}`, area, skill, kit: path.relative(lib.KIT_ROOT, path.join(refs, rel)), project, overridden: fs.existsSync(path.join(root, project)) });
+    }
+  }
+  return { folder: base, templates: rows };
+}
+
+function templatesCmd() {
+  const sub = pos[1] || 'list';
+  const all = templateList();
+  if (sub === 'list') {
+    return out(all, () => `Project templates folder: ${all.folder}/ (a file there replaces the kit's copy)\n` +
+      all.templates.map((t) => `${t.overridden ? '✔ project' : '• kit    '}  ${t.id}`).join('\n') +
+      '\n\nCopy one to edit it: sf-sdlc templates copy <id | area | all>');
+  }
+  if (sub === 'copy') {
+    const want = pos.slice(2);
+    if (!want.length) fail('usage: sf-sdlc templates copy <id | area | all>  (ids from `sf-sdlc templates list`)');
+    const picked = all.templates.filter((t) => want.includes('all') || want.includes(t.id) || want.includes(t.area));
+    const unknown = want.filter((w) => w !== 'all' && !all.templates.some((t) => t.id === w || t.area === w));
+    if (unknown.length) fail(`unknown template or area: ${unknown.join(', ')}. Run \`sf-sdlc templates list\`.`);
+    const copied = [];
+    const skipped = [];
+    for (const t of picked) {
+      const dest = path.join(root, t.project);
+      if (fs.existsSync(dest)) { skipped.push(`${t.project} (exists; not overwritten)`); continue; }
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(path.join(lib.KIT_ROOT, t.kit), dest);
+      copied.push(t.project);
+    }
+    return out({ ok: true, copied, skipped }, () => [...copied.map((c) => `copied  ${c}`), ...skipped.map((s) => `skipped ${s}`)].join('\n') +
+      `\n\nEdit the copies to match your team's format; the skills now use them. Commit ${all.folder}/.`);
+  }
+  fail('usage: sf-sdlc templates list | templates copy <id | area | all>');
+}
+
 const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
 
   setup [--org <alias>] [--profile developer|admin|ba] [--install-tools] [--no-jira] [--no-git] [--offline]
@@ -1119,6 +1185,8 @@ const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
   delta [--from <git-ref>]     components new / changed / removed against a git ref (--manifest writes package.xml)
   skills recommend [--profile developer|admin|ba]
   skills install|remove <name...>, skills list [--all], skills sync [--dry-run]
+  templates list               document and Jira templates, and which ones the project overrides
+  templates copy <id|area|all> copy the kit's template into paths.templates for the team to edit
   org classify [alias]         production | sandbox | scratch | developer | unknown
   org login [--alias a] [--instance-url u]
                                browser sign-in (sf org login web) using SF_ORG_ALIAS and SF_LOGIN_URL from .env
@@ -1168,6 +1236,7 @@ function main() {
       return out(d, () => `Against ${d.base}:\n` + ['new', 'changed', 'removed'].map((k) => `${k.toUpperCase()} (${d[k].length})\n` + d[k].map((c) => `  ${c.type}: ${c.apiName}`).join('\n')).join('\n') + (d.manifestDir ? `\nmanifests written to ${d.manifestDir}/` : ''));
     }
     case 'skills': return skillsCmd();
+    case 'templates': return templatesCmd();
     case 'browser': return browserCmd();
     case 'org': {
       if (pos[1] === 'login') return orgLogin();

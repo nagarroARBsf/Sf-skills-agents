@@ -2,7 +2,7 @@
       <div class="callout"><p>Inspired by Salesforce's <a href="https://developer.salesforce.com" target="_blank" rel="noopener">Agent-Driven Development with the Headless Toolkit</a>: <a href="https://developer.salesforce.com/blogs/2026/11/accelerate-agent-driven-development-with-the-headless-toolkit" target="_blank" rel="noopener">read the Salesforce Developers post</a> or see <a href="#references">the references</a>.</p></div>
       <div class="hero">
         <div class="hero-text">
-          <div class="eyebrow">Getting started</div>
+          <div class="eyebrow">Getting started · Release 3.0, Enterprise Edition</div>
           <h1>Salesforce SDLC plugin for Claude Code</h1>
           <p class="lead">One plugin that takes a Salesforce project from meeting transcripts to a production release: grounding in your business and org, BRD, Jira stories, architecture, spec-driven build, code review, validated deployment, testing, re-test, release and observation, with Salesforce Hosted MCP Servers for org context and guard hooks around every org-changing command.</p>
           <p class="agent-strip"><a href="#install"><span class="dot ok"></span>Available for Claude Code</a><a href="#install"><span class="dot soon"></span>Codex, Cursor, GitHub Copilot, Antigravity and more: coming soon</a></p>
@@ -40,28 +40,28 @@
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 4 · Spec &amp; plan<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="5s" repeatCount="indefinite"/></text>
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 5 · Build<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="6s" repeatCount="indefinite"/></text>
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 6 · Review<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="7s" repeatCount="indefinite"/></text>
-<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 7 · Deploy<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="8s" repeatCount="indefinite"/></text>
-<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 8 · Test<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="9s" repeatCount="indefinite"/></text>
-<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 9 · Re-test<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="10s" repeatCount="indefinite"/></text>
+<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 7 · Test design<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="8s" repeatCount="indefinite"/></text>
+<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 8 · Deploy<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="9s" repeatCount="indefinite"/></text>
+<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 9 · Test &amp; re-test<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="10s" repeatCount="indefinite"/></text>
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 10 · Release<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="11s" repeatCount="indefinite"/></text>
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 11 · Observe<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="12s" repeatCount="indefinite"/></text>
 </svg>
           <figcaption>Built for Salesforce teams · by Nagarro</figcaption>
         </figure>
       </div>
-      <div class="lifecycle" aria-label="Lifecycle">
-        <span><b>0</b>Setup</span><span><b>G</b>Ground</span><span><b>1</b>BRD</span><span><b>2</b>Stories</span><span><b>3</b>Architecture</span><span><b>4</b>Spec &amp; plan</span><span><b>5</b>Build</span><span><b>6</b>Review</span><span><b>7</b>Deploy</span><span><b>8</b>Test</span><span><b>9</b>Re-test</span><span><b>10</b>Release</span><span><b>11</b>Observe</span>
+      <div class="lifecycle" role="list" aria-label="Lifecycle stages, setup to observe">
+        <span role="listitem" style="--i:0"><b>0</b>Setup</span><span role="listitem" style="--i:1"><b>1</b>BRD</span><span role="listitem" style="--i:2"><b>2</b>Stories</span><span role="listitem" style="--i:3"><b>3</b>Architecture</span><span role="listitem" style="--i:4"><b>4</b>Spec &amp; plan</span><span role="listitem" style="--i:5"><b>5</b>Build</span><span role="listitem" style="--i:6"><b>6</b>Review</span><span role="listitem" style="--i:7"><b>7</b>Test design</span><span role="listitem" style="--i:8"><b>8</b>Deploy</span><span role="listitem" style="--i:9"><b>9</b>Test &amp; re&#8209;test</span><span role="listitem" style="--i:10"><b>10</b>Release</span><span role="listitem" style="--i:11"><b>11</b>Observe</span>
       </div>
       <div class="stat-grid">
-        <div class="card stat"><b>10</b><span>agents, one per stage</span></div>
-        <div class="card stat"><b>22</b><span>slash commands</span></div>
-        <div class="card stat"><b>11</b><span>SDLC method skills</span></div>
-        <div class="card stat"><b>176</b><span>Salesforce skills, installed on demand</span></div>
+        <div class="card stat"><b>6</b><span>agents: 4 from the kit (BRD, architect, code reviewer, QA) and 2 built into your coding agent (planner, developer)</span></div>
+        <div class="card stat"><b>23</b><span>slash commands</span></div>
+        <div class="card stat"><b>11</b><span>always-available skills: 10 SDLC method skills and setup</span></div>
+        <div class="card stat"><b>177</b><span>Salesforce skills, installed on demand</span></div>
         <div class="card stat"><b>7</b><span>hook events guarded</span></div>
         <div class="card stat"><b>4</b><span>Salesforce Hosted MCP servers, signed in through the sf CLI</span></div>
-        <div class="card stat"><b>3 · 2 · 2</b><span>workflows · monitors · output styles</span></div>
+        <div class="card stat"><b>3 · 2 · 3</b><span>workflows · monitors · output styles</span></div>
       </div>
       <div class="callout"><p><strong>Hosted MCP Servers are required.</strong> They give the agents just the org context they need. See <a href="#hosted-mcp">how your coding agent connects to them, and which to turn on</a>.</p></div>
-      <div class="callout"><p><strong>See it work.</strong> Meet <a href="#agents">the ten agents</a>, watch <a href="#hooks-live">the hooks catch a production deploy</a>, see the QA agent <a href="#browser-testing">test an LWC in a real browser</a>, and trace every session's cost in <a href="#tracing">Langfuse</a>.</p></div>
-      <div class="callout"><p>Every stage writes a <strong>draft</strong> and stops. A person reviews it and fills in its approval record before the next stage starts. Agents never approve their own work.</p></div>
+      <div class="callout"><p><strong>See it work.</strong> See <a href="#agents">which stages run in an agent</a>, watch <a href="#hooks-live">the hooks catch a production deploy</a>, see the QA agent <a href="#browser-testing">test an LWC in a real browser</a>, and trace every session's cost in <a href="#tracing">Langfuse</a>.</p></div>
+      <div class="callout"><p>Every stage writes a <strong>draft</strong> and stops. A person reviews it and fills in its approval record before the next stage starts. Claude never approves its own work.</p></div>
     </section>

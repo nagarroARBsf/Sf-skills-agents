@@ -27,17 +27,22 @@
 .relay-step.done::before, .relay-step.on::before { background: var(--accent); }
 .relay-step.on .rs-dot { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); transform: scale(1.08); }
 .relay-step.on .rs-id { color: var(--accent-text); }
+.relay-step.main .rs-dot { border-style: dashed; }
+.relay-step.main.on .rs-dot, .relay-step.main.done .rs-dot { border-style: solid; }
+.relay-step.agent .rs-who { font-weight: 600; color: var(--text); }
+.relay-legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 0; font-size: 12.5px; color: var(--muted); }
+.relay-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--accent); margin-right: 6px; vertical-align: -1px; }
+.relay-legend i.main { border-style: dashed; border-color: var(--muted); }
+.relay-legend i.builtin { border-style: dotted; border-width: 2px; border-color: var(--text); }
+.relay-step.builtin .rs-dot { border-style: dotted; border-width: 2px; }
+.relay-step.builtin.on .rs-dot, .relay-step.builtin.done .rs-dot { border-style: solid; }
 .relay-gate { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 14px; flex-wrap: wrap; }
 .relay-gate .gate-pill { font: 600 11.5px var(--sans); border-radius: 999px; padding: 3px 10px; background: var(--proj-soft); color: var(--proj); white-space: nowrap; }
 .relay-gate .gate-pill.ok { background: var(--hand-soft); color: var(--hand); }
 
-/* ---------- agents: roster ---------- */
-.agent-roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin: 14px 0; max-width: 980px; }
+/* ---------- agents: cards (rail and panels in crew.css) ---------- */
 .agent-card { padding: 16px 16px 14px; transition: border-color .3s, box-shadow .3s, transform .3s; }
 .agent-card.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); transform: translateY(-2px); }
-.agent-card header { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
-.agent-card .ag-ico { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-text); }
-.agent-card .ag-ico svg { width: 19px; height: 19px; }
 .agent-card h3 { margin: 0; font-size: 15px; }
 .agent-card .ag-stage { font-size: 12px; color: var(--muted); }
 .agent-card p { margin: 0 0 10px; font-size: 13.5px; color: var(--muted); }
@@ -49,6 +54,8 @@
 .ag-tag.ro { background: var(--gen-soft); color: var(--gen); }
 .ag-tag.person { background: var(--proj-soft); color: var(--proj); }
 .ag-tag.yes { background: var(--hand-soft); color: var(--hand); }
+.ag-tag.builtin { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); margin: 0 0 0 4px; }
+.agent-card.builtin { border-style: dotted; border-width: 1.5px; }
 
 /* ---------- hooks player ---------- */
 .hookplay { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 12px; }
@@ -307,6 +314,9 @@
 .cc-agent { border: 1px solid #f0c7b6; background: #fff7f3; border-radius: .6cqw; padding: .55cqw .8cqw; font-size: .95cqw; }
 .cc-agent b { color: #b4532a; }
 .cc-agent small { display: block; color: #777; font-size: .85cqw; margin-top: .15cqw; }
+.cc-skill { border: 1px dashed #9cc3e6; background: #f3f8fd; border-radius: .6cqw; padding: .55cqw .8cqw; font-size: .95cqw; }
+.cc-skill b { color: #005fb8; }
+.cc-skill small { display: block; color: #777; font-size: .85cqw; margin-top: .15cqw; }
 .cc-fail { border: 1px solid #f3c2bc; background: #fff3f1; border-radius: .6cqw; padding: .6cqw .8cqw; }
 .cc-fail b { color: #b3261e; }
 

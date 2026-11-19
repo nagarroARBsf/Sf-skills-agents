@@ -25,7 +25,7 @@ Business analysts and managers who only produce documents (BRD, stories, test de
 notes) need Claude Code, Node.js and git only. You do not have to install anything by hand first:
 `/sf-sdlc:setup` checks each tool, explains what it is for and offers the install command for your
 operating system (step-by-step instructions are in
-`.claude/skills/sdlc-project-setup/references/environment-setup.md`).
+`.claude/skills/sf-sdlc-setup/references/environment-setup.md`).
 
 ## 2. Install
 
@@ -87,6 +87,10 @@ cp -r /path/to/Sf-skills-agents/.claude /path/to/your-project/
 Commands are then `/sdlc-<name>` and `/sdd-<name>`, and the CLI is `node .claude/bin/sf-sdlc`.
 Run `/sdlc-setup`. If the project already has a `.claude/` folder, merge `settings.json` by hand
 (the `hooks`, `permissions` and `env` blocks) instead of overwriting it.
+
+Upgrading a copy-in install from 2.x: copy the new `.claude/` over the old one, then run
+`node .claude/bin/sf-sdlc doctor`. Its "no files left over from an older kit version" row lists what
+3.0 removed (six agents, `skills/sdlc-project-setup/`, the two old output styles); delete those files.
 
 ### Roll out to a whole organisation (managed settings)
 
@@ -165,8 +169,8 @@ Validate with `sf-sdlc config validate`.
 | `orgs.dev`, `orgs.qa`, `orgs.uat`, `orgs.devHub` | The `sf` CLI alias of each org | `"orion-qa"` |
 | **`orgs.production`** | **Every alias or username that is a production org.** The guard treats these as production no matter what the org looks like | `["orion-prod"]` |
 | `git.mainBranch`, `git.integrationBranch` | Your branch names | `"main"`, `"develop"` |
-| `git.protectedBranches` | Branches agents may not push to; `*` is a wildcard | `["main", "develop", "release/*"]` |
-| `git.branchPattern`, `git.commitPattern`, `git.pullRequestBase` | Naming rules the plan and developer agents follow | `"feature/{ticket}-{slug}"`, `"{ticket}: {summary}"`, `"develop"` |
+| `git.protectedBranches` | Branches Claude may not push to; `*` is a wildcard | `["main", "develop", "release/*"]` |
+| `git.branchPattern`, `git.commitPattern`, `git.pullRequestBase` | Naming rules planning and implementation follow | `"feature/{ticket}-{slug}"`, `"{ticket}: {summary}"`, `"develop"` |
 | `jira.enabled`, `jira.site`, `jira.projectKey` | Turn on Jira issue creation; your site URL and project key | `true`, `"https://acme.atlassian.net"`, `"ORION"` |
 | `jira.issueTypes.*` | Your issue type names if they differ | `"Story"` |
 | `jira.fields.storyPoints`, `.epicLink`, `.acceptanceCriteria` | Custom field IDs in your Jira (Jira admin → Issues → Custom fields) | `"customfield_10016"` |
@@ -181,7 +185,8 @@ Validate with `sf-sdlc config validate`.
 | `deploy.allowDirectProductionDeploy` | `false` forces validate-then-quick-deploy for production | `false` |
 | `deploy.useDelta`, `deploy.waitMinutes` | Deploy only changed components; CLI wait time | `true`, `60` |
 | `paths.docs`, `paths.specs` | Where SDLC documents and specs live | `"docs/sdlc"`, `"specs"` |
-| `mcp.servers` | Salesforce Hosted MCP Servers the agents may use: `metadata-grounding`, `metadata-experts`, `headless-360`, `data360` | `["metadata-experts", "metadata-grounding"]` |
+| `paths.templates` | The team's own document and Jira templates (Jira process, story, BRD, LLD, test case, release notes…). A file here replaces the kit's copy; `sf-sdlc templates copy <id>` starts one | `"docs/sdlc/templates"` |
+| `mcp.servers` | Salesforce Hosted MCP Servers the agents may use: `metadata-grounding`, `metadata-experts`, `sobject-reads`, `sobject-all`, `headless-360`, `data360` | `["metadata-experts", "metadata-grounding", "sobject-reads"]` |
 | `mcp.org` | Org role or alias the hosted servers sign in to; empty means the default target org | `"dev"` |
 | `browser.enabled` | Start the Playwright browser server (`sf-browser`) for UI tests | `true` |
 | `browser.browser` | `chrome`, `msedge`, `chromium` (Chrome for Testing), `firefox` or `webkit`. On Linux without Google Chrome, `chrome` falls back to `chromium` | `"chrome"` |
@@ -241,7 +246,7 @@ and the CI workflow also select `Custom`. When an agent repeats a mistake, add a
 
 **Salesforce Hosted MCP Servers.** The plugin registers six servers (`sf-metadata-grounding`,
 `sf-metadata-experts`, `sf-headless-360`, `sf-data360`, `sf-sobject-reads`, `sf-sobject-all`). Metadata
-Experts and Metadata Grounding are on by default; turn the others on with `sf-sdlc mcp enable <name>`.
+Experts, Metadata Grounding and SObject Reads (read-only object schema and records) are on by default; turn the others on with `sf-sdlc mcp enable <name>`.
 A server that is registered but not enabled, or not switched on in the org, shows in `/mcp` as
 "no tools" — that is expected, not an error. For the copy-in folder, `sf-sdlc init`
 adds the same entries to the project's `.mcp.json` without touching other servers. Each entry starts
@@ -353,6 +358,30 @@ Claude Code after editing `.env` so MCP servers read it.
 | `.github/workflows/sf-code-analyzer.yml` | Yes | Created by `init` in a Salesforce DX project: Code Analyzer on the files changed in a pull request. Keep `SEVERITY_THRESHOLD` equal to `quality.analyzerSeverityThreshold` |
 | `docs/sdlc/00-grounding/ontology.yaml`, `feature-map.md` | Yes | Drafted by setup: business terms mapped to Salesforce objects, and the components behind each feature. Add a term whenever an agent misreads one |
 | `.sf-sdlc/` | No | Local state: audit log, tracked jobs, test-run results, caches |
+
+### 4.7b Your own templates (`docs/sdlc/templates/`, commit it)
+
+Teams with their own Jira process or document formats keep them in the project. A file at
+`<paths.templates>/<area>/<file>` replaces the kit's template of the same name; the skills say which
+ones they used.
+
+```bash
+node .claude/bin/sf-sdlc templates list            # every template, and which ones the project overrides
+node .claude/bin/sf-sdlc templates copy jira       # the four Jira templates, ready to edit
+node .claude/bin/sf-sdlc templates copy all        # everything; never overwrites a file you edited
+```
+
+`jira/jira-process-template.md` describes how the team runs Jira — framework (Scrum, Kanban, SAFe or
+your own), issue hierarchy, workflow statuses, Definition of Ready and Done, estimation, sprint and
+release cycle, required fields. `/sdlc-stories` follows it. Identifiers the tools call (project key,
+issue type names, field IDs, transition names) stay in the `jira` block of `.claude/sf-sdlc.json`.
+
+### 4.7c Output styles
+
+`/output-style` offers three: **Salesforce Business Analyst** (requirements, stories, acceptance
+criteria in business language), **Salesforce Developer** (terse, file and line evidence, commands and
+results) and **Salesforce Manager** (status, risks and decisions on one screen, no technical detail).
+Each person picks their own; it does not change what the stages write.
 
 ### 4.8 Per-user plugin options
 

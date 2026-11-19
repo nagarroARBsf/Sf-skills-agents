@@ -3,7 +3,7 @@ skill-library/
 ├── platform-apex-test-run/
 ├── experience-lwc-generate/
 ├── sf-flow/                      # community, Clientell-Ai/salesforce-skills
-└── ... 176 skills, never loaded from here
+└── ... 177 skills, never loaded from here
 
 # copy the ones this project needs into .claude/skills/
 sf-sdlc skills recommend

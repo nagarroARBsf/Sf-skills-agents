@@ -37,11 +37,30 @@
 .mcp-figure .step-t { fill: var(--bg); font-size: 14px; font-weight: 700; }
 .guard-band { margin-top: 10px; border: 1px dashed var(--warn); color: var(--text); border-radius: 12px; padding: 10px 14px; font-size: 14px; background: color-mix(in srgb, var(--proj-soft) 60%, transparent); }
 
-.lifecycle { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
-.lifecycle span { padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 13px; }
-.lifecycle span b { color: var(--accent-text); margin-right: 4px; }
+/* Overview lifecycle strip: one row of numbered steps on a connecting rail; a highlight walks the stages. */
+.lifecycle { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); row-gap: 16px; margin: 18px 0 22px; padding: 16px 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+.lifecycle span { position: relative; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 0 3px; text-align: center; font-size: 12.5px; line-height: 1.25; color: var(--text); }
+.lifecycle span::before { content: ""; position: absolute; top: 14px; left: -50%; right: 50%; height: 2px; background: var(--accent); opacity: .35; }
+.lifecycle span:first-child::before { display: none; }
+.lifecycle span b { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); border: 2px solid var(--accent); color: var(--accent-text); font-size: 12.5px; font-weight: 700; animation: lc-step 12s linear infinite; animation-delay: calc(var(--i, 0) * 1s); }
+@keyframes lc-step {
+  0%, 9.5%, 100% { background: var(--accent-soft); color: var(--accent-text); transform: none; box-shadow: none; }
+  2%, 7% { background: var(--accent); color: var(--bg); transform: scale(1.14); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 18%, transparent); }
+}
+.lifecycle span:hover b { background: var(--accent); color: var(--bg); }
+@media (max-width: 760px) {
+  .lifecycle { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .lifecycle span:nth-child(7)::before { display: none; }
+}
+@media (max-width: 520px) {
+  .lifecycle { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lifecycle span { font-size: 12px; }
+  .lifecycle span:nth-child(7)::before { display: block; }
+  .lifecycle span:nth-child(4n+1)::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .lifecycle span b { animation: none; } }
 
-.persona-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.persona-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .persona { padding: 18px; }
 .persona h3 { margin: 0 0 6px; }
 .persona ul { margin: 6px 0 0; padding-left: 18px; font-size: 14.5px; }

@@ -29,8 +29,8 @@
     "useDelta": true,
     "waitMinutes": 60
   },
-  "paths": { "docs": "docs/sdlc", "specs": "specs" },
-  "mcp": { "servers": ["metadata-experts", "metadata-grounding"], "org": "dev" },
+  "paths": { "docs": "docs/sdlc", "specs": "specs", "templates": "docs/sdlc/templates" },
+  "mcp": { "servers": ["metadata-experts", "metadata-grounding", "sobject-reads"], "org": "dev" },
   "browser": { "enabled": true, "browser": "chrome", "headless": false },
   "hooks": { "mode": "observe", "auditLog": true, "strictEvidence": false }
 }

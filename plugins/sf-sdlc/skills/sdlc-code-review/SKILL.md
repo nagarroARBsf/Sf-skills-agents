@@ -2,7 +2,7 @@
 name: sdlc-code-review
 description: "Independent, read-only review of Salesforce changes (Apex, triggers, LWC, Aura, Visualforce, Flow, metadata) against the spec and acceptance criteria, security (sharing, CRUD/FLS and user mode, SOQL injection, secrets, hard-coded IDs, @AuraEnabled exposure, XSS, guest access), governor limits and bulk safety, automation interplay, test quality and coverage, metadata hygiene and maintainability. Uses the official Salesforce Code Analyzer and the change delta. Every finding cites a file and line that was read, with a severity and a confidence; unverifiable concerns become questions. Produces review.md with a verdict: Approve, Approve with conditions, or Changes required. TRIGGER when: user asks for a code, peer, PR, security or best-practice review, a governor-limit or coverage check of a change, or runs /sf-sdlc:review. DO NOT TRIGGER when: the user wants code fixed or written (use sdlc-spec-driven-development), or only a static-analysis run (/sf-sdlc:analyze)."
 metadata:
-  version: "1.0"
+  version: "2.0"
   author: "Nagarro Salesforce CoE"
 ---
 
@@ -12,9 +12,21 @@ Review someone else's change as an independent engineer: verify claims instead o
 report what could not be verified, and never touch the code.
 
 ## Ground rules
-- **Read-only.** The reviewer never edits source, tests, metadata, the spec or the plan, and
-  never commits, deploys or changes an org. Fixes are the author's job. Do not work around a
-  missing write tool through the shell.
+- **Runs in the `sdlc-code-review-agent`** (`/sf-sdlc:review`, or when someone asks for a review): a
+  separate context that never saw the build, with read-only tools. The agent returns the report and
+  the main conversation saves it. When a review is asked for in the main conversation without the
+  agent, follow this skill there and apply the independence rule below.
+- **Read-only.** During a review, the only file written is the report (`review.md`). Never edit
+  source, tests, metadata, the spec or the plan, and never commit, deploy or change an org — not even
+  to fix something obvious. Fixes are the author's job, in a later turn, when the user asks.
+  Shell commands are read-only: `git`, `sf-sdlc` analyze, check, delta and inventory, `sf` reads.
+- **Independence.** If this session wrote the code, say so at the top of the report: a self-review
+  misses what the author assumed. Recommend `/sf-sdlc:review` (the review agent), another person, or
+  the `sdlc-review-changes` workflow (parallel reviewers that never saw the build, each finding
+  verified). Review the code as written, not as you remember intending it.
+- **Best practice is the project's rules.** Review each file type against its rule file in
+  `${CLAUDE_PLUGIN_ROOT}/skills/salesforce-coding-rules/references/` (Apex, Apex tests, LWC, Flow, metadata) and the installed technical skills, and
+  cite the rule a finding breaks.
 - **Evidence.** Every finding cites `path/to/file:line` from a file opened in this review, and
   states the concrete failure it causes. No citation, no finding.
 - **Honesty about limits.** What was not read or could not be checked is listed in the report.
@@ -131,9 +143,10 @@ The verdict is the reviewer's recommendation. A person accepts it in the approva
 
 ## 6. Report
 
-Write the report in the format of [references/review-template.md](references/review-template.md)
-to `specs/<story>/review.md` (root from `paths.specs`). If the reviewer has no write tool, return
-the complete report as the final message so the caller can save it. A re-review appends a new
+Write the report (in the agent: return it as the final message for the caller to save) in the format of [references/review-template.md](references/review-template.md)
+(or the project's own `review/review-template.md` under `paths.templates`) to
+`specs/<story>/review.md` (root from `paths.specs`), or to `<paths.docs>/reviews/<branch>.md` when
+there is no feature folder. A re-review appends a new
 dated round to the same file and states which earlier findings are resolved, citing the lines.
 
 Finish with: the verdict, counts by severity, the conditions or blockers in one line each, what

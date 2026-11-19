@@ -1,18 +1,18 @@
     <section id="references" data-tab="ref">
       <div class="eyebrow">Reference</div>
       <h2>References</h2>
-      <p class="lead">This framework is inspired by Salesforce's <a href="https://developer.salesforce.com/blogs/2026/11/accelerate-agent-driven-development-with-the-headless-toolkit" target="_blank" rel="noopener">Accelerate Agent-Driven Development with the Headless Toolkit</a> (Mohith Shrivastava, Salesforce Developers Blog, 10 November 2026). The post describes a seven-stage loop of <strong>ground, specify, build, verify, review, release and observe</strong>. SF-SDLC turns that loop into agents, commands, skills and guard hooks for Claude Code, and adds the requirements, architecture, testing and release stages a delivery team also needs.</p>
+      <p class="lead">This framework is inspired by Salesforce's <a href="https://developer.salesforce.com/blogs/2026/11/accelerate-agent-driven-development-with-the-headless-toolkit" target="_blank" rel="noopener">Accelerate Agent-Driven Development with the Headless Toolkit</a> (Mohith Shrivastava, Salesforce Developers Blog, 10 November 2026). The post describes a seven-stage loop of <strong>ground, specify, build, verify, review, release and observe</strong>. SF-SDLC turns that loop into skills, commands, four agents and guard hooks for Claude Code, and adds the requirements, architecture, testing and release stages a delivery team also needs.</p>
 
       <h3>How the kit maps to the Headless Toolkit loop</h3>
       <div class="table-wrap"><table>
         <thead><tr><th>Headless Toolkit stage</th><th>In SF-SDLC</th></tr></thead>
         <tbody>
-          <tr><td><strong>1. Ground</strong></td><td>Project scout agent, <code>ontology.yaml</code> and feature map, Metadata Grounding MCP server</td></tr>
+          <tr><td><strong>1. Ground</strong></td><td>Setup skill, <code>ontology.yaml</code> and feature map, Metadata Grounding MCP server</td></tr>
           <tr><td><strong>2. Specify</strong></td><td>BRD, stories and architecture stages, then the <code>/sdd-*</code> spec, plan and tasks commands</td></tr>
-          <tr><td><strong>3. Build</strong></td><td>Developer agent, one approved task at a time, with the Salesforce skills installed for the project</td></tr>
+          <tr><td><strong>3. Build</strong></td><td>Main conversation, one approved task at a time, following the spec-driven skill, the coding rules and the Salesforce skills installed for the project</td></tr>
           <tr><td><strong>4. Verify</strong></td><td>Code Analyzer through <code>/sdlc-analyze</code>, Apex and Jest runs through <code>/sdlc-test-run</code>, hooks that run on every edit</td></tr>
-          <tr><td><strong>5. Review</strong></td><td>Read-only code review agent that cites file and line, run in a fresh context</td></tr>
-          <tr><td><strong>6. Release</strong></td><td>Deployment agent: validate, then quick deploy; the production gate stays with a person</td></tr>
+          <tr><td><strong>5. Review</strong></td><td>Read-only code reviewer agent, in its own context: Code Analyzer plus the Salesforce coding rules, every finding citing file and line; the <code>sdlc-review-changes</code> workflow for a parallel pass</td></tr>
+          <tr><td><strong>6. Release</strong></td><td>Deploy and release skill, started by a person: validate, then quick deploy; the production gate stays with a person</td></tr>
           <tr><td><strong>7. Observe</strong></td><td>Observe stage; findings become new specs and new checks</td></tr>
         </tbody>
       </table></div>

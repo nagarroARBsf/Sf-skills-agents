@@ -109,8 +109,9 @@ not change product code.
 
 ### 6. UI cases in the browser, manual and UAT cases
 **UI cases you can run yourself.** When the `sf-browser` tools (Playwright MCP) are available, run the
-UI, persona and LWC cases in a real browser against the same non-production org, following
-[references/browser-testing.md](references/browser-testing.md): get the address with
+UI, persona and LWC cases in a real browser against the same non-production org, following the
+`sdlc-ui-testing` skill (locators, waits, accessibility and mobile checks, console and server errors,
+session rules): get the address with
 `sf-sdlc browser url --org <role> --json`; the person signs in in the browser window
 the first time (never type a password); act on snapshot references; check every expected result word
 for word; save a screenshot per verified result under `docs/sdlc/04-qa/test-runs/evidence/<TR-id>/`;

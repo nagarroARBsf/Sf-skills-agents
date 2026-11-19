@@ -65,7 +65,8 @@ All documents are drafts for review; only a person fills in an approval record.
    data factory, logging, API version), automation per object, known gaps.
 4. Org-only components: when the person names a non-production org, enrich with
    `sf org list metadata --metadata-type <Type> --target-org <alias>`,
-   `sf sobject describe --sobject <ApiName> --target-org <alias>` and
+   `sf sobject describe --sobject <ApiName> --target-org <alias>` (or the read-only `sf-sobject-reads`
+   MCP server when connected) and
    `sf package installed list --target-org <alias>`. Without an org, list "org-only components not
    verified" as a gap. Never query production unless the person names it.
 5. Refresh the inventory when it is older than the latest commit on `git.integrationBranch`.

@@ -1,59 +1,66 @@
 ---
 name: sdlc-workflow
-description: "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder layout, the grounding files (ontology, feature map), the traceability ID scheme (BR/FR/EPIC/US/LLD/TC/TR/DEF/DEP/REL), the approval record every artifact carries, hand-off contracts between the SDLC agents, the requirements traceability matrix and the Salesforce feasibility checklist. TRIGGER when: user asks where to start, what comes next, what is blocked, how artifacts link together, wants to run the lifecycle end to end, asks for a traceability matrix or status across requirements, design, tests and releases, or another sdlc-* skill needs the shared conventions. DO NOT TRIGGER when: the user asks for one specific artifact or action (use the matching sdlc-* skill directly)."
+description: "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder layout, the grounding files (ontology, feature map), the traceability ID scheme (BR/FR/EPIC/US/LLD/TC/TR/DEF/DEP/REL), the approval record every artifact carries, which stages run in an agent and which in the main conversation, project templates, the requirements traceability matrix and the Salesforce feasibility checklist. TRIGGER when: user asks where to start, what comes next, what is blocked, how artifacts link together, wants to run the lifecycle end to end, asks for a traceability matrix or status across requirements, design, tests and releases, or another sdlc-* skill needs the shared conventions. DO NOT TRIGGER when: the user asks for one specific artifact or action (use the matching sdlc-* skill directly)."
 metadata:
-  version: "2.0"
+  version: "3.0"
   author: "Nagarro Salesforce CoE"
 ---
 
 # sdlc-workflow: the Salesforce delivery lifecycle
 
-Ten agents form one lifecycle. Each stage reads the previous stage's artifact from disk, so stages
+One lifecycle, mostly skills. Each stage reads the previous stage's artifact from disk, so stages
 run in separate sessions, by different people, without shared memory.
+
+**Keep agents to a minimum.** Most stages run in the main conversation, with the coding agent's own
+planning, editing and tools, guided by a skill and the project rules. Four stages run in a subagent:
+requirements (transcripts), architecture (the whole codebase and diagrams) and QA (test runs and
+browser sessions), because they read large inputs or produce long tool output that would crowd the
+conversation; and code review, because a reviewer that never saw the build is independent of its
+author. Planning and building use the coding agent's own plan mode and editing, in this format.
 
 ```mermaid
 flowchart LR
     IN["Transcripts, notes, emails"] --> BRD
-    SETUP["0 Setup<br/>sdlc-project-scout-agent"] --> GR["G Ground<br/>ontology, feature map"]
-    GR --> BRD["1 BRD<br/>sdlc-brd-agent"]
-    BRD -->|"sponsor sign-off"| JIRA["2 Epics and stories<br/>sdlc-jira-story-agent"]
-    JIRA -->|"PO approval"| ARCH["3 HLD, LLD, diagrams<br/>sdlc-solution-architect-agent"]
-    ARCH -->|"tech-lead review"| PLAN["4 Spec, plan, tasks<br/>sdlc-plan-agent"]
-    PLAN -->|"plan approved"| DEV["5 Build<br/>sdlc-developer-agent"]
-    DEV --> REV["6 Code review<br/>sdlc-code-review-agent"]
+    SETUP["0 Setup<br/>sf-sdlc-setup"] --> GR["G Ground<br/>ontology, feature map"]
+    GR --> BRD["1 BRD<br/>agent: sdlc-brd-agent"]
+    BRD -->|"sponsor sign-off"| JIRA["2 Epics and stories<br/>skill: jira-story-generate"]
+    JIRA -->|"PO approval"| ARCH["3 HLD, LLD, diagrams<br/>agent: sdlc-solution-architect-agent"]
+    ARCH -->|"tech-lead review"| PLAN["4 Spec, plan, tasks<br/>skill: spec-driven-development"]
+    PLAN -->|"plan approved"| DEV["5 Build<br/>skill: spec-driven-development"]
+    DEV --> REV["6 Code review<br/>agent: sdlc-code-review-agent"]
     REV -->|"changes required"| DEV
-    REV -->|"approved"| DEP["8 Deploy, validate first<br/>sdlc-deployment-agent"]
-    JIRA --> TD["7 Test design<br/>sdlc-qa-test-agent"]
+    REV -->|"approved"| DEP["8 Deploy, validate first<br/>skill: deploy-release"]
+    JIRA --> TD["7 Test design<br/>agent: sdlc-qa-test-agent"]
     ARCH --> TD
-    TD --> QA["9 Test execution<br/>sdlc-qa-test-agent"]
+    TD --> QA["9 Test execution and UI tests<br/>agent: sdlc-qa-test-agent"]
     DEP --> QA
     QA -->|"defect DEF-nnn"| DEV
-    QA -->|"exit criteria met"| REL["10 Release<br/>sdlc-release-agent"]
+    QA -->|"exit criteria met"| REL["10 Release<br/>skill: deploy-release"]
     REL --> OBS["11 Observe<br/>logs, traces, findings"]
     OBS -->|"new spec or DEF + constraint"| GR
 ```
 
-| # | Stage | Agent | Commands | Skill | Reads | Writes | Human gate |
+| # | Stage | Runs in | Commands | Skill | Reads | Writes | Human gate |
 |---|---|---|---|---|---|---|---|
-| 0 | Setup | `sdlc-project-scout-agent` | `/sdlc-setup`, `/sdlc-doctor`, `/sdlc-skills` | `sdlc-project-setup` | repository, org metadata | `.claude/sf-sdlc.json`, installed skills, `03-architecture/baseline/inventory.md` | Lead confirms config and skill set |
-| G | Ground | `sdlc-project-scout-agent` (drafts); every agent reads | `/sdlc-setup` | `sdlc-project-setup`, this skill | baseline, source, org metadata (grounding MCP when connected) | `00-grounding/ontology.yaml`, `00-grounding/feature-map.md` | Lead confirms the terms |
+| 0 | Setup | main conversation | `/sdlc-setup`, `/sdlc-doctor`, `/sdlc-skills` | `sf-sdlc-setup` | repository, org metadata | `.claude/sf-sdlc.json`, installed skills, `03-architecture/baseline/inventory.md` | Lead confirms config and skill set |
+| G | Ground | main conversation (drafts); every stage reads | `/sdlc-setup` | `sf-sdlc-setup`, this skill | baseline, source, org metadata (grounding MCP when connected) | `00-grounding/ontology.yaml`, `00-grounding/feature-map.md` | Lead confirms the terms |
 | 1 | Requirements | `sdlc-brd-agent` | `/sdlc-brd` | `sdlc-brd-generate` | `00-inputs/*` | `01-brd/BRD.md` | Sponsor sign-off |
-| 2 | Backlog | `sdlc-jira-story-agent` | `/sdlc-stories` | `sdlc-jira-story-generate` | BRD | `02-backlog/backlog.md`, `jira-import.csv`, Jira issues | PO approval; explicit yes before Jira writes |
+| 2 | Backlog | main conversation | `/sdlc-stories` | `sdlc-jira-story-generate` (team's Jira process and templates first) | BRD | `02-backlog/backlog.md`, `jira-import.csv`, Jira issues | PO approval; explicit yes before Jira writes |
 | 3 | Design | `sdlc-solution-architect-agent` | `/sdlc-architecture`, `/sdlc-diagram` | `sdlc-architecture-diagram` | BRD, backlog, baseline | `03-architecture/HLD.md`, `LLD/`, `ADR/`, `components.json` | Tech-lead review |
-| 4 | Spec and plan | `sdlc-plan-agent` for the plan; the other phases run in the main session | `/sdd-constitution`, `/sdd-specify`, `/sdd-clarify`, `/sdd-plan`, `/sdd-tasks` | `sdlc-spec-driven-development` | story, LLD, existing code | `specs/<story>/spec.md`, `plan.md`, `tasks.md` | Each file approved before the next |
-| 5 | Build | `sdlc-developer-agent` | `/sdd-implement`, `/sdd-verify` | `sdlc-spec-driven-development` + installed technical skills | plan, tasks | source, ticked `tasks.md`, `verification.md` | Developer confirms evidence |
-| 6 | Code review | `sdlc-code-review-agent` | `/sdlc-review`, `/sdlc-analyze` | `sdlc-code-review` | diff, spec, plan | `specs/<story>/review.md` | Reviewer accepts the verdict |
+| 4 | Spec and plan | main conversation (plan mode follows the same format) | `/sdd-constitution`, `/sdd-specify`, `/sdd-clarify`, `/sdd-plan`, `/sdd-tasks` | `sdlc-spec-driven-development` | story, LLD, existing code | `specs/<story>/spec.md`, `plan.md`, `tasks.md` | Each file approved before the next |
+| 5 | Build | main conversation | `/sdd-implement`, `/sdd-verify` | `sdlc-spec-driven-development` + rules + installed technical skills | plan, tasks | source, ticked `tasks.md`, `verification.md` | Developer confirms evidence |
+| 6 | Code review | `sdlc-code-review-agent`, read-only (or the `sdlc-review-changes` workflow) | `/sdlc-review`, `/sdlc-analyze` | `sdlc-code-review` | diff, spec, plan | `specs/<story>/review.md` | Reviewer accepts the verdict |
 | 7 | Test design | `sdlc-qa-test-agent` | `/sdlc-test-cases` | `sdlc-qa-test-case-generate` | backlog, LLD, spec | `04-qa/test-cases/`, `test-cases.csv`, `rtm.md` | QA lead review |
-| 8 | Deployment | `sdlc-deployment-agent` | `/sdlc-deploy` | `sdlc-deploy-release` | review verdict, source, config | `05-release/deployments/DEP-nnn.md` | Named org and explicit yes; production always |
-| 9 | Test execution, defects, re-test | `sdlc-qa-test-agent` | `/sdlc-test-run`, `/sdlc-retest` | `sdlc-test-execution` | test cases, deployed org | `04-qa/test-runs/TR-*.md`, `04-qa/defects/DEF-nnn.md` | QA lead sign-off on exit criteria |
-| 10 | Release | `sdlc-release-agent` | `/sdlc-release` | `sdlc-deploy-release` | everything above | `05-release/REL-<version>/readiness.md`, `release-notes.md` | Go/no-go by the release owner |
-| 11 | Observe | `sdlc-qa-test-agent` (defects), `sdlc-plan-agent` (new specs) | `/sdlc-test-run`, `/sdd-specify` | this skill, `sdlc-test-execution` | debug logs, traces, user reports | `06-observe/findings-<YYYYMMDD>.md`, `DEF-nnn`, new stories | Lead triages each finding |
-| — | Status | any | `/sdlc-trace` | this skill | all artifacts | `04-qa/rtm.md` | — |
+| 8 | Deployment | main conversation, started by a person | `/sdlc-deploy` | `sdlc-deploy-release` | review verdict, source, config | `05-release/deployments/DEP-nnn.md` | Named org and explicit yes; production always |
+| 9 | Test execution, UI tests, defects, re-test | `sdlc-qa-test-agent` | `/sdlc-test-run`, `/sdlc-ui-test`, `/sdlc-retest` | `sdlc-test-execution`, `sdlc-ui-testing` | test cases, deployed org | `04-qa/test-runs/TR-*.md`, `04-qa/defects/DEF-nnn.md` | QA lead sign-off on exit criteria |
+| 10 | Release | main conversation, started by a person | `/sdlc-release` | `sdlc-deploy-release` | everything above | `05-release/REL-<version>/readiness.md`, `release-notes.md` | Go/no-go by the release owner |
+| 11 | Observe | main conversation; `sdlc-qa-test-agent` for defects | `/sdlc-test-run`, `/sdd-specify` | this skill, `sdlc-test-execution` | debug logs, traces, user reports | `06-observe/findings-<YYYYMMDD>.md`, `DEF-nnn`, new stories | Lead triages each finding |
+| — | Status | main conversation | `/sdlc-trace` | this skill | all artifacts | `04-qa/rtm.md` | — |
 
 Paths in the Writes column are relative to `paths.docs` (default `docs/sdlc`). Stage 7 can start
 as soon as stories and LLDs are approved; it does not wait for the build.
 
-Every stage ends with a **human gate**: the agent writes a draft, lists open questions, and stops.
+Every stage ends with a **human gate**: the stage writes a draft, lists open questions, and stops.
 
 ## Project configuration
 
@@ -61,7 +68,7 @@ Project-specific values (org aliases, branch names, Jira keys, coverage targets,
 artifact paths) live in `.claude/sf-sdlc.json`, with personal overrides in
 `.claude/sf-sdlc.local.json`. Read them with `node .claude/bin/sf-sdlc config show --json`.
 Never hard-code such a value in an artifact, and never guess one: if the config is missing, tell
-the user to run `/sdlc-setup`. The `sdlc-project-setup` skill documents every key.
+the user to run `/sdlc-setup`. The `sf-sdlc-setup` skill documents every key.
 
 Technical Salesforce skills are installed per project into `.claude/skills/`. Never assume one is
 loaded. Use the installed skill for the task if present; if it is missing, tell the user to run
@@ -110,6 +117,15 @@ specs/
 
 If the project already uses different folders, follow the project and say so in the output.
 
+## Project templates
+Every document template a stage uses can be replaced by the team's own. Before using a template from
+a skill's `references/`, look for the project's copy at `<paths.templates>/<area>/<file>` (default
+`docs/sdlc/templates/`; areas: `brd`, `jira`, `architecture`, `spec`, `qa`, `testing`, `review`,
+`release`, `workflow`). If it exists, use it and say so; the project's format wins. Keep the kit's
+trace IDs and the approval record unless the project template explicitly replaces them, because later
+stages parse them. `node .claude/bin/sf-sdlc templates list` shows which templates the project
+overrides; `templates copy <id|area|all>` starts an editable copy.
+
 ## Grounding
 
 An agent starts every session without knowing what the business means by "customer" or what
@@ -122,7 +138,7 @@ already exists in the org. Two small files, kept under `00-grounding/`, close th
   behind it, so an agent changing a feature finds all of its parts. Template:
   [references/feature-map-template.md](references/feature-map-template.md).
 
-Setup drafts both (`sdlc-project-setup`, step 6). Then every agent:
+Setup drafts both (`sf-sdlc-setup`, section "Explore an existing codebase"). Then every stage:
 
 1. **Reads them first when present**, before naming an object, field or component. A requirement
    that uses a term missing from the ontology gets an open question, not a guess.
@@ -209,7 +225,7 @@ failed cases without a defect, open defects, stories not in any release.
 ## Salesforce feasibility checklist
 
 Requirements and stories often ask for behaviour Salesforce does not provide out of the box.
-Every agent from stage 2 onward runs
+Every stage from 2 onward runs
 [references/salesforce-feasibility-checklist.md](references/salesforce-feasibility-checklist.md)
 against what it produces and records each hit as a note, an assumption or an open question. It is
 cheaper to catch "validation rule as a warning" in the backlog than in UAT.
@@ -248,5 +264,6 @@ No new ID: a finding is a `DEF` or a story, and its constraint is recorded in th
 "Constraint added" field (`sdlc-test-execution`). The same question applies to every defect found
 in verification or review: each repeated mistake should leave a deterministic check behind.
 
-Run each stage in its own agent so its context stays small. Pass file paths, not file contents,
-between stages.
+Keep each session to one stage or one story so its context stays small; the three agent stages keep
+their large inputs out of the conversation on their own. Pass file paths, not file contents, between
+stages.

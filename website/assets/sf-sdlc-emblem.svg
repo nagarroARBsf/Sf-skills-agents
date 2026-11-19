@@ -30,9 +30,9 @@
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 4 · Spec &amp; plan<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="5s" repeatCount="indefinite"/></text>
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 5 · Build<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="6s" repeatCount="indefinite"/></text>
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 6 · Review<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="7s" repeatCount="indefinite"/></text>
-<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 7 · Deploy<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="8s" repeatCount="indefinite"/></text>
-<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 8 · Test<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="9s" repeatCount="indefinite"/></text>
-<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 9 · Re-test<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="10s" repeatCount="indefinite"/></text>
+<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 7 · Test design<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="8s" repeatCount="indefinite"/></text>
+<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 8 · Deploy<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="9s" repeatCount="indefinite"/></text>
+<text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 9 · Test &amp; re-test<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="10s" repeatCount="indefinite"/></text>
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 10 · Release<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="11s" repeatCount="indefinite"/></text>
 <text x="180" y="258" text-anchor="middle" class="em-stage" opacity="0">Stage 11 · Observe<animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.02;.065;.077;1" dur="13s" begin="12s" repeatCount="indefinite"/></text>
 </svg>

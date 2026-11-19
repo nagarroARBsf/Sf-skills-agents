@@ -8,7 +8,7 @@ description: "Independent, read-only review of Salesforce changes ... TRIGGER wh
   asks for a code, peer, PR, security or best-practice review ... DO NOT TRIGGER when:
   the user wants code fixed or written (use sdlc-spec-driven-development)."
 metadata:
-  version: "1.0"
+  version: "2.0"
   author: "Nagarro Salesforce CoE"
 ---
 
@@ -16,3 +16,7 @@ metadata:
 
 Review someone else's change as an independent engineer: verify claims instead of
 trusting them, report what could not be verified, and never touch the code.
+
+- Runs in the sdlc-code-review-agent (/sf-sdlc:review): a separate context that never
+  saw the build, with read-only tools.
+- Read-only: the only file written is the report (review.md).

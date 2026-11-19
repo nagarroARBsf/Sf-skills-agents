@@ -22,14 +22,26 @@
             <div data-hk-log></div>
           </div>
           <div class="hk-rail" aria-label="Hook events">
-            <div class="hk-ev" data-ev="SessionStart"><b>SessionStart</b><code>session-start</code><span class="hk-v"></span></div>
-            <div class="hk-ev" data-ev="PreToolUse"><b>PreToolUse</b><code data-ev-handler>pre-bash · pre-write · pre-mcp</code><span class="hk-v"></span></div>
+            <div class="hk-ev" data-ev="SessionStart" data-hk-pick="SessionStart" role="button" tabindex="0" aria-pressed="false" title="Show an example of SessionStart"><b>SessionStart</b><code>session-start</code><span class="hk-v"></span></div>
+            <div class="hk-ev" data-ev="PreToolUse" data-hk-pick="PreToolUse" role="button" tabindex="0" aria-pressed="false" title="Show an example of PreToolUse"><b>PreToolUse</b><code data-ev-handler>pre-bash · pre-write · pre-mcp</code><span class="hk-v"></span></div>
             <div class="hk-tool" data-ev="tool">the tool runs</div>
-            <div class="hk-ev" data-ev="PostToolUse"><b>PostToolUse</b><code data-ev-handler>post-write · post-bash</code><span class="hk-v"></span></div>
-            <div class="hk-ev" data-ev="PostToolUseFailure"><b>PostToolUseFailure</b><code>bash-failure</code><span class="hk-v"></span></div>
-            <div class="hk-ev" data-ev="Stop"><b>Stop</b><code>stop</code><span class="hk-v"></span></div>
+            <div class="hk-ev" data-ev="PostToolUse" data-hk-pick="PostToolUse" role="button" tabindex="0" aria-pressed="false" title="Show an example of PostToolUse"><b>PostToolUse</b><code data-ev-handler>post-write · post-bash</code><span class="hk-v"></span></div>
+            <div class="hk-ev" data-ev="PostToolUseFailure" data-hk-pick="PostToolUseFailure" role="button" tabindex="0" aria-pressed="false" title="Show an example of PostToolUseFailure"><b>PostToolUseFailure</b><code>bash-failure</code><span class="hk-v"></span></div>
+            <div class="hk-ev" data-ev="Stop" data-hk-pick="Stop" role="button" tabindex="0" aria-pressed="false" title="Show an example of Stop"><b>Stop</b><code>stop</code><span class="hk-v"></span></div>
+            <p class="hk-hint">Click an event to see what the hook receives and returns</p>
           </div>
         </div>
+      </div>
+
+      <div class="card hk-detail" id="hookDetail" aria-live="polite">
+        <div class="hk-detail-head"><h3 data-hd-title>PreToolUse</h3><code data-hd-handler>pre-bash</code></div>
+        <p class="hk-when" data-hd-when></p>
+        <div class="seg" role="tablist" data-hd-tabs></div>
+        <div class="hk-io">
+          <div><p class="code-label">Input: what Claude Code sends the hook (stdin)</p><pre><code data-hd-in></code></pre></div>
+          <div><p class="code-label">Output: what the hook returns (stdout)</p><pre><code data-hd-out></code></pre></div>
+        </div>
+        <p class="hk-effect" data-hd-effect></p>
       </div>
 
       <h3>What each hook does</h3>

@@ -1,8 +1,8 @@
 ---
 name: sdlc-spec-driven-development
-description: "Spec-driven development (SDD) for Salesforce features: write the spec (what/why) before the plan (how), the plan before tasks, and tasks before code, with a project constitution of Salesforce engineering principles as the gate. Phases: constitution, specify, clarify, plan, tasks, implement, verify — each producing a file under specs/<id>-<slug>/ and stopping for human approval. The plan uses a mandatory 12-section format (problem, root cause, requirements, metadata scope, technical flow with diagram, impact analysis, unit test plan, acceptance criteria, delivery, skills, ticket close-out). Reuses Jira stories and LLDs when present. Adapted from GitHub Spec Kit. TRIGGER when: user runs /sdd-* commands, asks for a plan, an approach, an impact or root-cause analysis, spec-driven or spec-first development, or wants a story or non-trivial feature implemented properly. DO NOT TRIGGER when: the change is trivial (typo, single label, one-line fix), or the user explicitly asks to skip the spec."
+description: "Spec-driven development (SDD) for Salesforce features: write the spec (what/why) before the plan (how), the plan before tasks, and tasks before code, with a project constitution of Salesforce engineering principles as the gate. Phases: constitution, specify, clarify, plan, tasks, implement, verify — each producing a file under specs/<id>-<slug>/ and stopping for human approval. The plan uses a mandatory 12-section format (problem, root cause, requirements, metadata scope, technical flow, impact, unit tests, acceptance criteria, delivery, skills, close-out). Also governs plan mode: any plan follows this format. Adapted from GitHub Spec Kit. TRIGGER when: user runs /sdd-* commands, plan mode is on, asks for a plan, an approach, an impact or root-cause analysis, spec-driven or spec-first development, or wants a story or non-trivial feature implemented properly. DO NOT TRIGGER when: the change is trivial (typo, single label, one-line fix), or the user explicitly asks to skip the spec."
 metadata:
-  version: "2.0"
+  version: "3.0"
   author: "Nagarro Salesforce CoE"
   adapted-from: "github/spec-kit (MIT)"
 ---
@@ -26,6 +26,24 @@ flowchart LR
 
 Each phase writes one file and **stops for review**. Do not run the next phase in the same turn
 unless the user explicitly says so ("go through to tasks").
+
+Every phase runs **in the main conversation**, with the coding agent's own planning and editing. There
+is no separate planner or developer agent: the coding agent's own plan mode and editing do that work,
+and this skill, the project rules in `.claude/rules/` and the installed Salesforce skills are the
+method. Only the review that follows runs in an agent (`/sdlc-review`). Keep one feature per session so the context stays small.
+
+## Plan mode and planning requests
+Coding agents have planning built in (Claude Code's plan mode, Cursor's plan, and so on). In this
+project, **any plan follows this skill's plan format**:
+- When plan mode is on, or the user asks for a plan, an approach, an impact or root-cause analysis,
+  write the plan as the 12 sections of [references/plan-template.md](references/plan-template.md), in
+  order, after the discovery in Phase 3 step 2. In plan mode that is the plan you present.
+- No spec yet for a non-trivial change: the plan's §1 and §3 carry the problem and the testable
+  requirements, and §8 the acceptance criteria; offer to save them as `spec.md` too.
+- When plan mode ends with the user's approval, first save the plan as `specs/<feature>/plan.md`
+  (status `Draft for review`), then continue with what the user asked. Approving plan mode lets you
+  proceed; it is **not** the plan's approval record, which only a person fills in.
+- Trivial changes (typo, label, one-line fix) need no plan file: say "trivial change, no spec".
 
 ## When to use it
 - Any Jira story, any change touching more than one metadata type, any Apex/LWC/Flow logic,
@@ -54,7 +72,7 @@ specs/
     ├── plan.md                        # phase 3
     ├── tasks.md                       # phase 4, checked off in phase 5
     ├── verification.md                # phase 6
-    └── review.md                      # written by /sdlc-review (sdlc-code-review skill)
+    └── review.md                      # written by /sdlc-review (sdlc-code-review-agent)
 ```
 
 The root comes from `paths.specs` in the project config (default `specs`). Project values
@@ -85,16 +103,25 @@ that must use `SeeAllData=true`) are recorded in the constitution with their rea
    `00-grounding/ontology.yaml` when it exists; a term it lacks becomes a clarification and a
    proposed ontology entry.
 4. Copy story ACs verbatim as the acceptance scenarios and keep their `AC-n` numbers.
-5. Mark unknowns `[NEEDS CLARIFICATION: question]`. At most 5; make reasonable defaults for the
-   rest and list them under Assumptions.
+5. Mark unknowns `[NEEDS CLARIFICATION: question]`. At most 3 — the ones that change scope,
+   security or user experience; make reasonable defaults for the rest and list them under
+   Assumptions. Success criteria are measurable and technology-neutral ("a manager approves in under
+   two minutes", not "the LWC loads fast").
 6. Run the spec checklist at the bottom of the template. Stop and show the open clarifications.
 
 ## Phase 2 — Clarify (`/sdd-clarify`)
-Ask the user the `[NEEDS CLARIFICATION]` questions one at a time, each with 2-4 concrete options and
-a recommendation. Write each answer into the spec (Clarifications section with date) and remove the
-marker. Stop when none remain or the user says to proceed with the assumptions.
+Ask the user the `[NEEDS CLARIFICATION]` questions one at a time (at most 5 per session, including
+any ambiguity you find while re-reading the spec), each with 2-4 concrete options and a
+recommendation. Write each answer into the spec (Clarifications section, `### Session YYYY-MM-DD`) and
+remove the marker. Stop when none remain or the user says to proceed with the assumptions.
 
-## Phase 3 — Plan (`/sdd-plan`)
+**Requirement checklists (optional).** When the person wants the spec's quality checked before
+planning (security, accessibility, integration, data volume), write
+`specs/<feature>/checklists/<area>.md`: questions that test the *requirements* ("Is the behaviour for
+an unauthorised user specified?"), not the code. The reviewer ticks them, never you; unticked items
+are raised before implementation.
+
+## Phase 3 — Plan (`/sdd-plan`, or plan mode)
 The plan follows [references/plan-template.md](references/plan-template.md): a mandatory format
 of **12 sections in a fixed order**. Do not add, drop, merge or reorder sections; a section that
 does not apply keeps its heading and says why.
@@ -131,11 +158,18 @@ does not apply keeps its heading and says why.
 
 4. If an LLD exists, cite it in §4 and §5 and record only deviations, with reasons. Do not
    re-design. Change statuses agree with `docs/sdlc/03-architecture/components.json`.
-5. Check the plan against the constitution. A broken article is either fixed or stated in §6 with
-   its reason and prevention.
+5. **Constitution check, before and after design.** Before writing §4-§5, check the approach
+   against each constitution article; after, check the finished plan again. A broken article is
+   either fixed or stated in §6 with its reason and prevention; an unjustified violation stops the
+   plan.
 6. Rules for the plan itself: no code (signatures, parameter tables and diagrams only); cite
    only files and lines actually read; state uncertainty as an open question, never as
    "unaffected". The plan ends with an empty approval record; implementation waits for approval.
+7. Discovery is read-only: `git log`, `git grep`, `sf-sdlc` inventory and delta, and read-only MCP
+   lookups (Metadata Grounding `search_metadata`, `query_metadata`, `describe_metadata`; Headless 360
+   `discover`, `describe`, `dispatch_readonly`). Never call a tool that changes an org while planning.
+8. Finish with a short report: the solution in one line, the highest-impact rows of §6, open
+   questions, and the next step (`/sdd-tasks` once the plan is approved).
 
 ## Phase 4 — Tasks (`/sdd-tasks`)
 Write `tasks.md` from [references/tasks-template.md](references/tasks-template.md):
@@ -149,10 +183,31 @@ Write `tasks.md` from [references/tasks-template.md](references/tasks-template.m
 - Test tasks precede the implementation they verify (red → green).
 - Include a regression task for every Medium or High row of the plan's §6 Impact Analysis, a
   verification task per AC and a final quality-gate task.
+- Label each task with the story or AC it serves so a story can be built and tested on its own;
+  order the MVP story first when the feature has several.
+
+**Consistency check (before any code).** Re-read spec, plan and tasks together and report, read-only,
+in the chat or at the end of `tasks.md`:
+
+| Check | Finding when |
+|---|---|
+| Coverage | A requirement or AC has no task or no test (report % covered) |
+| Constitution | A task or plan section breaks an article without a recorded reason — always CRITICAL |
+| Consistency | Terms, components or values differ between the three files |
+| Ambiguity | Vague words with no measure ("fast", "secure", "intuitive") |
+| Duplication / scope | Two tasks do the same thing; a task serves no requirement |
+
+Severity CRITICAL or HIGH blocks Phase 5: fix it in the file where it starts (spec, plan or tasks),
+not in code.
 
 ## Phase 5 — Implement (`/sdd-implement [task range]`)
-- Check the plan's approval record first. If the plan is not approved, say so and continue only
-  if the user confirms.
+- No approved plan and tasks, no code. Check the plan's approval record first; if it is not
+  approved, say so and continue only if the user confirms. For a trivial change say "trivial
+  change, no spec" and proceed.
+- Work on a feature branch named per `git.branchPattern`; never commit to a protected branch.
+- **Tests first.** Write the failing Apex or Jest test the task names, then the code that makes it
+  pass (red → green). The rules in `.claude/rules/` load for each file type (Apex, tests, LWC,
+  metadata, Flow); follow them, and load the installed skill for the file type before writing it.
 - Work task by task in order. Before each task, re-read its line in `tasks.md` and the matching
   plan section. Use the installed skill named in the plan's §12; if it is not installed, tell
   the user to run `/sdlc-skills` and continue with the project rules in `.claude/rules/`.
@@ -164,13 +219,19 @@ Write `tasks.md` from [references/tasks-template.md](references/tasks-template.m
   A task without evidence is not ticked.
 - When the change adds, renames or removes components, update the feature's section in
   `docs/sdlc/00-grounding/feature-map.md` (if the project keeps one) in the same change.
+- When fixing a `DEF-nnn`, fill its Fix section, including "Constraint added": the test, Code
+  Analyzer rule or hook that now catches this mistake, or `none` with a reason.
+- Finish with: tasks completed with evidence, tasks blocked and why, plan deviations, and the next
+  step (`/sdd-verify`, then `/sdlc-review`).
 - Stop and ask when the plan turns out wrong; update the plan (with a "Changed during
   implementation" note) before continuing. Never silently diverge from the spec.
 - Deploy only to the developer's own org (`orgs.dev`, a scratch org or a developer sandbox).
   Shared orgs and production go through `/sdlc-deploy`, never through this phase.
 
 ## Phase 6 — Verify (`/sdd-verify`)
-Write `verification.md`:
+Write `verification.md`. When something is missing, partial, contradicts the spec or was built
+without being asked for, add a "Follow-up tasks" section to `tasks.md` and return to Phase 5; verify
+again until nothing is open.
 - Each AC → evidence (test name and result, screenshot reference, or manual step outcome).
 - The plan's §8 Acceptance Criteria checklist, each box ticked only with pasted real output.
 - Quality gates: every test in the plan's §7 exists and passes; coverage of new and changed
@@ -181,9 +242,11 @@ Write `verification.md`:
 - What was not verified, and why.
 
 Verification is the author's own check; it is not a review. **Hand off to `/sdlc-review`**: the
-`sdlc-code-review-agent` reviews the diff independently (correctness, security, limits, tests)
-and writes `specs/<story>/review.md` with a verdict. Do not self-review in place of it, and do
-not report the story as done before the review verdict is Approve (or its conditions are met).
+`sdlc-code-review-agent` reviews the diff in its own context, which never saw the build — Code
+Analyzer, the project's coding rules, security, limits, tests — read-only, and its report is saved
+as `specs/<story>/review.md` with a verdict. For more depth, use the `sdlc-review-changes` workflow
+(parallel reviewers, each finding verified) or a second person. Do not report the story as done before the review verdict is Approve (or its
+conditions are met).
 
 Then: set `spec.md` status to `Implemented — pending review`; name the next steps in order —
 `/sdlc-review`, `/sdlc-deploy` to the test org, `/sdlc-test-run` against

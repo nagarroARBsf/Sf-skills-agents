@@ -10,6 +10,17 @@ const { spawnSync } = require('child_process');
 
 const KIT_ROOT = path.resolve(__dirname, '..'); // .claude/ in a project, or the plugin root
 const IS_PLUGIN = fs.existsSync(path.join(KIT_ROOT, '.claude-plugin', 'plugin.json'));
+// Files earlier kit versions shipped in .claude/ that kit 3.0 removed or replaced. A copy-in upgrade
+// (copying the new .claude/ over the old one) leaves them behind; doctor lists them for deletion.
+const OBSOLETE_KIT_FILES = [
+  'agents/sdlc-project-scout-agent.md', 'agents/sdlc-jira-story-agent.md', 'agents/sdlc-plan-agent.md',
+  'agents/sdlc-developer-agent.md', 'agents/sdlc-deployment-agent.md',
+  'agents/sdlc-release-agent.md', 'skills/sdlc-project-setup',
+  'output-styles/sf-engineer.md', 'output-styles/sf-delivery-lead.md',
+];
+function obsoleteKitFiles(root) {
+  return OBSOLETE_KIT_FILES.map((f) => path.join('.claude', f)).filter((f) => fs.existsSync(path.join(root, f)));
+}
 // The kit's always-on instructions as a project rule (plugin users get it from `sf-sdlc init`). When it
 // exists, the SessionStart hook stops printing the same text.
 const KIT_RULE_FILE = 'sf-sdlc-kit.md';
@@ -45,8 +56,8 @@ const DEFAULTS = {
     testLevel: { dev: 'NoTestRun', qa: 'RunLocalTests', uat: 'RunLocalTests', production: 'RunLocalTests' },
     validateBeforeDeploy: true, allowDirectProductionDeploy: false, useDelta: true, waitMinutes: 60,
   },
-  paths: { docs: 'docs/sdlc', specs: 'specs' },
-  mcp: { servers: ['metadata-experts', 'metadata-grounding'], org: '' },
+  paths: { docs: 'docs/sdlc', specs: 'specs', templates: 'docs/sdlc/templates' },
+  mcp: { servers: ['metadata-experts', 'metadata-grounding', 'sobject-reads'], org: '' },
   browser: { enabled: true, browser: 'chrome', headless: false },
   hooks: { mode: 'observe', auditLog: true, strictEvidence: false },
 };
@@ -112,6 +123,11 @@ function validateConfig(cfg) {
   if (typeof cov !== 'number' || cov < 75 || cov > 100) errors.push('quality.coverageTarget must be a number from 75 to 100');
   const sev = cfg.quality.analyzerSeverityThreshold;
   if (![1, 2, 3, 4, 5].includes(sev)) errors.push('quality.analyzerSeverityThreshold must be 1 to 5');
+  for (const k of ['docs', 'specs', 'templates']) {
+    const v = cfg.paths[k];
+    if (typeof v !== 'string' || !v.trim()) errors.push(`paths.${k} must be a folder path relative to the project`);
+    else if (path.isAbsolute(v) || v.split(/[\\/]/).includes('..')) errors.push(`paths.${k} must stay inside the project (relative, no "..")`);
+  }
   if (cfg.jira.enabled && !cfg.jira.projectKey) errors.push('jira.enabled is true but jira.projectKey is empty');
   if (!cfg.project.code) warnings.push('project.code is empty; document references and epic prefixes will lack it');
   const known = Object.keys(require('./mcp').HOSTED_SERVERS); // lazy: mcp.js requires this file
@@ -370,7 +386,7 @@ function hashDir(dir) {
 }
 
 module.exports = {
-  KIT_ROOT, IS_PLUGIN, KIT_RULE_FILE, DEFAULTS, TEST_LEVELS,
+  KIT_ROOT, IS_PLUGIN, KIT_RULE_FILE, OBSOLETE_KIT_FILES, obsoleteKitFiles, DEFAULTS, TEST_LEVELS,
   BROWSERS, merge, readJson, projectDir, configPaths, loadConfig, validateConfig, hookMode,
   run, has, sfJson, git, stateDir, appendJsonl,
   splitCommands, stripPrefix, flagValue, sfInvocations, gitInvocations,

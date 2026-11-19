@@ -34,13 +34,7 @@
       "name": "sdlc-jira-story-generate",
       "location": "skills",
       "source": "nagarro",
-      "description": "Convert an approved BRD (or any requirements document) into a Jira-ready backlog: epics, INVEST user stories with Gherkin acceptance criteria, Salesforce story types and labels, dependencies, story-point estimates, a Mermaid dependency graph, release slicing, and a Jira CSV import file. Reads the Ji"
-    },
-    {
-      "name": "sdlc-project-setup",
-      "location": "skills",
-      "source": "nagarro",
-      "description": "Set a Salesforce project up for the SDLC kit in one run, for technical and non-technical users: run sf-sdlc setup first (creates the project files, git repository, .env and .env.sample, explores the code, installs the mandatory core skills plus those the code needs, checks tools, the Salesforce org,"
+      "description": "Convert an approved BRD (or any requirements document) into a Jira-ready backlog: epics, INVEST user stories with Gherkin acceptance criteria, Salesforce story types, dependencies, estimates, a dependency graph, release slicing and a Jira CSV import. Reads Jira keys, issue types and field IDs from t"
     },
     {
       "name": "sdlc-qa-test-case-generate",
@@ -61,10 +55,22 @@
       "description": "Execute Salesforce tests and close the loop: run Apex tests through the Salesforce CLI against a non-production org from the project config, run LWC Jest tests, run UI cases in a browser, read failures and per-class and org-wide coverage against the project targets, triage each failure (product defe"
     },
     {
+      "name": "sdlc-ui-testing",
+      "location": "skills",
+      "source": "nagarro",
+      "description": "Test Salesforce user interfaces in a real browser through the Playwright MCP server (sf-browser): a Lightning Web Component, a record or app page, a screen flow, an Experience Cloud page, a list view or layout, in a sandbox, scratch or developer org. Finds where the component is placed, has the pers"
+    },
+    {
       "name": "sdlc-workflow",
       "location": "skills",
       "source": "nagarro",
       "description": "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder layout, the gr"
+    },
+    {
+      "name": "sf-sdlc-setup",
+      "location": "skills",
+      "source": "nagarro",
+      "description": "Setup skill for the sf-sdlc kit itself, not a lifecycle stage. Sets a Salesforce project up in one run: runs sf-sdlc setup first (project files, .env, core skills plus those the code needs, checks of tools, org, MCP servers, browser, Jira, GitHub), shows a checklist of what is done, what Claude can "
     },
     {
       "name": "agentforce-architecture-analyze",

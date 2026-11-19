@@ -2,11 +2,11 @@
 description: Set this project up for the Salesforce SDLC kit in one go — files, skills chosen from the code, tools, Salesforce, Jira and GitHub connections — and show a checklist of what is done and what is left
 argument-hint: "[optional: developer | admin | ba, or an org alias]"
 ---
-Set this project up by following the `sdlc-project-setup` skill **yourself, in this conversation**.
+Set this project up by following the `sf-sdlc-setup` skill **yourself, in this conversation**.
 
 From the user: $ARGUMENTS
 
-1. If the `sdlc-project-setup` skill is not available in this session, the plugin was installed after
+1. If the `sf-sdlc-setup` skill is not available in this session, the plugin was installed after
    the session started. Say so in one line, ask the person to run `/reload-plugins` (or restart Claude
    Code) and then run this command again, and stop.
 2. Run `node .claude/bin/sf-sdlc setup --json` **first, before asking anything**. It creates the
@@ -20,6 +20,6 @@ From the user: $ARGUMENTS
    `node .claude/bin/sf-sdlc setup --install-tools --json`.
 
 Do not hand setup to a subagent and do not run it in the background: a subagent cannot ask the person
-anything, and they cannot see its progress. Only the deeper code study (baseline and grounding
-drafts) goes to the **sdlc-project-scout-agent** subagent, after the checklist is on screen. Never ask
-for or read a credential.
+anything, and they cannot see its progress. For an existing codebase, the deeper study (baseline and
+grounding drafts, the skill's "Explore an existing codebase" section) follows once the checklist is
+on screen. Never ask for or read a credential.

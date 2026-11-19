@@ -1,15 +1,40 @@
 ---
 name: sdlc-jira-story-generate
-description: "Convert an approved BRD (or any requirements document) into a Jira-ready backlog: epics, INVEST user stories with Gherkin acceptance criteria, Salesforce story types and labels, dependencies, story-point estimates, a Mermaid dependency graph, release slicing, and a Jira CSV import file. Reads the Jira project key, issue types, field IDs, labels and transitions from the project config. Creates issues through a connected Jira/Atlassian MCP tool only after a preview and an explicit yes, searches first so nothing is duplicated, and records the created keys in the backlog. TRIGGER when: user asks to create epics, user stories, a backlog, Jira tickets, story splitting, acceptance criteria, or a Jira import from a BRD/requirements. DO NOT TRIGGER when: user wants the BRD itself (use sdlc-brd-generate), technical design (use sdlc-architecture-diagram), or test cases (use sdlc-qa-test-case-generate)."
+description: "Convert an approved BRD (or any requirements document) into a Jira-ready backlog: epics, INVEST user stories with Gherkin acceptance criteria, Salesforce story types, dependencies, estimates, a dependency graph, release slicing and a Jira CSV import. Reads Jira keys, issue types and field IDs from the project config. Follows the team's own Jira process (hierarchy, workflow, Definition of Ready and Done, sprint cycle, custom framework such as SAFe) and story templates when the project provides them. Creates issues through a connected Jira/Atlassian MCP tool only after a preview and an explicit yes, searching first so nothing is duplicated. TRIGGER when: user asks to create epics, user stories, a backlog, Jira tickets, story splitting, acceptance criteria, a Jira import from a BRD/requirements, or to set up the team's Jira template or process. DO NOT TRIGGER when: user wants the BRD itself (use sdlc-brd-generate), technical design (use sdlc-architecture-diagram), or test cases (use sdlc-qa-test-case-generate)."
 metadata:
-  version: "2.0"
+  version: "3.0"
   author: "Nagarro Salesforce CoE"
 ---
 
 # sdlc-jira-story-generate
 
 Produce a backlog that a Salesforce team can estimate and build from, where every story traces to
-a BRD requirement and every acceptance criterion can become a test case.
+a BRD requirement and every acceptance criterion can become a test case. This skill runs in the main
+conversation (`/sdlc-stories`, or whenever someone asks for stories or Jira tickets).
+
+## Your team's Jira process and templates come first
+Every team runs Jira differently. Before writing anything, look for the project's own versions under
+`paths.templates` (default `docs/sdlc/templates/`), folder `jira/`:
+
+| Project file (`<paths.templates>/jira/…`) | Replaces the kit's | Defines |
+|---|---|---|
+| `jira-process-template.md` | [references/jira-process-template.md](references/jira-process-template.md) | Framework (Scrum, Kanban, SAFe, client's own), issue hierarchy, workflow statuses, Definition of Ready and Done, estimation scale, max story size, sprint and release cycle, required fields |
+| `story-template.md` | [references/story-template.md](references/story-template.md) | The story layout |
+| `backlog-template.md` | [references/backlog-template.md](references/backlog-template.md) | The backlog document |
+| `jira-csv-import.md` | [references/jira-csv-import.md](references/jira-csv-import.md) | CSV columns for the import |
+
+- A project file wins over the kit's file. Say which ones you used in the report.
+- Follow the project's hierarchy: for SAFe, Epic → Feature → Story means writing features between
+  epics and stories; for Kanban, no sprint slicing. Keep the kit's trace IDs (`EPIC-nn`, `US-nn-mm`,
+  `BR-nn`) in summaries and labels whatever the format, so later stages can find the issues.
+- Use the project's estimation scale, max story size and Definition of Ready instead of the defaults
+  below (≤ 8 points, Fibonacci, the kit's Ready checks).
+- Identifiers the tools call (project key, issue type names, field IDs, transition names) stay in the
+  `jira` block of `.claude/sf-sdlc.json`. If the process file and the config disagree, stop and ask.
+- No project files: use the kit's templates and tell the person, once, that they can add their own —
+  `node .claude/bin/sf-sdlc templates copy jira/jira-process-template.md` (or `templates copy jira`
+  for all four) puts editable copies in the project. The same works for any custom Jira framework:
+  describe it in the process file and the skill follows it.
 
 ## Inputs
 - BRD (default `docs/sdlc/01-brd/BRD.md`). Other requirement documents work; IDs then start fresh
@@ -19,7 +44,7 @@ a BRD requirement and every acceptance criterion can become a test case.
   name, custom field ID, label or transition name. A value missing from the config is asked for
   once, and the user is told to save it with `/sdlc-setup`.
 - Optional: epic naming convention, an existing backlog (update it, do not duplicate), team
-  velocity, sprint length.
+  velocity, sprint length (from the project's process file when it has them).
 
 Check the BRD approval record (section 19). If it is not approved, say so and continue only if
 the user confirms; note "built on unapproved BRD v{x}" in the backlog header.

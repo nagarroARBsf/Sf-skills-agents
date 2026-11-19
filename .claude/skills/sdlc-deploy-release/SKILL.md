@@ -2,7 +2,7 @@
 name: sdlc-deploy-release
 description: "Deployment and release runbook for Salesforce through the sf CLI: promotion order from the project config, classifying the target org first, validate then quick deploy, test levels per environment (never NoTestRun for production), delta versus full deployments, destructive changes with explicit confirmation, manual steps, failure diagnosis, rollback planning and the deployment record (DEP); then the release: evidence-based readiness checklist, go/no-go recommendation, release notes, Jira fix version and GitHub release after explicit approval, and hypercare. Production is deployed only when the user names the org and confirms. TRIGGER when: user asks to deploy, validate, promote, roll back, build a manifest, diagnose a deployment failure, check release readiness, write release notes, tag or close a release, or runs /sdlc-deploy or /sdlc-release. DO NOT TRIGGER when: the user wants tests run without deploying (use sdlc-test-execution) or a change reviewed (use sdlc-code-review)."
 metadata:
-  version: "1.0"
+  version: "2.0"
   author: "Nagarro Salesforce CoE"
 ---
 
@@ -11,6 +11,12 @@ metadata:
 A deployment is a controlled change to someone's business system. Validate before deploying,
 never surprise the person who owns the org, and leave a record another engineer could roll back
 from. Part A is deployment (`/sdlc-deploy`); Part B is release (`/sdlc-release`).
+
+Both parts run **in the main conversation**; there is no separate deployment or release agent. Only
+a person starts them: the commands cannot be invoked by the model, and the guard hooks ask before any
+org-changing `sf` command. The readiness evidence can be gathered in parallel with the
+`sdlc-release-readiness` workflow. Do not change source to make a deployment pass: report the cause
+and hand the fix back to the build (`/sdd-implement`). You recommend go or no-go; a person decides.
 
 All project values come from `node .claude/bin/sf-sdlc config show --json`: `orgs.*`,
 `deploy.pipeline`, `deploy.testLevel.<role>`, `deploy.validateBeforeDeploy`,

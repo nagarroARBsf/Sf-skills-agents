@@ -4,8 +4,10 @@ description: Validate, then deploy to a named org through the Salesforce CLI, wi
 argument-hint: "<org role or alias: qa | uat | production | alias> [validate | quick | status]"
 disable-model-invocation: true
 ---
-Use the **sdlc-deployment-agent** subagent to run the deployment.
+Follow Part A of the `sdlc-deploy-release` skill in this conversation.
 
 Target and scope from the user: $ARGUMENTS
 
-If no target org was named, ask for it and stop; never choose one.
+If no target org was named, ask for it and stop; never choose one. Classify the target
+org with `sf-sdlc org classify <alias> --json` and state the result first (unknown
+counts as production).

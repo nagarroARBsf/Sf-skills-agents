@@ -25,25 +25,25 @@
   var relay = document.getElementById('agentRelay');
   if (relay) {
     var STEPS = [
-      ['scout', 'The project scout reads the code, git history and org, and records what already exists.'],
-      ['brd', 'The BRD agent turns workshop transcripts into BR-04, "Sales sees account revenue at a glance".'],
-      ['stories', 'The Jira story agent splits it into US-04-02 with Gherkin acceptance criteria.'],
-      ['architect', 'The solution architect designs LLD-US-04-02: an LWC on the Account page, an Apex controller, a permission set.'],
-      ['plan', 'The planner writes the spec, plan and test-first tasks for US-04-02. No code yet.'],
-      ['dev', 'The developer builds each task tests first and ticks it off with evidence.'],
-      ['review', 'The read-only reviewer checks the change and runs Code Analyzer: verdict in review.md.'],
-      ['deploy', 'The deployment agent validates against UAT, quick-deploys, and records DEP-005 with a rollback plan.'],
-      ['qa', 'QA runs Apex, Jest and browser tests in UAT: TR report, and DEF records for anything that fails.'],
-      ['release', 'The release manager checks the evidence and drafts REL-1.4.0 notes for a go/no-go.']
+      ['setup', 'Setup, in the main conversation with the sf-sdlc-setup skill, reads the code, git history and org and records what already exists.'],
+      ['brd', 'The BRD agent reads the workshop transcripts in its own context and writes BR-04, "Sales sees account revenue at a glance".'],
+      ['stories', 'In the main conversation, the story skill splits it into US-04-02 with Gherkin criteria, in the team\'s own Jira process.'],
+      ['architect', 'The solution architect agent reads the codebase and designs LLD-US-04-02: an LWC on the Account page, an Apex controller, a permission set.'],
+      ['plan', 'The planner built into your coding agent (plan mode) writes the spec, the 12-section plan and test-first tasks in the kit\'s format. No code yet.'],
+      ['dev', 'The built-in developer, your coding agent itself, builds each task tests first under the project rules and ticks it off with evidence.'],
+      ['review', 'The code reviewer agent, which never saw the build, runs Code Analyzer and reviews the change against the Salesforce coding rules, read-only: verdict in review.md.'],
+      ['deploy', 'A person starts the deployment: Claude validates against UAT, quick-deploys, and records DEP-005 with a rollback plan.'],
+      ['qa', 'The QA agent runs Apex, Jest and browser tests in UAT: TR report with screenshots, and DEF records for anything that fails.'],
+      ['release', 'A person starts the release: Claude checks the evidence and drafts REL-1.4.0 notes for a go/no-go.']
     ];
     var steps = relay.querySelectorAll('.relay-step');
-    var cards = document.querySelectorAll('.agent-card');
+    var cards = document.querySelectorAll('#agents .agent-card');
     var pill = relay.querySelector('[data-relay-pill]');
     var text = relay.querySelector('[data-relay-text]');
     var approveTimer;
     function show(n) {
       steps.forEach(function (s, k) { s.classList.toggle('on', k === n); s.classList.toggle('done', k < n); });
-      cards.forEach(function (c) { c.classList.toggle('on', c.dataset.agent === STEPS[n][0]); });
+      cards.forEach(function (c) { c.classList.toggle('on', (c.dataset.agent || '').split(' ').indexOf(STEPS[n][0]) >= 0); });
       text.textContent = STEPS[n][1];
       pill.textContent = 'Draft written'; pill.classList.remove('ok');
       clearTimeout(approveTimer);
@@ -216,26 +216,26 @@
   var ad = document.getElementById('agentDemo');
   if (ad) replay(ad, [
     { cls: '', prompt: '/sf-sdlc:brd docs/sdlc/00-inputs/', ms: 3000, cap: 'The workshop transcript and emails are in <code>docs/sdlc/00-inputs/</code>. You start the BRD stage with one command.' },
-    { cls: '', ms: 2600, cap: '<b>1.</b> Claude hands the work to the <b>sdlc-brd-agent</b>: a subagent with its own context, only file tools, and the BRD method skill.' },
+    { cls: '', ms: 2600, cap: '<b>1.</b> Claude hands the work to the <b>sdlc-brd-agent</b>: one of the kit\'s four agents, with its own context for the long transcripts, only file tools, and the BRD method skill.' },
     { cls: '', ms: 2200, cap: '<b>2.</b> It reads every input: transcripts, notes, emails.' },
     { cls: 's-brd s-pane2', ms: 3000, cap: '<b>3.</b> It writes a draft BRD with traceable IDs (<code>BR-04</code> → <code>FR-04.2</code>), citing the transcript line behind each requirement, and lists open questions.' },
     { cls: 's-brd s-pane2', ms: 3000, cap: '<b>4.</b> Then it stops. Nothing moves on until a person has reviewed the draft.' },
     { cls: 's-brd s-pane2 s-approve', ms: 3200, cap: '<b>5.</b> You review it and fill in the approval record yourself. Agents never approve their own work.' },
     { cls: 's-brd s-pane2 s-approve', prompt: '/sf-sdlc:stories', ms: 2400, cap: '<b>6.</b> When you are ready, you start the next stage.' },
-    { cls: 's-brd s-pane2 s-approve', ms: 2600, cap: '<b>7.</b> The <b>sdlc-jira-story-agent</b> checks that the BRD is approved, then reads it.' },
-    { cls: 's-brd s-backlog s-pane2 s-approve', ms: 5000, cap: '<b>8.</b> It writes the backlog and a Jira import file as a draft. Every stage works the same way: one command, one agent, one draft, one approval.' }
+    { cls: 's-brd s-pane2 s-approve', ms: 2800, cap: '<b>7.</b> Stories run in the <b>main conversation</b>, guided by the <b>sdlc-jira-story-generate</b> skill: Claude checks that the BRD is approved, reads it, and follows your team\'s Jira process template.' },
+    { cls: 's-brd s-backlog s-pane2 s-approve', ms: 5000, cap: '<b>8.</b> It writes the backlog and a Jira import file as a draft. Every stage works the same way, in an agent or in your conversation: one command, one draft, one approval.' }
   ]);
 
   var bd = document.getElementById('browserDemo');
   if (bd) {
     var bscenes = [
-      { cls: '', prompt: '/sf-sdlc:test-run uat TC-US-04-02-007', ms: 2800, cap: 'You ask Claude Code, in VS Code, to run a UI test case from the test design.' },
+      { cls: '', prompt: '/sf-sdlc:ui-test TC-US-04-02-007 uat', ms: 2800, cap: 'You ask Claude Code, in VS Code, to run a UI test case from the test design.' },
       { cls: '', ms: 2600, cap: '<b>1.</b> The <b>QA agent</b> picks the case up and asks the kit for the sandbox address (sandbox orgs only, never a session link).' },
       { cls: '', ms: 1800, cap: '<b>2.</b> It calls <code>browser_navigate</code>. The <code>pre-mcp</code> hook checks the org is a sandbox before the browser may open it.' },
       { cls: 's-browser s-loading', ms: 1900, cap: '<b>3.</b> Playwright opens Chrome on the Account record page, signed in from the kept browser profile.' },
       { cls: 's-browser s-loading s-loaded s-chart s-broken', ms: 2400, cap: '<b>4.</b> The <code>accountRevenueChart</code> Lightning Web Component renders, but something is off.' },
       { cls: 's-browser s-loaded s-chart s-broken s-bad s-shot', ms: 4200, cap: '<b>5.</b> The agent takes a screenshot and checks it against the expected result: the chart spills out of its card and the month labels sit off their bars. The case fails and <code>DEF-012</code> is logged with the screenshot.' },
-      { cls: 's-pane2', ms: 4200, cap: '<b>6.</b> You ask for the fix. The <b>developer agent</b> finds the cause in <code>accountRevenueChart.css</code>: a fixed 120% width and a stray left padding on the axis.' },
+      { cls: 's-pane2', ms: 4200, cap: '<b>6.</b> You ask for the fix. Claude, in the <b>main conversation</b>, finds the cause in <code>accountRevenueChart.css</code>: a fixed 120% width and a stray left padding on the axis.' },
       { cls: 's-pane2', ms: 2800, cap: '<b>7.</b> It deploys just that component to the UAT sandbox. The <code>pre-bash</code> hook allows it because UAT is not production.' },
       { cls: 's-pane2 s-browser s-loaded s-chart s-good', ms: 3000, cap: '<b>8.</b> The re-test opens the same page again: the chart now fits its card and every label sits under its bar.' },
       { cls: 's-pane2 s-browser s-loaded s-chart s-good s-shot', ms: 2400, cap: '<b>9.</b> A new screenshot. The defect closes only when a passing run is cited: <code>DEF-012</code> → Fixed.' },

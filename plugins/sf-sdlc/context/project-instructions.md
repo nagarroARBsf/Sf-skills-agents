@@ -2,12 +2,12 @@
 
 # Salesforce project — AI delivery kit
 
-This project uses the Nagarro Salesforce SDLC kit: delivery agents, spec-driven development commands,
-guard hooks, coding rules and Salesforce skills. Follow them over generic habits.
+This project uses the Nagarro Salesforce SDLC kit: spec-driven development, skills for each delivery
+stage, four agents, guard hooks, coding rules and Salesforce skills. Follow them over generic habits.
 
 ## Project settings
 Project-specific values live in `.claude/sf-sdlc.json` (org aliases and which are production, branch
-rules, Jira project, coverage target, promotion order, document paths). Read it with
+rules, Jira project, coverage target, promotion order, document and template paths). Read it with
 `sf-sdlc config show`; never hard-code a value it defines. If it is missing or
 incomplete, offer `/sf-sdlc:setup`.
 
@@ -22,33 +22,52 @@ incomplete, offer `/sf-sdlc:setup`.
    Any non-trivial change (more than a typo, label or one-line fix) goes through a spec first. If a
    request skips it, say so and offer `/sf-sdlc:specify`.
 4. **Verify → ship**: `/sf-sdlc:review` (and `/sf-sdlc:analyze`) → `/sf-sdlc:deploy <org>` → `/sf-sdlc:test-run`
-   → `/sf-sdlc:retest` → `/sf-sdlc:release <version>`. `/sf-sdlc:trace` shows status and traceability at any time.
+   and `/sf-sdlc:ui-test` → `/sf-sdlc:retest` → `/sf-sdlc:release <version>`. `/sf-sdlc:trace` shows status and
+   traceability at any time.
 
-Each stage runs in its own agent, writes a draft and stops for human review. Only a person fills in
-an approval record; never mark your own output approved, and never start the next stage unasked.
+Most stages run here, in the main conversation, following their skill; planning and building use
+your own plan mode and editing. Four run in an agent: `sdlc-brd-agent` (BRD),
+`sdlc-solution-architect-agent` (architecture and diagrams) and `sdlc-qa-test-agent` (test design,
+test runs, browser UI tests), because they read large inputs; and `sdlc-code-review-agent`
+(`/sf-sdlc:review`: Code Analyzer plus the coding rules, read-only), so the review is independent of
+whoever wrote the code. Each stage writes a
+draft and stops for human review. Only a person fills in an approval record; never mark your own
+output approved, and never start the next stage unasked.
 
-## Skills
-The `sdlc-*` skills define the method for each stage. Salesforce technical skills (Apex, LWC, Flow,
-objects, permissions, deployment and so on) are installed per project in `.claude/skills/`. Load the
-matching installed skill before generating Salesforce metadata or code. When a task needs one that
-is not installed, say which and offer `/sf-sdlc:skills`; do not install skills unasked.
+## Planning
+When the user asks for a plan, an approach or an impact analysis, or plan mode is on, write the plan
+in the spec-driven format: the 12 sections of the `sdlc-spec-driven-development` plan template, in
+order, after reading the code it touches. When plan mode is approved, save the plan as
+`specs/<feature>/plan.md` (status `Draft for review`) before continuing; plan-mode approval is not the
+plan's approval record.
+
+## Skills and templates
+The `sdlc-*` skills define the method for each stage; `sf-sdlc-setup` sets the kit up. Salesforce
+technical skills (Apex, LWC, Flow, objects, permissions, deployment and so on) are installed per
+project in `.claude/skills/`. Load the matching installed skill before generating Salesforce metadata
+or code. When a task needs one that is not installed, say which and offer `/sf-sdlc:skills`; do not
+install skills unasked. When a skill uses a document or Jira template, use the team's own copy in the
+project templates folder (`paths.templates`) when one exists.
 
 ## Salesforce engineering rules (always)
-- Security: `with sharing` by default; `WITH USER_MODE` / `AccessLevel.USER_MODE`; bind variables,
-  never concatenated SOQL; access through permission sets and custom permissions; no hard-coded
-  IDs, profile names, endpoints or secrets.
+- Security: explicit sharing on every class (`with sharing` by default); an explicit access mode on
+  every query and DML (`WITH USER_MODE`, `as user`, `AccessLevel.USER_MODE`), never
+  `WITH SECURITY_ENFORCED`; bind variables, never concatenated SOQL; access through permission sets and
+  custom permissions; no hard-coded IDs, profile names, endpoints or secrets.
 - Bulk-safe: no SOQL/DML in loops; collections in, collections out; one trigger per object with a
   handler.
-- Tests: written from acceptance criteria; meaningful assertions; positive, negative, bulk and
-  `System.runAs` permission cases; test data factory; no `SeeAllData`.
+- Tests: written from acceptance criteria; `Assert` class with messages; positive, negative, bulk and
+  minimum-access `System.runAs` cases; test data factory; no `SeeAllData`.
 - Declarative first when it stays maintainable; record the reason when choosing code.
 - Configuration values in Custom Metadata; user-facing text in Custom Labels.
 - Static analysis: the official Salesforce Code Analyzer (`sf-sdlc analyze`) must
   show no violation at or above the project's blocking severity before a change is committed.
 
-Detailed, file-type-specific rules are in the `salesforce-coding-rules` skill: load it before writing or reviewing Apex, LWC, metadata XML or SDLC documents.
+Detailed, file-type-specific rules are in the `salesforce-coding-rules` skill: load it before writing or reviewing Apex, LWC, Flows, metadata XML or SDLC documents.
 
 ## Orgs and deployment
+- For object schema and record data, use the read-only `sf-sobject-reads` MCP server when it is
+  connected; otherwise `sf sobject describe` and `sf data query`. Never guess at org data.
 - Never deploy to, delete from or change data in production or a shared org unless the user names
   the org and confirms in this conversation. Treat an org you cannot classify as production.
 - Validate before deploying (`sf project deploy validate`, then `sf project deploy quick`). Never use
@@ -73,7 +92,14 @@ For any change beyond a trivial edit (typo, label, formatting, one-line fix), wo
 2. If none exists, propose `/sf-sdlc:specify <story or description>` before writing code. If the user
    says to skip it, proceed and note "no spec" in your summary.
 3. If one exists, read `specs/constitution.md`, `spec.md`, `plan.md` and `tasks.md`, and work
-   within them. When the code needs to diverge, update the plan first and say why.
-4. Tick tasks in `tasks.md` as they are completed.
+   within them. When the code needs to diverge, update the plan (or the spec, for a scope change)
+   first and say why.
+4. The spec says what and why only, with measurable success criteria and at most 3
+   `[NEEDS CLARIFICATION]` markers; do not plan while markers remain unless the user accepts the risk.
+5. Every plan — `/sf-sdlc:plan`, plan mode or a plain request for a plan — uses the 12-section plan format
+   and passes the constitution check before and after design.
+6. Every requirement and acceptance criterion maps to a task and a test; run the consistency check
+   (spec ↔ plan ↔ tasks) before writing code and fix critical findings at their source.
+7. Tests first. Tick a task in `tasks.md` only with evidence: the command and its result.
 
 The full method is in the `sdlc-spec-driven-development` skill.

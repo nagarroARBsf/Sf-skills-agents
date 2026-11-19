@@ -1,11 +1,11 @@
     <section id="limitations" data-tab="safety">
       <h2>Known limitations</h2>
+      <div class="callout beta-callout"><p><span class="beta-tag">Beta</span> <strong>The SF-SDLC Framework is in beta.</strong> It has not yet been tested on real customer projects. Try it in a sandbox and on non-critical work first, and tell us what you find.</p></div>
       <ul>
-        <li>Not yet run end to end against a real org or Jira project. Prove deploy, test-run and Jira paths in a sandbox first.</li>
-        <li>No behavioural evaluation suite yet; agent quality is unmeasured.</li>
-        <li>Monitors and themes are experimental in Claude Code; monitors do not run in headless sessions.</li>
-        <li>Hosted MCP servers are reached through Salesforce's Beta <code>v1-beta.2</code> route, as Salesforce's own plugin does; it may change. Grounding results can lag recent changes and are never a complete list.</li>
-        <li>Source checks are heuristics; the Code Analyzer is the authoritative scan.</li>
+        <li><strong>Not yet run end to end on a real project.</strong> The deploy, test-run and Jira paths have not been exercised against a real org or Jira project. Prove them in a sandbox before relying on them.</li>
+        <li><strong>The framework is still evolving.</strong> Commands, skills, file layouts and config keys can change between releases. You can help shape it: <a href="#contribute">contribute</a>.</li>
+        <li>3.0 is new: moving seven stages from agents into skills, browser UI testing, project templates and the rewritten rules are covered by structural unit tests, not yet by a customer project. The rules cite Salesforce documentation as of Winter '27; check them against your org's API version.</li>
+        <li><strong>Monitors and themes are experimental in Claude Code</strong> and may need changes when their format moves. Monitors do not run in headless (<code>claude -p</code>) sessions.</li>
       </ul>
       <p class="muted">The full list is in the <a href="https://github.com/nagarroARBsf/Sf-skills-agents#known-limitations">README</a>.</p>
     </section>

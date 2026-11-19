@@ -22,7 +22,7 @@
       "skills": ["platform-apex-generate", "platform-apex-test-generate", "platform-apex-test-run", "platform-apex-logs-debug"] },
     { "id": "lwc", "reason": "The project contains Lightning Web Components",
       "when": { "folders": ["lwc"] },
-      "skills": ["experience-lwc-generate", "design-systems-slds-apply"] },
+      "skills": ["experience-lwc-generate", "design-systems-slds-apply", "experience-accessibility-validate"] },
     { "id": "aura", "reason": "The project contains Aura components that are candidates for migration",
       "when": { "folders": ["aura"] },
       "skills": ["experience-aura-lwc-migrate"] },

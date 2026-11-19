@@ -3,7 +3,7 @@ description: Recommend, install, remove or update the Salesforce skills this pro
 argument-hint: "[recommend | install <names> | remove <names> | list | sync]"
 ---
 <!-- Generated from .claude/commands/sdlc-skills.md by scripts/build-claude-plugin.py. Edit the source in .claude/ and re-run the script; changes here are overwritten. -->
-Use the **sf-sdlc:sdlc-project-scout-agent** subagent to manage this project's skills.
+Follow the `sf-sdlc-setup` skill, section "Skill requests", in this conversation.
 
 Request from the user: $ARGUMENTS
 

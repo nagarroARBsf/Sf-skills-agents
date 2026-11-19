@@ -1,12 +1,12 @@
     <section id="how-it-fits" data-tab="plugin">
       <h2>How the pieces work together</h2>
-      <p>A command names an agent; the agent loads its method skills and any Salesforce skills installed in the project; real work on Salesforce goes through the <code>sf-sdlc</code> CLI and the <code>sf</code> CLI, and org context (what metadata already exists, metadata schemas) comes from Salesforce Hosted MCP Servers. Hooks sit around every tool call.</p>
+      <p>A command either names one of the four agents (BRD, solution architect, code reviewer, QA) or tells Claude to follow a skill in the main conversation. Either way the method skill loads, with the coding rules and any Salesforce skills installed in the project; real work on Salesforce goes through the <code>sf-sdlc</code> CLI and the <code>sf</code> CLI, and org context (what metadata already exists, metadata schemas) comes from Salesforce Hosted MCP Servers. Hooks sit around every tool call.</p>
       <div class="flow">
         <div class="node"><b>Command</b><span>You type <code>/sf-sdlc:review US-04-02</code></span></div>
-        <div class="node"><b>Agent</b><span><code>sdlc-code-review-agent</code>, read-only tools</span></div>
-        <div class="node"><b>Skills</b><span><code>sdlc-code-review</code>, <code>sdlc-workflow</code> + installed Apex skills</span></div>
+        <div class="node"><b>Agent</b><span><code>sdlc-code-review-agent</code>: own context, read-only tools (Read, Glob, Grep, Bash)</span></div>
+        <div class="node"><b>Skills and rules</b><span><code>sdlc-code-review</code>, <code>sdlc-workflow</code>, Apex rules + installed Apex skills</span></div>
         <div class="node"><b>CLI</b><span><code>sf-sdlc analyze</code>, <code>delta</code> → <code>sf code-analyzer</code></span></div>
-        <div class="node"><b>Draft</b><span><code>specs/US-04-02-…/review.md</code> with a verdict, then stop</span></div>
+        <div class="node"><b>Draft</b><span>report returned and saved as <code>specs/US-04-02-…/review.md</code> with a verdict, then stop</span></div>
       </div>
       <div class="guard-band"><strong>Hooks around every step:</strong> <code>SessionStart</code> prints project facts and instructions · <code>PreToolUse</code> runs the production-org, secret, branch, commit and hosted-MCP guards · <code>PostToolUse</code> runs source checks and writes the audit log · <code>PostToolUseFailure</code> explains deploy failures · <code>Stop</code> checks task evidence. Monitors report when a background deploy or test run changes state.</div>
     </section>

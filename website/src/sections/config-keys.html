@@ -5,10 +5,11 @@
         <tbody>
           <tr><td><code>orgs.production</code></td><td>Every alias listed here is treated as production regardless of what the org looks like. An org that cannot be classified is never treated as safe.</td></tr>
           <tr><td><code>git.protectedBranches</code></td><td>Branches agents may not push to; force-pushes to them are always blocked.</td></tr>
-          <tr><td><code>jira.projectKey</code>, <code>jira.fields.*</code></td><td>Where the story agent creates issues, and your custom field IDs (story points, acceptance criteria).</td></tr>
+          <tr><td><code>jira.projectKey</code>, <code>jira.fields.*</code></td><td>Where the stories stage creates issues, and your custom field IDs (story points, acceptance criteria).</td></tr>
           <tr><td><code>quality.coverageTarget</code>, <code>analyzerSeverityThreshold</code></td><td>Per-class Apex coverage target and the Code Analyzer severity that blocks a commit (1 Critical … 5 Info).</td></tr>
           <tr><td><code>deploy.pipeline</code>, <code>deploy.testLevel</code></td><td>Promotion order and test level per stage. Production may not be <code>NoTestRun</code>.</td></tr>
           <tr><td><code>mcp.servers</code>, <code>mcp.org</code></td><td>Which Salesforce Hosted MCP Servers the agents may use, and the org (role or alias) they sign in to. Headless 360 and Data 360 are off by default.</td></tr>
+          <tr><td><code>paths.templates</code></td><td>Where your team's own document and Jira templates live (default <code>docs/sdlc/templates</code>). A copy here replaces the kit's template. <code>sf-sdlc templates list</code> shows which; <code>sf-sdlc templates copy &lt;id|area|all&gt;</code> starts one.</td></tr>
           <tr><td><code>hooks.mode</code></td><td><code>observe</code> reports what would be blocked; <code>enforce</code> blocks. Start in observe for a week. The production and secret guards enforce in every mode.</td></tr>
         </tbody>
       </table></div>

@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 This is **not a Salesforce project** — it is the *kit that gets installed into* Salesforce projects,
-for Claude Code. It ships 10 SDLC agents, 22 commands, 10 always-available `sdlc-*` skills, a
-177-skill on-demand library, guard hooks, the `sf-sdlc` CLI, output styles and workflows, in two
-forms:
+for Claude Code. Release 3.0 ("Enterprise Edition") ships 4 agents, 23 commands, 11 always-available
+skills (10 `sdlc-*` plus the kit's own `sf-sdlc-setup`), a 177-skill on-demand library, 7 rule files,
+guard hooks, the `sf-sdlc` CLI, 3 output styles and workflows, in two forms:
 
 - `.claude/` — the copy-in folder, and the **single source of truth**.
 - `plugins/sf-sdlc/` — the Claude Code plugin, **generated** from `.claude/` (marketplace `nagarro-sf`).
@@ -94,12 +94,22 @@ They are `rmtree`d on every build. Two files inside `.claude/` are also generate
 - **Commands** that route to an agent open with exactly `Use the **<agent-name>** subagent to <verb>…`.
   Use `$ARGUMENTS`. Commands that change an org, Jira or GitHub carry
   `disable-model-invocation: true` so only a person can start them.
-- **Agents**: frontmatter `name` equals the file name; `skills:` lists only skills that exist in
-  `.claude/skills/` (the tests check this). Omit `tools:` when the agent needs MCP tools. The
-  code-review agent has no `Write`/`Edit` on purpose. Agents must not assume a technical skill is
-  loaded — skills are installed per project.
+- **Agents are kept to a minimum** (BRD, solution architect, code review, QA): a stage gets an agent
+  only when it reads large inputs or produces long tool output, or (code review) when it must be
+  independent of the session that wrote the code. Planning and development are the coding agent's own
+  plan mode and editing, not kit agents. Everything else is a skill run in the main conversation. Do not add an agent where a skill and a command will do; a test pins the agent list.
+  Frontmatter `name` equals the file name; `skills:` lists only skills that exist in
+  `.claude/skills/` (the tests check this). Omit `tools:` when the agent needs MCP tools. Agents must
+  not assume a technical skill is loaded — skills are installed per project.
+- **Commands** that run in the main conversation open with "Follow the `<skill>` skill … in this
+  conversation." Review stays read-only (it writes only `review.md`); deploy and release keep
+  `disable-model-invocation: true`.
 - **Skills**: frontmatter `name` equals the folder name; `description` ≤ 1,024 characters after
-  whitespace collapsing (the build warns).
+  whitespace collapsing (the build warns). Document templates a team may replace end in
+  `-template.<ext>` under a skill's `references/`; `sf-sdlc templates` maps them to areas through
+  `TEMPLATE_AREAS` in `.claude/bin/sf-sdlc`. A new `sdlc-*` skill with templates needs an area there.
+- **Removing or renaming a kit file** that copy-in users already have: add its old path to
+  `OBSOLETE_KIT_FILES` in `.claude/hooks/lib.js` so `sf-sdlc doctor` tells them to delete it.
 - **No project-specific values** in agents, commands or skills. Org aliases, branch names, Jira
   keys, thresholds and paths come from `.claude/sf-sdlc.json`; defaults live in `DEFAULTS` in
   `.claude/hooks/lib.js`. A new config key needs: the default there, validation in
@@ -112,7 +122,7 @@ They are `rmtree`d on every build. Two files inside `.claude/` are also generate
 `.claude/hooks/run.js <hook>` is the single dispatcher (`session-start`, `pre-bash`, `pre-write`,
 `pre-mcp`, `post-write`, `post-bash`, `bash-failure`, `stop`); `lib.js` holds config, command parsing
 and org classification; `ops.js` the Code Analyzer wrapper, inventory and delta; `checks.js` the
-source checks and secret patterns; `mcp.js` the Salesforce Hosted MCP routes (six servers; two on by default), JWT minting, probe and the no-tools handshake; `diagram.js` the
+source checks and secret patterns; `mcp.js` the Salesforce Hosted MCP routes (six servers; three on by default, including the read-only `sobject-reads`), JWT minting, probe and the no-tools handshake; `diagram.js` the
 Salesforce-standard draw.io generator (spec → `.drawio`, checks, export through draw.io desktop); `envfile.js` the
 project `.env` and `.env.sample` (sections, template, parse, names-only status — never values);
 `browser.js` the Playwright MCP launch plan (pinned `@playwright/mcp`, persistent profile in
@@ -172,10 +182,11 @@ update. `.claude-plugin/marketplace.json` carries a `renames` entry from the old
   into `.claude/skill-library/drawio-skill/` at the commit named in `THIRD_PARTY_SKILLS` in the build
   script. **Do not hand-edit**; to update, replace the folder from upstream and change the commit
   there and in `NOTICE`. It is in the core set (every project) and needs Python 3.
-- **10 Nagarro SDLC** skills (`sdlc-*`), edited in place in `.claude/skills/`.
+- **11 Nagarro** skills — 10 `sdlc-*` lifecycle skills and `sf-sdlc-setup` (the kit's setup skill,
+  deliberately not named `sdlc-*`) — edited in place in `.claude/skills/`.
 
-All technical skills live in `skill-library/`; only `sdlc-*` skills are in `skills/` (a test
-enforces this). Which library skills a project gets is decided by
+All technical skills live in `skill-library/`; only `sdlc-*` skills and `sf-sdlc-setup` are in
+`skills/` (a test enforces this). Which library skills a project gets is decided by
 `.claude/catalog/detection-rules.json` — add a rule there when adding a skill family. Attribution is
 in `NOTICE`; keep it current. Official and third-party skills bundle their own scripts and assets; none of that is
 this repo's code — do not refactor or lint it.
@@ -190,11 +201,12 @@ drive scripts that exist only in Salesforce's own plugin.
 ## The product this kit delivers
 
 Lifecycle: setup → ground → BRD → stories → architecture → spec/plan → build → review → deploy →
-test → re-test → release → observe. Each stage runs in its own agent, writes a **draft** and stops for human review;
+test → re-test → release → observe. Most stages run in the main conversation under a skill; BRD,
+architecture, code review and QA run in an agent. Each stage writes a **draft** and stops for human review;
 only a person fills in an approval record. Stages are decoupled by a shared ID scheme
 (`BR-04` → `FR-04.2` → `US-04-02` → `LLD-US-04-02` → `TC-US-04-02-007` → `TR-…` → `DEF-nnn` →
 `DEP-nnn` → `REL-x.y.z`). The ID scheme, artifact layout and feasibility checklist live in the
-`sdlc-workflow` skill and are referenced by every agent — change them there, not per agent.
+`sdlc-workflow` skill and are referenced by every stage — change them there, not per skill or agent.
 
 Integrations: Salesforce through the `sf` CLI, plus Salesforce Hosted MCP Servers (Metadata
 Grounding, Metadata Experts, optional Headless 360 and Data 360) through `sf-mcp-proxy`, signed in

@@ -4,4 +4,5 @@ templates/
 ├── code-analyzer.yml          # Code Analyzer v5 rule config, with the NoHardcodedSalesforceIds rule
 ├── code-analyzer-ci.yml       # GitHub Actions gate written to .github/workflows/ by init
 ├── mcp.json                   # hosted MCP servers merged into .mcp.json (copy-in folder only)
-└── pull_request_template.md   # PR checklist written to .github/ by init
+├── pull_request_template.md   # PR checklist written to .github/ by init
+└── project/rules/             coding rules init copies into your .claude/rules/ (plugin users)

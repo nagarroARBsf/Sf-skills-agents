@@ -1,16 +1,19 @@
     <section id="walkthrough" data-tab="use">
       <h2>Walk-through</h2>
+      <p>The BRD, architecture and test commands hand the work to an agent; the others run with you in the main conversation. Either way each one writes a draft and stops.</p>
 <pre><code>/sf-sdlc:setup                          # once per project
 /sf-sdlc:brd docs/sdlc/00-inputs/       # transcripts in, BRD draft out      → BA reviews and signs
 /sf-sdlc:stories                        # backlog and Jira CSV               → PO reviews; "yes" creates issues
-/sf-sdlc:architecture                   # HLD; then /sf-sdlc:architecture US-04-02 for the LLD
+/sf-sdlc:architecture                   # architect agent: HLD; then /sf-sdlc:architecture US-04-02 for the LLD
 /sf-sdlc:diagram solution US-04-02      # what is new, changed, unchanged
-/sf-sdlc:specify US-04-02               # then clarify → plan → tasks, each reviewed
+/sf-sdlc:specify US-04-02               # then clarify → plan → tasks, each reviewed (plan mode uses the same format)
 /sf-sdlc:implement                      # tests first, task by task
 /sf-sdlc:verify                         # evidence for each acceptance criterion
-/sf-sdlc:review US-04-02                # independent review + Code Analyzer
+/sf-sdlc:review US-04-02                # code reviewer agent: Code Analyzer + coding rules, read-only
 /sf-sdlc:deploy qa                      # validate, then quick deploy
+/sf-sdlc:test-cases US-04-02            # QA agent: test cases, CSV, traceability matrix
 /sf-sdlc:test-run qa US-04-02           # run tests, coverage, log defects
+/sf-sdlc:ui-test accountRevenueChart qa # the LWC in a real browser, screenshots as evidence
 /sf-sdlc:retest DEF-012                 # after the fix
 /sf-sdlc:deploy production              # only when you name it; asks again
 /sf-sdlc:release 1.4.0                  # readiness, notes, close-out</code></pre>

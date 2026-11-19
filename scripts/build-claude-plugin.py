@@ -61,6 +61,7 @@ PR = "${CLAUDE_PLUGIN_ROOT}"
 PATH_REWRITES = [
     ("node .claude/bin/sf-sdlc", "sf-sdlc"),
     (".claude/skills/sdlc-", f"{PR}/skills/sdlc-"),
+    (".claude/skills/sf-sdlc-setup/", f"{PR}/skills/sf-sdlc-setup/"),
     (".claude/skill-library/", f"{PR}/skill-library/"),
     (".claude/rules/", f"{PR}/skills/{RULES_SKILL}/references/"),
     (".claude/catalog/", f"{PR}/catalog/"),
@@ -72,7 +73,7 @@ PATH_REWRITES = [
 CLAUDE_MD_REWRITES = [
     ("Detailed, file-type-specific rules live in `.claude/rules/` and load when matching files are opened.",
      f"Detailed, file-type-specific rules are in the `{RULES_SKILL}` skill: load it before writing or "
-     "reviewing Apex, LWC, metadata XML or SDLC documents."),
+     "reviewing Apex, LWC, Flows, metadata XML or SDLC documents."),
 ]
 
 GENERATED_PATHS = ["agents", "commands", "skills", ON_DEMAND, "context", "hooks", "bin", "catalog",
@@ -136,7 +137,7 @@ def skill_entries(warnings: list[str]) -> list[dict]:
                 warnings.append(f"{location}/{d.name}: frontmatter name '{meta.get('name')}' != folder name")
             if len(desc) > 1024:
                 warnings.append(f"{location}/{d.name}: description is {len(desc)} chars (> 1,024)")
-            source = ("nagarro" if d.name.startswith("sdlc-") else "official" if d.name in official
+            source = ("nagarro" if location == "skills" else "official" if d.name in official
                       else "community" if d.name.startswith("sf-")
                       else "third-party" if d.name in THIRD_PARTY_SKILLS else "other")
             entries.append({"name": d.name, "location": location, "source": source,
@@ -225,7 +226,7 @@ def gen_rules_skill(out: Path) -> None:
         rows.append(f"| [{src.stem}](references/{src.name}) | {globs} | {meta.get('description', '')} |")
 
     desc = ("Salesforce coding and documentation rules for this delivery kit: Apex and triggers (security, "
-            "bulkification, structure), Apex tests, Lightning Web Components, metadata XML, and SDLC "
+            "bulkification, structure), Apex tests, Lightning Web Components, Flows, metadata XML, and SDLC "
             "document conventions. TRIGGER when: writing, editing or reviewing .cls, .trigger, LWC "
             "files, *-meta.xml metadata, or documents under docs/sdlc/ or specs/; load it alongside the "
             "skill doing the work. DO NOT TRIGGER for files outside Salesforce source or SDLC documents.")
@@ -316,7 +317,7 @@ PROJECT_NOTE = (
 )
 KIT_RULE_FILE = "sf-sdlc-kit.md"  # keep in step with KIT_RULE_FILE in .claude/hooks/lib.js
 # Kit paths that exist only inside the plugin: a project file cannot reach them (no ${CLAUDE_PLUGIN_ROOT}).
-PLUGIN_ONLY_PATHS = (".claude/skills/sdlc-", ".claude/skill-library/", ".claude/catalog/", ".claude/templates/")
+PLUGIN_ONLY_PATHS = (".claude/skills/sdlc-", ".claude/skills/sf-sdlc-setup/", ".claude/skill-library/", ".claude/catalog/", ".claude/templates/")
 
 
 def rewrite_project(body: str) -> str:
