@@ -86,7 +86,7 @@ the package. Posters (`*_poster.jpg`) are small and live in `assets/`.
 
 | Video | Where on the page | File in `website/media/` | Player |
 |---|---|---|---|
-| Marketing overview | top of `sections/overview.html` | `sf_sdlc_marketing_v2.2.mp4` (13 MB) | the browser's own controls |
+| Marketing overview | top of `sections/overview.html` | `sf_sdlc_marketing_v2.3.mp4` (66 MB, 1080p60) | the browser's own controls |
 | Setup tutorial | `sections/tutorial.html` | `sf_sdlc_tutorial_v3.2.mp4` (~50 MB) | chapter player (`scripts/video-player.js`, `styles/video-player.css`) |
 
 The tutorial player works like YouTube's: the progress bar is split into one segment per chapter, hovering

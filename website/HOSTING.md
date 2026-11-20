@@ -24,7 +24,7 @@ The public site for the Nagarro Salesforce SDLC kit. The source is `website/` (l
 ## How files are stored
 Everything, including the two videos (marketing overview and setup tutorial, served from the site since
 2026-11-19), is uploaded as static files inside the Static Web App; see the Videos section of
-[README.md](README.md). Site size is about 100 MB with the videos. The app serves them under these paths:
+[README.md](README.md). Site size is about 150 MB with the videos. The app serves them under these paths:
 
 | URL path | Built from |
 |---|---|
@@ -39,8 +39,8 @@ Everything, including the two videos (marketing overview and setup tutorial, ser
 `website/media/` (git-ignored) is copied only for videos the page references as `assets/<name>.mp4`, so
 **the videos must be in `website/media/` on the machine that builds**, or the build warns and they will not play.
 The build also prints the total size: the Free plan allows 250 MB per site and 100 GB of downloads a month.
-Video streaming counts toward that 100 GB: a full tutorial view is about 50 MB, so roughly 2,000 full views a
-month fit. Watch the `video_play` events (below) and move to the Standard plan if it gets close.
+Video streaming counts toward that 100 GB: a full tutorial view is about 52 MB and a full marketing view about 66 MB, so roughly 1,500 full marketing views a
+month fit (fewer for the tutorial). Watch the `video_play` events (below) and move to the Standard plan if it gets close.
 
 ## Build and deploy
 
