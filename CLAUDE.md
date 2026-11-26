@@ -59,8 +59,8 @@ run `build-claude-plugin.py`.
 
 Each group holds its own Static Web App, Application Insights + Log Analytics, and Communication
 Services email for the sign-up form. The client site is a copy of the kit site tailored to what we show
-clients (today: the Salesforce harmonization use case, with Discovery agent → MapShift → Developer → QA
-agent, and the agents section right after the video tutorial). Client-specific changes go **only** in
+clients (today: org harmonization — MapShift shown as a sixth kit agent, tool access on every agent card,
+and the agents section right after the video tutorial). Client-specific changes go **only** in
 `sf-sdlc-client-website/`; never change `website/` for a client. **No client names** on the client site
 or in the repo. MapShift exists only on the client site, not in the kit. Deploy steps: each folder's
 `HOSTING.md`. Both are deployed by hand from this machine; there is no CI deploy.

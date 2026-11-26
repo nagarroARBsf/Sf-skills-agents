@@ -1,9 +1,9 @@
 # SF-SDLC client showcase website
 
 > Client copy of `website/`. Build with `python3 scripts/build-site.py --client` (output `site-client/`).
-> Differences from the kit site: the *Salesforce harmonization* section (`src/sections/harmonization.html`,
-> `src/styles/harmonization.css`) and the agents section come straight after the video tutorial; MapShift is
-> shown as a sixth kit agent; no beta notice. No client names anywhere. Hosting: [HOSTING.md](HOSTING.md).
+> Differences from the kit site: the agents section comes straight after the video tutorial; MapShift is
+> shown as a sixth kit agent; every agent card and a table show its tool access; the relay starts at the
+> discovery agent on one line; no beta notice. No client names anywhere. Hosting: [HOSTING.md](HOSTING.md).
 
 The public site for the SF-SDLC Framework. It is a static page assembled from small parts, plus
 one Azure Function for the sign-up form. No npm packages and no framework: the build is

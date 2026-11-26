@@ -1,8 +1,7 @@
 # Client showcase site: hosting
 
 This is the **client** copy of the SF-SDLC website, used to show the kit to clients and changed for
-their use cases (today: Salesforce org harmonization, with the Discovery agent, MapShift, Developer and
-QA agent). The public kit site is `website/` and is hosted separately; see [../website/HOSTING.md](../website/HOSTING.md).
+their use cases (today: org harmonization, with MapShift shown alongside the kit's agents). The public kit site is `website/` and is hosted separately; see [../website/HOSTING.md](../website/HOSTING.md).
 **Never put a client's name on this site.** Created and first deployed: 2026-11-26.
 
 ## Azure resources (resource group `rg-salesforce-sdlc-client`, subscription `ARB azure`)
