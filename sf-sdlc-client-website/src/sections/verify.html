@@ -1,0 +1,10 @@
+    <section id="verify" data-tab="configure">
+      <h2>Verify the install</h2>
+<pre><code>sf-sdlc doctor            # every required line should show ✔
+sf-sdlc config validate
+sf-sdlc org classify      # your production org must report "production"
+sf-sdlc analyze --changed # the official Code Analyzer runs, with your custom rules
+sf-sdlc mcp status        # hosted MCP servers: connected with their tools, or why not</code></pre>
+      <p class="muted">Copy-in folder: prefix each with <code>node .claude/bin/</code>. Or run <code>/sf-sdlc:doctor</code>.</p>
+      <p><strong>Upgrading from 2.x?</strong> Plugin users get 3.0 with <code>/plugin update</code>. With the copy-in folder, copy the new <code>.claude/</code> over the old one, then run <code>sf-sdlc doctor</code>: it lists the files 2.x left behind (the seven removed agents, the old output styles, the renamed setup skill) for you to delete.</p>
+    </section>

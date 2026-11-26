@@ -1,0 +1,9 @@
+    <section id="skills" data-tab="use">
+      <h2>Skills on demand</h2>
+      <p>No Salesforce technical skill is loaded by default, because every loaded skill costs context in every session. The 177 skills sit in <code>skill-library/</code>. Setup reads your project and recommends a small set with the evidence for each; only the ones you confirm are copied into your project's <code>.claude/skills/</code>.</p>
+<pre><code>sf-sdlc skills recommend                 # evidence-based, from your metadata folders
+sf-sdlc skills recommend --profile admin # starter sets: developer, admin, ba
+sf-sdlc skills install platform-apex-generate platform-apex-test-run
+sf-sdlc skills sync --dry-run            # after an upgrade; never overwrites a skill you edited</code></pre>
+      <p class="muted">Or simply run <code>/sf-sdlc:skills</code>.</p>
+    </section>

@@ -16,3 +16,7 @@ __pycache__/
 # Generated static site (scripts/build-site.py) and website videos (too large for git)
 site/
 website/media/
+
+# Client showcase site (scripts/build-site.py --client)
+site-client/
+sf-sdlc-client-website/media/

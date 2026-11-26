@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "command",
+      "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.js\" session-start" }] }],
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [{ "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.js\" pre-bash",
+          "timeout": 900, "statusMessage": "sf-sdlc guard" }] },
+      { "matcher": "Write|Edit|MultiEdit",
+        "hooks": [{ "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.js\" pre-write" }] }
+    ],
+    "PostToolUse":        [ "... post-write, post-bash ..." ],
+    "PostToolUseFailure": [ "... bash-failure ..." ],
+    "Stop":               [ "... stop ..." ]
+  }
+}

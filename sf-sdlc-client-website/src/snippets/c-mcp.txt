@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "atlassian": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v2/mcp"
+    },
+    "sf-metadata-grounding": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/sf-mcp-proxy", "metadata-grounding"]
+    },
+    "sf-metadata-experts": { "...": "same, with metadata-experts" },
+    "sf-headless-360":     { "...": "same, with headless-360 (off unless in mcp.servers)" },
+    "sf-data360":          { "...": "same, with data360 (off unless in mcp.servers)" }
+  }
+}

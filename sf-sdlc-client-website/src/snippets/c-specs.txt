@@ -1,0 +1,8 @@
+specs/
+├── constitution.md
+└── US-04-02-deal-health-score/
+    ├── spec.md            what and why (no implementation)
+    ├── plan.md            12-section plan: root cause, metadata scope, impact, tests ...
+    ├── tasks.md           ordered, test-first; ticked with evidence
+    ├── verification.md    evidence per acceptance criterion
+    └── review.md          independent review with a verdict

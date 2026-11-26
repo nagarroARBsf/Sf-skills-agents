@@ -1,0 +1,18 @@
+    <section id="safety" data-tab="safety">
+      <div class="eyebrow">Safety</div>
+      <h2>Guards and hooks</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Guard</th><th>What it does</th><th>Can be relaxed?</th></tr></thead>
+        <tbody>
+          <tr><td>Production-org guard</td><td>Classifies the target of every org-changing <code>sf</code> command. Production: denies <code>NoTestRun</code> and direct deploys, asks for everything else. Unknown orgs also ask.</td><td>Policy only; on in every mode</td></tr>
+          <tr><td>Secret guard</td><td>Blocks writing or committing auth URLs, private keys, tokens and anything in <code>.sf/</code> or <code>.sfdx/</code></td><td>No</td></tr>
+          <tr><td>Branch guard</td><td>Blocks pushes to protected branches; force-pushes always blocked</td><td><code>hooks.mode</code></td></tr>
+          <tr><td>Commit gate</td><td>Runs the official Code Analyzer (Recommended plus your custom rules) on the files being committed; the CI workflow does the same for pull requests</td><td><code>hooks.mode</code></td></tr>
+          <tr><td>Hosted MCP guard</td><td>Headless 360 <code>dispatch</code> and Data 360 <code>execute</code> can change the org: they always ask, naming the org and its class, even when the tool is allow-listed</td><td>No</td></tr>
+          <tr><td>Source check</td><td>After each edit: SOQL/DML in loops, missing sharing, hard-coded IDs, <code>SeeAllData</code></td><td>Advisory</td></tr>
+          <tr><td>Audit log</td><td>Who ran which org-affecting command against which org, in <code>.sf-sdlc/audit.jsonl</code></td><td><code>hooks.auditLog</code></td></tr>
+          <tr><td>Person-only commands</td><td><code>deploy</code> and <code>release</code> carry <code>disable-model-invocation: true</code></td><td>No</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout warn"><p>Hooks and permission rules steer an agent; they are not a security boundary. Keep org permissions, branch protection and CI in place.</p></div>
+    </section>

@@ -1,0 +1,281 @@
+    <section id="agents" data-tab="start">
+      <div class="eyebrow">Getting started · Agents</div>
+      <h2>Eight agents: six from the kit, two built in</h2>
+      <p class="lead">SF-SDLC works with eight agents. Six come with the kit: the <strong>discovery &amp; design agent</strong> (existing orgs checked against the discovery pack, then the fit-gap and HLD), <strong>MapShift</strong> (one org's subjects, case rules, letters and forms mapped onto the target org for a harmonization), the <strong>BRD agent</strong> (meeting transcripts), the <strong>solution architect</strong> (the whole codebase and diagrams), the <strong>code reviewer</strong> (Code Analyzer and the Salesforce coding rules, independent of whoever wrote the code) and <strong>QA</strong> (test runs and browser sessions). Two are <strong>built into your coding agent</strong>: the <strong>planner</strong> (plan mode) and the <strong>developer</strong> (the agent that edits your code) already come with Claude Code, Cursor and the others, and the kit makes them follow the spec-driven format and the project rules automatically. Each stage still writes a <strong>draft</strong> and stops; a person approves it before the next stage starts.</p>
+      <p>No duplicate agents to learn: you plan and build with your coding agent directly, and the kit adds only the agents it does not already have. Stages never call each other. They hand off through files in your repository, linked by one ID chain, so you can stop, review, edit or re-run any stage on its own and still trace a release back to the meeting it came from.</p>
+
+      <h3>How a stage runs</h3>
+      <div class="demo" id="agentDemo">
+        <div class="demo-bar">
+          <span style="font-size:13.5px;color:var(--muted)"><span class="live-dot"></span>Replay: transcript → BRD agent → approval → stories in the main conversation · VS Code with the Claude Code extension</span>
+          <button type="button" class="demo-play" data-demo-toggle aria-pressed="false">Pause</button>
+        </div>
+        <div class="screen" role="img" aria-label="Animation: in VS Code, a person runs /sf-sdlc:brd on a workshop transcript. Claude hands the work to the BRD agent, which reads the inputs and writes a draft BRD with traceable requirement IDs, then stops. The person fills in the approval record, then runs /sf-sdlc:stories; Claude, in the main conversation with the Jira story skill, checks the approval, reads the team's Jira process template and writes a draft backlog and Jira import file.">
+          <div class="vs">
+            <div class="vs-title">acme-salesforce — Visual Studio Code</div>
+            <div class="vs-body">
+              <div class="vs-act"><i class="on"></i><i></i><i></i><i class="cc"></i></div>
+              <div class="vs-side">
+                <h6>EXPLORER</h6>
+                <div>▾ docs/sdlc</div>
+                <div>&nbsp;&nbsp;▾ 00-inputs</div>
+                <div class="sel">&nbsp;&nbsp;&nbsp;&nbsp;workshop-transcript.md</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;email-thread.md</div>
+                <div class="x-new x-brd">&nbsp;&nbsp;▾ 01-brd</div>
+                <div class="x-new x-brd add-file">&nbsp;&nbsp;&nbsp;&nbsp;BRD.md</div>
+                <div class="x-new x-backlog">&nbsp;&nbsp;▾ 02-backlog</div>
+                <div class="x-new x-backlog add-file">&nbsp;&nbsp;&nbsp;&nbsp;backlog.md</div>
+                <div class="x-new x-backlog add-file">&nbsp;&nbsp;&nbsp;&nbsp;jira-import.csv</div>
+                <div>▸ force-app</div>
+                <div>▸ .claude</div>
+              </div>
+              <div class="vs-ed">
+                <div class="ed-pane ed-default">
+                  <span class="tab">workshop-transcript.md</span><br>
+                  <span class="ln">1</span><span class="c">[00:04] Priya (Sales Ops):</span> Reps open five<br>
+                  <span class="ln">2</span>&nbsp;&nbsp;reports to see how an account is trending.<br>
+                  <span class="ln">3</span><span class="c">[00:06] Tom (Sales):</span> I just want revenue<br>
+                  <span class="ln">4</span>&nbsp;&nbsp;for the last six months on the account page.<br>
+                  <span class="ln">5</span><span class="c">[00:09] Priya:</span> And managers only see their<br>
+                  <span class="ln">6</span>&nbsp;&nbsp;team's accounts, same as today.<br>
+                  <span class="ln">7</span><span class="c">[00:12] Tom:</span> Ideally before the Q1 kickoff.<br>
+                  <span class="ln">8</span><span class="c">[00:15] Priya:</span> Which revenue field, though?
+                </div>
+                <div class="ed-pane ed-2">
+                  <span class="tab">BRD.md</span><br>
+                  <span class="ln">1</span><span class="k"># BRD · Account insights</span><br>
+                  <span class="ln">2</span><span class="k">## Approval</span><br>
+                  <span class="ln">3</span>Status: <span class="draft warn">Draft — awaiting review</span><span class="ok" data-type-at="5" data-text="Approved · BA lead · 2026-11-16"></span><br>
+                  <span class="ln">4</span><br>
+                  <span class="ln">5</span><span class="k">## Business requirements</span><br>
+                  <span class="ln">6</span><span class="s">BR-04</span> Sales sees account revenue at a glance <span class="c">(Must)</span><br>
+                  <span class="ln">7</span>&nbsp;&nbsp;<span class="s">FR-04.1</span> Last 6 months of revenue<br>
+                  <span class="ln">8</span>&nbsp;&nbsp;<span class="s">FR-04.2</span> Respect existing record access<br>
+                  <span class="ln">9</span>&nbsp;&nbsp;<span class="c">Source: workshop-transcript.md [00:06]</span><br>
+                  <span class="ln">10</span><span class="k">## Open questions</span><br>
+                  <span class="ln">11</span><span class="s">Q-01</span> Which revenue field is the source of truth?
+                </div>
+              </div>
+              <div class="vs-cc">
+                <div class="vs-cc-head"><span></span>Claude Code</div>
+                <div class="vs-cc-log">
+                  <div class="cc-msg cc-user" data-at="1">/sf-sdlc:brd docs/sdlc/00-inputs/</div>
+                  <div class="cc-msg cc-agent" data-at="1"><b>sdlc-brd-agent</b> · subagent<small>skill: sdlc-brd-generate · tools: Read, Write, Edit, Glob, Grep</small></div>
+                  <div class="cc-msg cc-tool" data-at="2"><b>Read</b> workshop-transcript.md<br><b>Read</b> email-thread.md</div>
+                  <div class="cc-msg cc-tool" data-at="3"><b>Write</b> docs/sdlc/01-brd/BRD.md<br>→ 14 BRs · 31 FRs · 3 open questions</div>
+                  <div class="cc-msg cc-say" data-at="4">Draft BRD ready for review. Fill in the approval record when you're happy; the stories stage waits until you do.</div>
+                  <div class="cc-msg cc-user" data-at="7">/sf-sdlc:stories</div>
+                  <div class="cc-msg cc-skill" data-at="7"><b>main conversation</b> · skill<small>sdlc-jira-story-generate · your Jira process template first</small></div>
+                  <div class="cc-msg cc-tool" data-at="7"><b>Read</b> BRD.md · approval ✓ Approved<br><b>Read</b> templates/jira/jira-process-template.md</div>
+                  <div class="cc-msg cc-tool" data-at="8"><b>Write</b> 02-backlog/backlog.md, jira-import.csv<br>→ 4 epics · 12 stories with Gherkin criteria</div>
+                  <div class="cc-msg cc-say" data-at="8">Draft backlog ready. Jira issues are created only after you preview them and say yes.</div>
+                </div>
+                <div class="cc-input"><span data-cc-typing></span><span class="caret"></span></div>
+              </div>
+            </div>
+            <div class="vs-status"><span>⎇ main</span><span>sf-sdlc · stage 1 → 2</span><span>hooks enforce</span></div>
+          </div>
+        </div>
+        <p class="demo-cap" data-demo-cap></p>
+      </div>
+
+      <div class="relay" id="agentRelay" aria-label="How a requirement travels through the stages, and which run in an agent">
+        <div class="demo-bar">
+          <strong style="font-size:14.5px">One requirement, end to end</strong>
+          <button type="button" class="demo-play" data-relay-toggle aria-pressed="false">Pause</button>
+        </div>
+        <div class="relay-track">
+          <div class="relay-step agent" data-agent="discovery"><span class="rs-dot">D</span><span class="rs-id">FG-007</span><span class="rs-who">Discovery agent</span></div>
+          <div class="relay-step agent" data-agent="mapshift"><span class="rs-dot">M</span><span class="rs-id">MAP-012</span><span class="rs-who">MapShift</span></div>
+          <div class="relay-step agent" data-agent="brd"><span class="rs-dot">1</span><span class="rs-id">BR-04</span><span class="rs-who">BRD agent</span></div>
+          <div class="relay-step agent" data-agent="architect"><span class="rs-dot">3</span><span class="rs-id">LLD-US-04-02</span><span class="rs-who">Architect agent</span></div>
+          <div class="relay-step builtin" data-agent="plan"><span class="rs-dot">4</span><span class="rs-id">plan.md</span><span class="rs-who">Planner (built in)</span></div>
+          <div class="relay-step builtin" data-agent="dev"><span class="rs-dot">5</span><span class="rs-id">tasks ✓</span><span class="rs-who">Developer (built in)</span></div>
+          <div class="relay-step agent" data-agent="review"><span class="rs-dot">6</span><span class="rs-id">review.md</span><span class="rs-who">Code reviewer agent</span></div>
+          <div class="relay-step main" data-agent="deploy"><span class="rs-dot">8</span><span class="rs-id">DEP-005</span><span class="rs-who">Deploy</span></div>
+          <div class="relay-step agent" data-agent="qa"><span class="rs-dot">9</span><span class="rs-id">TR · DEF</span><span class="rs-who">QA agent</span></div>
+          <div class="relay-step main" data-agent="release"><span class="rs-dot">10</span><span class="rs-id">REL-1.4.0</span><span class="rs-who">Release</span></div>
+        </div>
+        <p class="relay-legend"><span><i></i>Kit agent, in its own context</span><span><i class="builtin"></i>Built-in agent of your coding tool, in the kit's format</span><span><i class="main"></i>Main conversation, guided by a skill</span></p>
+        <div class="relay-gate"><span class="gate-pill" data-relay-pill>Draft written</span><span data-relay-text>The org already exists, so the discovery agent snapshots it read-only and checks the discovery pack against it.</span></div>
+      </div>
+
+      <h3>The eight agents</h3>
+      <p class="muted">Six ship with the kit and run in their own context. Two are built into Claude Code, Cursor and other coding agents; the kit gives them its format and rules. What sets them apart is their <strong>tool access</strong>: shown on every card and in the table below. Pick one to see what it does.</p>
+      <div class="agent-rail-wrap">
+        <div class="agent-rail crew-rail" id="crewRail" role="list" aria-label="The eight agents">
+          <article class="agent-card crew-card is-selected" data-agent="discovery" tabindex="0" role="listitem" aria-label="Discovery and design agent">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><ellipse class="cl-s cl-pop cl-d1" cx="15" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d1" d="M7 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><ellipse class="cl-s cl-pop cl-d2" cx="33" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d2" d="M25 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><path class="cl-s cl-dim" d="M10 38h12"/><path class="cl-s cl-w cl-d3 cl-ok" pathLength="1" d="m27 37 3.5 3.5L38 33"/></svg></span><span class="badge kit">Kit agent</span></div>
+            <h3>Discovery &amp; design</h3>
+            <p class="agent-vendor">Stage D · Existing orgs</p>
+            <p class="agent-desc">Checks the discovery pack against the real org(s), read-only, then drafts the fit-gap and the HLD.</p>
+            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write drafts</span><span class="tool-chip bash">Bash: read-only sf</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Read-only on every org, production included. Never changes an org.</p></div>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:discovery</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+          <article class="agent-card crew-card" data-agent="mapshift" tabindex="0" role="listitem" aria-label="MapShift agent">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><rect class="cl-s cl-pop cl-d1" x="5" y="8" width="12" height="8" rx="2"/><rect class="cl-s cl-pop cl-d2" x="5" y="20" width="12" height="8" rx="2"/><rect class="cl-s cl-pop cl-d3" x="5" y="32" width="12" height="8" rx="2"/><path class="cl-s cl-w cl-d1" pathLength="1" d="M18 12c8 0 8 12 13 12"/><path class="cl-s cl-w cl-d2" pathLength="1" d="M18 24h13"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M18 36c8 0 8-12 13-12"/><rect class="cl-s cl-pop cl-d3 cl-new" x="31" y="18" width="12" height="12" rx="3"/></svg></span><span class="badge kit">Kit agent</span></div>
+            <h3>MapShift</h3>
+            <p class="agent-vendor">Stage M · Map &amp; migrate</p>
+            <p class="agent-desc">Maps one org's subjects, case rules, letters and forms onto the target org's model, from both orgs' metadata.</p>
+            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write drafts</span><span class="tool-chip bash">Bash: read-only sf</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Reads both orgs' metadata; no record data, never a change to an org.</p></div>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:mapshift</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+          <article class="agent-card crew-card" data-agent="brd" tabindex="0" role="listitem" aria-label="BRD agent">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s" d="M14 7h14l8 8v25a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><path class="cl-s" d="M28 7v8h8"/><path class="cl-s cl-w cl-d1" pathLength="1" d="M17 23h14"/><path class="cl-s cl-w cl-d2" pathLength="1" d="M17 29h14"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M17 35h8"/></svg></span><span class="badge kit">Kit agent</span></div>
+            <h3>BRD agent</h3>
+            <p class="agent-vendor">Stage 1 · Business analyst</p>
+            <p class="agent-desc">Turns meeting transcripts, notes and emails into a solution-neutral BRD with a Salesforce outline.</p>
+            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span></div><p>Files only: no shell, no org, no browser.</p></div>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:brd</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+          <article class="agent-card crew-card" data-agent="architect" tabindex="0" role="listitem" aria-label="Solution architect">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s cl-w cl-d2" pathLength="1" d="M20 14h8"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M14 20l8 9"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M34 20l-8 9"/><rect class="cl-s cl-pop cl-d1" x="8" y="8" width="12" height="12" rx="3"/><rect class="cl-s cl-pop cl-d2" x="28" y="8" width="12" height="12" rx="3"/><rect class="cl-s cl-pop cl-d3 cl-new" x="18" y="29" width="12" height="12" rx="3"/></svg></span><span class="badge kit">Kit agent</span></div>
+            <h3>Solution architect</h3>
+            <p class="agent-vendor">Stage 3 · Architecture</p>
+            <p class="agent-desc">Designs the HLD, one LLD per story and ADRs, with draw.io diagrams to Salesforce's standard.</p>
+            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash: read-only</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Reads the codebase and a non-production org; writes designs and diagrams.</p></div>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:architecture</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+          <article class="agent-card crew-card" data-agent="review" tabindex="0" role="listitem" aria-label="Code reviewer">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s cl-dim" d="M8 12h22M8 19h28M8 26h16M8 33h24"/><g class="cl-scan"><circle class="cl-s cl-lens" cx="29" cy="27" r="7"/><path class="cl-s" d="m34 32 6 6"/></g><path class="cl-s cl-w cl-d3 cl-ok" pathLength="1" d="m26 27 2.5 2.5L33 24"/></svg></span><span class="badge kit">Kit agent</span></div>
+            <h3>Code reviewer</h3>
+            <p class="agent-vendor">Stage 6 · Code review</p>
+            <p class="agent-desc">Reviews the change against its spec and the Salesforce coding rules. Every finding cites a file and line.</p>
+            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Writes review.md only</span><span class="tool-chip bash">Bash: Code Analyzer</span></div><p>Read-only: never edits code or touches an org.</p></div>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:review</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+          <article class="agent-card crew-card" data-agent="qa" tabindex="0" role="listitem" aria-label="QA agent">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-liquid" d="M15.6 30h16.8l3.7 6.6A2.3 2.3 0 0 1 34.1 40H13.9a2.3 2.3 0 0 1-2-3.4z"/><path class="cl-s" d="M19 7h10M21 7v11L10.6 36.4A3.3 3.3 0 0 0 13.5 41h21a3.3 3.3 0 0 0 2.9-4.6L27 18V7"/><circle class="cl-bub cl-d1" cx="20" cy="35" r="1.9"/><circle class="cl-bub cl-d2" cx="27" cy="36" r="1.5"/><circle class="cl-bub cl-d3" cx="24" cy="33" r="1.3"/></svg></span><span class="badge kit">Kit agent</span></div>
+            <h3>QA agent</h3>
+            <p class="agent-vendor">Stages 7 · 9 · Test design, runs, UI, re-test</p>
+            <p class="agent-desc">Designs test cases, runs Apex and Jest, tests any page in a real browser in a sandbox, logs defects.</p>
+            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash: sf tests, Jest</span><span class="tool-chip browser">Browser</span><span class="tool-chip org">Sandbox org</span></div><p>Runs tests and the browser in non-production orgs only.</p></div>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:test-run</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+          <article class="agent-card crew-card builtin" data-agent="plan" tabindex="0" role="listitem" aria-label="Planner">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s cl-dim" d="M23 13h16M23 24h16M23 35h12"/><path class="cl-s cl-w cl-d1" pathLength="1" d="m8 13 3.5 3.5L17 10"/><path class="cl-s cl-w cl-d2" pathLength="1" d="m8 24 3.5 3.5L17 21"/><path class="cl-s cl-w cl-d3" pathLength="1" d="m8 35 3.5 3.5L17 32"/></svg></span><span class="badge builtin">Built in</span></div>
+            <h3>Planner</h3>
+            <p class="agent-vendor">Stage 4 · Spec &amp; plan · plan mode</p>
+            <p class="agent-desc">Your coding agent's own plan mode, following the kit's spec-driven format.</p>
+            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Writes spec, plan, tasks</span><span class="tool-chip bash">Bash: read-only</span></div><p>Plan mode: explores and plans, no code changes until approved.</p></div>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:specify</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+          <article class="agent-card crew-card builtin" data-agent="dev" tabindex="0" role="listitem" aria-label="Developer">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s" d="m15 13-9 11 9 11M33 13l9 11-9 11"/><path class="cl-s cl-w cl-type" pathLength="1" d="M18 24h9"/><rect class="cl-caret" x="28.5" y="18" width="2.8" height="12" rx="1.2"/></svg></span><span class="badge builtin">Built in</span></div>
+            <h3>Developer</h3>
+            <p class="agent-vendor">Stage 5 · Build</p>
+            <p class="agent-desc">The coding agent you already use, building each task tests first under the project rules.</p>
+            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash</span><span class="tool-chip org">Salesforce org</span></div><p>Every tool, behind the guard hooks: no production deploys, secrets or protected-branch pushes.</p></div>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:implement</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+        </div>
+        <button type="button" class="rail-btn prev" data-rail="-1" aria-label="Scroll agents left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="rail-btn next" data-rail="1" aria-label="Scroll agents right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="tool-matrix-wrap">
+        <h4>What each agent can touch</h4>
+        <table class="tool-matrix">
+          <thead><tr><th>Agent</th><th>Read files</th><th>Write / edit files</th><th>Bash</th><th>Browser</th><th>Salesforce org</th></tr></thead>
+          <tbody>
+            <tr><td>Discovery &amp; design</td><td class="y">✓</td><td class="p">Drafts only</td><td class="p">Read-only <code>sf</code></td><td class="n">–</td><td class="p">Read-only</td></tr>
+            <tr><td>MapShift</td><td class="y">✓</td><td class="p">Drafts only</td><td class="p">Read-only <code>sf</code></td><td class="n">–</td><td class="p">Read-only, both orgs</td></tr>
+            <tr><td>BRD agent</td><td class="y">✓</td><td class="y">✓</td><td class="n">–</td><td class="n">–</td><td class="n">–</td></tr>
+            <tr><td>Solution architect</td><td class="y">✓</td><td class="y">✓</td><td class="p">Read-only inspection</td><td class="n">–</td><td class="p">Read-only, non-production</td></tr>
+            <tr><td>Code reviewer</td><td class="y">✓</td><td class="p"><code>review.md</code> only</td><td class="p">Code Analyzer, checks</td><td class="n">–</td><td class="n">–</td></tr>
+            <tr><td>QA agent</td><td class="y">✓</td><td class="y">✓</td><td class="y">Tests (<code>sf</code>, Jest)</td><td class="y">✓ Playwright</td><td class="p">Sandboxes only</td></tr>
+            <tr><td>Planner <span class="ag-tag builtin">Built in</span></td><td class="y">✓</td><td class="p">Spec, plan, tasks</td><td class="p">Read-only</td><td class="n">–</td><td class="p">Read-only</td></tr>
+            <tr><td>Developer <span class="ag-tag builtin">Built in</span></td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="p">Guarded: production asks first</td></tr>
+          </tbody>
+        </table>
+        <p class="tool-legend"><span class="tool-chip read">Read</span><span class="tool-chip write">Write</span><span class="tool-chip bash">Bash</span><span class="tool-chip browser">Browser</span><span class="tool-chip org">Org</span> Guard hooks sit around every tool call, for every agent.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-discovery">
+        <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><ellipse class="cl-s cl-pop cl-d1" cx="15" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d1" d="M7 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><ellipse class="cl-s cl-pop cl-d2" cx="33" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d2" d="M25 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><path class="cl-s cl-dim" d="M10 38h12"/><path class="cl-s cl-w cl-d3 cl-ok" pathLength="1" d="m27 37 3.5 3.5L38 33"/></svg></span><div><h3>Discovery &amp; design agent <span class="badge kit">Kit agent</span></h3><p class="muted">Stage D · Existing orgs: discovery validation, fit-gap, HLD</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Takes a dated, read-only snapshot of each org with <code>sf-sdlc discover</code>: data model, automation, code, profiles and permission sets, sharing, integrations, packages, licences, limits, recent setup changes</li><li>Reads the discovery pack in its own context and checks every statement against the org: confirmed, partly holds, contradicted, stale or not verifiable, each with its evidence</li><li>For a merge or harmonization, compares the orgs and records keep, bring, merge or retire per component, with the conflicts a merge always hits</li><li>Drafts the current-state assessment, the fit-gap (fit to standard first, declarative before code) and the HLD the solution architect continues</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>Workshop notes, call transcripts, current-state documents; one or more existing orgs, production included, read-only</dd><dt>Writes</dt><dd><code>docs/sdlc/00-discovery/</code>: snapshots, claim register (<code>CLM</code>), org comparison, current state, fit-gap (<code>FG</code>); <code>03-architecture/HLD.md</code> draft</dd><dt>Tools</dt><dd><span class="ag-tag ro">read-only</span>Metadata queries and counts through the <code>sf</code> CLI, read-only MCP tools. No record data, no user names, never a change to an org.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:discovery target-prod source-prod docs/sdlc/00-inputs/discovery/</code></pre>
+        <p class="crew-next">Stops with drafts. After a person reviews them: <code>/sf-sdlc:brd</code> with the discovery outputs as inputs, or <code>/sf-sdlc:architecture</code> to continue the HLD.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-mapshift" hidden>
+        <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><rect class="cl-s cl-pop cl-d1" x="5" y="8" width="12" height="8" rx="2"/><rect class="cl-s cl-pop cl-d2" x="5" y="20" width="12" height="8" rx="2"/><rect class="cl-s cl-pop cl-d3" x="5" y="32" width="12" height="8" rx="2"/><path class="cl-s cl-w cl-d1" pathLength="1" d="M18 12c8 0 8 12 13 12"/><path class="cl-s cl-w cl-d2" pathLength="1" d="M18 24h13"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M18 36c8 0 8-12 13-12"/><rect class="cl-s cl-pop cl-d3 cl-new" x="31" y="18" width="12" height="12" rx="3"/></svg></span><div><h3>MapShift agent <span class="badge kit">Kit agent</span></h3><p class="muted">Stage M · Map &amp; migrate: case mapping and migration for org harmonization</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Reads both orgs' metadata read-only: case subjects and reasons, record types, picklists, assignment and escalation rules, email templates, web-to-case forms and document templates</li><li>Builds the mapping from the source org onto the target org's case model: subject to Case Reason, rule to rule, field to field, each marked keep, map, merge or retire</li><li>Flags every mapping the business has to decide, instead of guessing it</li><li>Lists every letter and form that must be rebuilt in the target org, with the fields each one uses, ready for the build and the data migration</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>The approved fit-gap and HLD from the discovery agent; both orgs' metadata, read-only</dd><dt>Writes</dt><dd><code>docs/sdlc/00-discovery/mapping/</code>: mapping register (<code>MAP</code>), decisions for the business, rebuild list for letters and forms, migration field map</dd><dt>Tools</dt><dd><span class="ag-tag ro">read-only</span>Metadata queries through the <code>sf</code> CLI and Metadata Grounding. No record data, never a change to an org.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:mapshift target-prod source-prod cases</code></pre>
+        <p class="crew-next">Stops with drafts. After the business signs off the mapping: <code>/sf-sdlc:stories</code> for the rebuild work, then <code>/sf-sdlc:architecture</code>.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-brd" hidden>
+        <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s" d="M14 7h14l8 8v25a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><path class="cl-s" d="M28 7v8h8"/><path class="cl-s cl-w cl-d1" pathLength="1" d="M17 23h14"/><path class="cl-s cl-w cl-d2" pathLength="1" d="M17 29h14"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M17 35h8"/></svg></span><div><h3>BRD agent <span class="badge kit">Kit agent</span></h3><p class="muted">Stage 1 · Business analyst</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Reads every input in its own context, so long transcripts never fill yours</li><li>Extracts business requirements, functional requirements, rules and NFRs, with MoSCoW priority</li><li>Cites the source line for each requirement; lists decisions, actions, open questions and contradictions</li><li>Adds an indicative Salesforce outline: data model, automation, UI, integrations, security, limits</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>Transcripts, meeting notes, emails, workshop outputs</dd><dt>Writes</dt><dd><code>docs/sdlc/01-brd/BRD.md</code> with <code>BR</code> / <code>FR</code> / <code>RULE</code> / <code>NFR</code> IDs</dd><dt>Tools</dt><dd><span class="ag-tag ro">files only</span>Read, Write, Edit, Glob, Grep. No shell, no org.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:brd docs/inputs/discovery-workshop.txt docs/inputs/follow-up-email.md</code></pre>
+        <p class="crew-next">Stops with a draft. After a person approves it: <code>/sf-sdlc:stories</code>.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-architect" hidden>
+        <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s cl-w cl-d2" pathLength="1" d="M20 14h8"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M14 20l8 9"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M34 20l-8 9"/><rect class="cl-s cl-pop cl-d1" x="8" y="8" width="12" height="12" rx="3"/><rect class="cl-s cl-pop cl-d2" x="28" y="8" width="12" height="12" rx="3"/><rect class="cl-s cl-pop cl-d3 cl-new" x="18" y="29" width="12" height="12" rx="3"/></svg></span><div><h3>Solution architect <span class="badge kit">Kit agent</span></h3><p class="muted">Stage 3 · Architecture</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Starts from a baseline of what already exists in the code and the org</li><li>Writes the HLD, a low-level design per story or Jira ticket, and ADRs for each decision</li><li>Marks every component New, Changed, Unchanged or Removed in <code>components.json</code></li><li>Draws editable draw.io diagrams to Salesforce's own standard, exported to PNG, SVG or PDF</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>Approved BRD and stories, the codebase, the baseline inventory, a non-production org</dd><dt>Writes</dt><dd><code>HLD.md</code>, <code>LLD-US-*.md</code>, ADRs, <code>components.json</code>, <code>.drawio</code></dd><dt>Tools</dt><dd>All tools; the shell only for read-only inspection. Uses Metadata Grounding and SObject Reads when connected.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:architecture US-04-02
+/sf-sdlc:diagram solution architecture for the revenue chart</code></pre>
+        <p class="crew-next">Stops with a draft. After approval: <code>/sf-sdlc:specify US-04-02</code> or <code>/sf-sdlc:test-cases</code>.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-review" hidden>
+        <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s cl-dim" d="M8 12h22M8 19h28M8 26h16M8 33h24"/><g class="cl-scan"><circle class="cl-s cl-lens" cx="29" cy="27" r="7"/><path class="cl-s" d="m34 32 6 6"/></g><path class="cl-s cl-w cl-d3 cl-ok" pathLength="1" d="m26 27 2.5 2.5L33 24"/></svg></span><div><h3>Code reviewer <span class="badge kit">Kit agent</span></h3><p class="muted">Stage 6 · Code review</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Never saw the build, so it does not share the author's assumptions</li><li>Runs the official Salesforce Code Analyzer and the kit's source checks on the changed files</li><li>Reads every changed file in full: sharing, user mode, SOQL injection, secrets, bulk safety, tests</li><li>Gives a verdict: Approve, Approve with conditions, or Changes required</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>The change delta, the spec and acceptance criteria, the coding rules</dd><dt>Writes</dt><dd><code>review.md</code> with a verdict, nothing else</dd><dt>Tools</dt><dd><span class="ag-tag ro">read-only</span>Read, Glob, Grep, Bash. No file edits, no org changes.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:review
+/sf-sdlc:review feature/US-04-02-revenue-chart</code></pre>
+        <p class="crew-next">A person reads the verdict and decides. Fixes go back to the developer, then review again.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-qa" hidden>
+        <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-liquid" d="M15.6 30h16.8l3.7 6.6A2.3 2.3 0 0 1 34.1 40H13.9a2.3 2.3 0 0 1-2-3.4z"/><path class="cl-s" d="M19 7h10M21 7v11L10.6 36.4A3.3 3.3 0 0 0 13.5 41h21a3.3 3.3 0 0 0 2.9-4.6L27 18V7"/><circle class="cl-bub cl-d1" cx="20" cy="35" r="1.9"/><circle class="cl-bub cl-d2" cx="27" cy="36" r="1.5"/><circle class="cl-bub cl-d3" cx="24" cy="33" r="1.3"/></svg></span><div><h3>QA agent <span class="badge kit">Kit agent</span></h3><p class="muted">Stages 7 · 9 · Test design, runs, UI, re-test</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Designs positive, negative, boundary, permission, bulk and UI cases from acceptance criteria</li><li>Runs Apex and Jest tests through the Salesforce CLI and checks coverage against the target</li><li>Tests an LWC or any page in a real browser (Playwright) in a sandbox, with a screenshot per result</li><li>Logs defects with steps and evidence, and re-tests fixes with the regression set</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>Stories, acceptance criteria, LLDs, a non-production org</dd><dt>Writes</dt><dd><code>TC-*</code>, CSV for Xray, Zephyr or TestRail, <code>TR-*</code> with screenshots, <code>DEF-nnn</code></dd><dt>Tools</dt><dd>All tools. The browser never opens a production org; Jira bugs only after a preview and a yes.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:test-cases US-04-02
+/sf-sdlc:ui-test revenueChart on the Account page in acme-uat</code></pre>
+        <p class="crew-next">Stops with the report. A person accepts the results; failures become defects to fix and re-test.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-plan" hidden>
+        <div class="crew-head"><span class="crew-logo lg builtin"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s cl-dim" d="M23 13h16M23 24h16M23 35h12"/><path class="cl-s cl-w cl-d1" pathLength="1" d="m8 13 3.5 3.5L17 10"/><path class="cl-s cl-w cl-d2" pathLength="1" d="m8 24 3.5 3.5L17 21"/><path class="cl-s cl-w cl-d3" pathLength="1" d="m8 35 3.5 3.5L17 32"/></svg></span><div><h3>Planner <span class="badge builtin">Built in</span></h3><p class="muted">Stage 4 · Spec &amp; plan · plan mode</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Spec first: what and why, with measurable success criteria</li><li>Then the 12-section plan, written after reading the code it touches</li><li>Then ordered, test-first tasks that map to every acceptance criterion</li><li>An approved plan is saved to <code>specs/&lt;feature&gt;/plan.md</code> as a draft for review</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>The story, its LLD, the constitution and the code</dd><dt>Writes</dt><dd><code>spec.md</code>, <code>plan.md</code>, <code>tasks.md</code></dd><dt>Tools</dt><dd>Built into Claude Code, Cursor and the others. The kit adds the format and the rules.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:specify US-04-02
+/sf-sdlc:clarify
+/sf-sdlc:plan
+/sf-sdlc:tasks</code></pre>
+        <p class="crew-next">Stops for approval of each file. Then <code>/sf-sdlc:implement</code>.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-dev" hidden>
+        <div class="crew-head"><span class="crew-logo lg builtin"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s" d="m15 13-9 11 9 11M33 13l9 11-9 11"/><path class="cl-s cl-w cl-type" pathLength="1" d="M18 24h9"/><rect class="cl-caret" x="28.5" y="18" width="2.8" height="12" rx="1.2"/></svg></span><div><h3>Developer <span class="badge builtin">Built in</span></h3><p class="muted">Stage 5 · Build</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Works one approved task at a time, tests first</li><li>Follows the Apex, LWC, Flow and metadata rules and the Salesforce skills installed for the project</li><li>The hooks check every file it writes and feed findings straight back</li><li>Ticks a task only with evidence: the command and its result</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>The approved spec, plan and tasks</dd><dt>Writes</dt><dd>Source and tests, with evidence per task in <code>tasks.md</code></dd><dt>Tools</dt><dd>Built in. Guard hooks block production deploys, secrets and pushes to protected branches.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:implement
+/sf-sdlc:verify</code></pre>
+        <p class="crew-next">When every task is ticked: <code>/sf-sdlc:review</code> by the independent reviewer.</p>
+      </div>
+
+      <div class="callout"><p><strong>Why these eight?</strong> The kit adds an agent only where your coding agent does not already have one and a separate context helps: long inputs (a discovery pack and org snapshots, two orgs' metadata to map, transcripts, a whole codebase, test runs and browser sessions) and an independent review, by a reviewer that never saw the build. Planning and building already come with Claude Code, Cursor and the others, so the kit does not duplicate them; it makes them follow the spec-driven format, the coding rules and the Salesforce skills installed in your project. Setup, stories, deployment and release run in your conversation, where you can see and steer them. Every stage writes a draft and stops.</p></div>
+    </section>

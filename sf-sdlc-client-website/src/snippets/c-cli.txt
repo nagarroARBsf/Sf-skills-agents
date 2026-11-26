@@ -1,0 +1,18 @@
+$ sf-sdlc help
+  doctor                       check tools, plugins, config and org setup
+  init                         create .claude/sf-sdlc.json, .gitignore entries, code-analyzer.yml
+  config show|validate         show the merged configuration, or validate it
+  detect                       what this project contains (metadata folders, counts, tooling)
+  inventory                    existing-state inventory of the source tree, by metadata type
+  delta [--from <git-ref>]     components new / changed / removed against a git ref
+  skills recommend|install|remove|list|sync
+  org classify [alias]         production | sandbox | scratch | developer | unknown
+  analyze [--staged | --changed [ref] | <paths>]   official Salesforce Code Analyzer
+  check [files...]             fast offline source checks
+  deploy validate|quick|report|preview --org <role|alias> [--delta --from <ref>]
+  test run|report --org <role|alias> [--tests A,B.method] [--level RunLocalTests]
+  diagram render <file>        Mermaid to SVG (needs mermaid-cli)
+  audit [--tail N]             local log of org-affecting commands
+  mcp status|list [server...]  Salesforce Hosted MCP servers: probe through the sf CLI login
+
+$ sf-mcp-proxy metadata-grounding   # started by Claude Code from .mcp.json; stdio MCP bridge

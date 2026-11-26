@@ -1,0 +1,10 @@
+skill-library/
+├── platform-apex-generate/       # official, forcedotcom/sf-skills
+├── platform-apex-test-run/
+├── experience-lwc-generate/
+├── sf-flow/                      # community, Clientell-Ai/salesforce-skills
+└── ... 177 skills, never loaded from here
+
+# copy the ones this project needs into .claude/skills/
+sf-sdlc skills recommend
+sf-sdlc skills install platform-apex-generate platform-apex-test-run

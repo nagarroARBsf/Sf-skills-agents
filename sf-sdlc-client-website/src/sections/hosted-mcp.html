@@ -1,0 +1,133 @@
+    <section id="hosted-mcp" data-tab="configure">
+      <h2>Salesforce Hosted MCP Servers <span class="badge-req">Required</span></h2>
+      <p class="lead">Hosted MCP servers are how the agents see your org: what metadata already exists, the exact schema of each type, and live Setup and data. Without them an agent guesses names and duplicates what is already there. Setting them up is a required step, not an extra. <strong>Which</strong> servers you turn on depends on the project; the ones marked <em>Required</em> are needed by every project.</p>
+
+      <figure class="mcp-figure">
+        <svg viewBox="0 0 1180 620" role="img" aria-labelledby="mcpDiagTitle mcpDiagDesc">
+          <title id="mcpDiagTitle">How a coding agent reaches Salesforce Hosted MCP Servers</title>
+          <desc id="mcpDiagDesc">On the left, a ring around the coding agent (Claude Code, Cursor, Codex or GitHub Copilot) holds the project harness: skills, instructions, tools and checks. Step 1: the agent authenticates with OAuth 2.0 through an External Client App, or with the Salesforce CLI login through sf-mcp-proxy. Step 2: it calls tools and prompts on the hosted MCP servers. The External Client App is restricted by permission sets, profiles and IP ranges and authorizes access to the servers. The servers expose MCP tools (Apex, Flows, APIs, prompts), which sharing rules and permissions secure. Every call is logged.</desc>
+          <defs>
+            <marker id="mcpArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+            <marker id="mcpArrowLight" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk-light"/></marker>
+          </defs>
+
+          <!-- Harness ring around the coding agent -->
+          <circle cx="205" cy="315" r="188" class="ring-fill"/>
+          <circle cx="205" cy="315" r="188" class="ring"/>
+          <text x="205" y="112" class="ring-title" text-anchor="middle">Your project harness</text>
+          <g class="pill"><rect x="40" y="150" width="104" height="30" rx="15"/><text x="92" y="170" text-anchor="middle">Skills</text></g>
+          <g class="pill"><rect x="262" y="150" width="128" height="30" rx="15"/><text x="326" y="170" text-anchor="middle">Instructions</text></g>
+          <g class="pill"><rect x="40" y="452" width="104" height="30" rx="15"/><text x="92" y="472" text-anchor="middle">Checks</text></g>
+          <g class="pill"><rect x="272" y="452" width="104" height="30" rx="15"/><text x="324" y="472" text-anchor="middle">Tools</text></g>
+
+          <text x="205" y="212" class="agent-head" text-anchor="middle">Your coding agent</text>
+          <g class="agent"><rect x="105" y="226" width="200" height="38" rx="10"/><circle cx="128" cy="245" r="11" class="glyph"/><text x="128" y="249" class="glyph-t" text-anchor="middle">C</text><text x="148" y="250">Claude Code</text></g>
+          <g class="agent"><rect x="105" y="272" width="200" height="38" rx="10"/><circle cx="128" cy="291" r="11" class="glyph"/><text x="128" y="295" class="glyph-t" text-anchor="middle">Cu</text><text x="148" y="296">Cursor</text></g>
+          <g class="agent"><rect x="105" y="318" width="200" height="38" rx="10"/><circle cx="128" cy="337" r="11" class="glyph"/><text x="128" y="341" class="glyph-t" text-anchor="middle">Cx</text><text x="148" y="342">Codex</text></g>
+          <g class="agent"><rect x="105" y="364" width="200" height="38" rx="10"/><circle cx="128" cy="383" r="11" class="glyph"/><text x="128" y="387" class="glyph-t" text-anchor="middle">GH</text><text x="148" y="388">GitHub Copilot</text></g>
+          <text x="205" y="428" class="agent-sub" text-anchor="middle">MCP client</text>
+
+          <!-- Platform -->
+          <rect x="452" y="30" width="712" height="574" rx="18" class="platform"/>
+          <text x="808" y="68" class="platform-title" text-anchor="middle">Salesforce Platform</text>
+
+          <!-- Steps -->
+          <path d="M392,268 C425,230 435,190 482,182" class="flow-line" marker-end="url(#mcpArrow)"/>
+          <path d="M392,362 C428,400 440,420 482,428" class="flow-line" marker-end="url(#mcpArrow)"/>
+          <circle cx="418" cy="205" r="14" class="step"/><text x="418" y="210" class="step-t" text-anchor="middle">1</text>
+          <circle cx="418" cy="425" r="14" class="step"/><text x="418" y="430" class="step-t" text-anchor="middle">2</text>
+
+          <!-- ECA -->
+          <g class="box"><rect x="484" y="140" width="250" height="84" rx="12"/>
+            <text x="609" y="174" text-anchor="middle" class="box-t">External Client App (ECA)</text>
+            <text x="609" y="198" text-anchor="middle" class="box-s">OAuth 2.0 + PKCE · or sf CLI login</text></g>
+          <text x="609" y="124" text-anchor="middle" class="note">1 · Authenticate</text>
+
+          <!-- Hosted MCP servers -->
+          <g class="box"><rect x="484" y="330" width="250" height="176" rx="12"/>
+            <text x="609" y="360" text-anchor="middle" class="box-t">Hosted MCP Servers</text>
+            <text x="502" y="386" class="box-s">Standard: Metadata Grounding,</text>
+            <text x="502" y="405" class="box-s">Metadata Experts, SObject,</text>
+            <text x="502" y="424" class="box-s">Data 360, Headless 360,</text>
+            <text x="502" y="443" class="box-s">CRM Analytics, Tableau Next,</text>
+            <text x="502" y="462" class="box-s">Content</text>
+            <text x="502" y="490" class="box-s">Custom: your Apex, Flows, APIs</text></g>
+          <text x="609" y="526" text-anchor="middle" class="note">2 · Call tools and prompts</text>
+
+          <path d="M609,226 L609,326" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <text x="620" y="272" class="lbl">Authorizes</text><text x="620" y="290" class="lbl">access to</text>
+
+          <!-- Restrictions -->
+          <text x="760" y="108" class="lbl">Access restricted by</text>
+          <g class="box"><rect x="808" y="126" width="186" height="46" rx="10"/><text x="901" y="155" text-anchor="middle" class="box-t sm">Permission Sets</text></g>
+          <g class="box"><rect x="808" y="192" width="186" height="46" rx="10"/><text x="901" y="221" text-anchor="middle" class="box-t sm">Profiles</text></g>
+          <g class="box"><rect x="808" y="258" width="186" height="46" rx="10"/><text x="901" y="287" text-anchor="middle" class="box-t sm">IP Ranges</text></g>
+          <path d="M736,170 C770,160 780,150 804,149" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <path d="M736,182 C770,195 780,213 804,215" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <path d="M736,194 C765,230 780,278 804,281" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+
+          <g class="box"><rect x="1018" y="84" width="128" height="46" rx="10"/><text x="1082" y="113" text-anchor="middle" class="box-t sm">Sharing Rules</text></g>
+          <path d="M1082,132 L1082,376" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <text x="1092" y="258" class="lbl">Secures</text>
+          <path d="M996,149 C1040,170 1050,300 1060,374" class="inner-line"/>
+          <path d="M996,215 C1030,240 1040,320 1052,374" class="inner-line"/>
+          <path d="M996,281 C1020,300 1030,340 1044,374" class="inner-line"/>
+
+          <!-- MCP tools -->
+          <g class="box"><rect x="972" y="378" width="176" height="104" rx="12"/>
+            <text x="1060" y="410" text-anchor="middle" class="box-t">MCP Tools</text>
+            <text x="1060" y="434" text-anchor="middle" class="box-s">Apex, Flows, APIs,</text>
+            <text x="1060" y="454" text-anchor="middle" class="box-s">Prompts…</text></g>
+          <path d="M736,430 L968,430" class="inner-line" marker-end="url(#mcpArrowLight)"/>
+          <text x="852" y="420" text-anchor="middle" class="lbl">Exposes</text>
+
+          <!-- Logging -->
+          <rect x="484" y="540" width="664" height="44" rx="10" class="logbar"/>
+          <text x="816" y="568" text-anchor="middle" class="box-t sm">Logging · every call is attributed to a named user</text>
+        </svg>
+        <figcaption>The ring is <strong>your project harness</strong>, the layer this framework provides around any coding agent: <strong>skills</strong> (the sdlc-* method and the Salesforce skills library), <strong>instructions</strong> (<code>CLAUDE.md</code> / <code>AGENTS.md</code>, <code>ontology.yaml</code>, the feature map), <strong>tools</strong> (Salesforce CLI, Hosted MCP Servers, the Apex language server) and <strong>checks</strong> (tests, Code Analyzer rules, hooks and quality gates). The right side follows Salesforce's <a href="https://developer.salesforce.com/blogs/2026/06/how-to-secure-salesforce-hosted-mcp-servers">How to Secure Salesforce Hosted MCP Servers</a>. Agent names are shown as plain labels; this kit's plugin, hooks and commands run in Claude Code, and any MCP client can connect to the same servers.</figcaption>
+      </figure>
+
+      <h3>Which servers your project needs</h3>
+      <p>Standard servers are off by default; an administrator turns each one on. Every tool call runs as the signed-in user, so field-level security, object permissions and sharing rules always apply. Full list: <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/references/reference/servers-reference.html">Standard MCP Servers Reference</a>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Server</th><th>Turn it on when</th><th>How this kit connects</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Metadata Grounding</strong> (Beta) <span class="badge-req">Required</span></td><td>Every project. Agents find existing objects, fields, flows, Apex, LWC and permission sets by meaning before proposing new ones. Read-only. Needs Data 360, API access and Salesforce Catalog; not in scratch orgs or namespaced Developer Edition orgs. <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/references/reference/metadata-grounding.html">Reference</a></td><td><code>sf-metadata-grounding</code> through <code>sf-mcp-proxy</code> (on by default)</td></tr>
+          <tr><td><strong>Metadata Experts</strong> <span class="badge-req">Required</span></td><td>Every project that builds metadata: exact schemas and generation for Flows, Lightning pages, apps, tabs and sites.</td><td><code>sf-metadata-experts</code> through <code>sf-mcp-proxy</code> (on by default)</td></tr>
+          <tr><td><strong>SObject Reads</strong> <span class="badge-req">Required</span></td><td>Every project. The default source for object and data questions: describe objects and fields, SOQL queries and search over records, for design, test data checks and defect triage. Read-only, the safest SObject server.</td><td><code>sf-sobject-reads</code> through <code>sf-mcp-proxy</code> (on by default)</td></tr>
+          <tr><td><strong>SObject All</strong></td><td>Only when agents must create, update or delete records, ideally in sandboxes. Prefer Reads.</td><td><code>sf-sobject-all</code> through <code>sf-mcp-proxy</code> (add to <code>mcp.servers</code>); every tool that is not plainly a read asks</td></tr>
+          <tr><td><strong>Data 360</strong></td><td>Data Cloud projects: query unified customer data.</td><td><code>sf-data360</code> through <code>sf-mcp-proxy</code> (add to <code>mcp.servers</code>); <code>execute</code> always asks</td></tr>
+          <tr><td><strong>Headless 360</strong> (Beta)</td><td>Setup and configuration work, feature, licence and limit checks, release updates.</td><td><code>sf-headless-360</code> through <code>sf-mcp-proxy</code> (add to <code>mcp.servers</code>); <code>dispatch</code> always asks</td></tr>
+          <tr><td><strong>CRM Analytics</strong> (Beta)</td><td>CRM Analytics projects: apps, dataset schemas, SAQL, dashboard and lens metadata. Read-only; needs a CRM Analytics licence; sandbox and scratch orgs during the Beta. <a href="https://developer.salesforce.com/docs/platform/hosted-mcp-servers/references/reference/crm-analytics-mcp.html">Reference</a></td><td>Direct OAuth through your ECA</td></tr>
+          <tr><td><strong>Tableau Next</strong></td><td>Tableau Next projects: semantic models, KPIs, dashboards.</td><td>Direct OAuth through your ECA</td></tr>
+          <tr><td><strong>Content Read-Only / Write</strong></td><td>Salesforce CMS projects: workspaces, channels, content.</td><td>Direct OAuth through your ECA</td></tr>
+          <tr><td><strong>Custom servers</strong></td><td>Your own Apex, Flows or catalog APIs exposed as tools.</td><td>Direct OAuth through your ECA</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Set them up</h3>
+      <div class="steps">
+        <div class="card step"><div><h3>Turn the servers on in the org</h3><p>Setup → Quick Find <strong>MCP Servers</strong> → <strong>MCP Servers</strong> under API Catalog. Turn on the required servers and the ones your project needs. Allow two minutes.</p></div></div>
+        <div class="card step"><div><h3>Connect the kit's servers with the Salesforce CLI login</h3><p>No client ID or secret: <code>sf-mcp-proxy</code> gets a short-lived token from the org through your CLI login. List the servers in <code>mcp.servers</code> and, if needed, the org in <code>mcp.org</code>.</p><pre><code>sf org login web --alias my-dev
+sf-sdlc mcp status</code></pre></div></div>
+        <div class="card step"><div><h3>Connect the other servers through an External Client App</h3><p>Setup → External Client App Manager → New. Enable OAuth, add the scopes <code>mcp_api</code> and <code>refresh_token</code>, require PKCE, select <em>Issue JSON Web Token (JWT)-based access tokens for named users</em>, and add your client's callback URL (Claude Code: <code>http://localhost:&lt;port&gt;/callback</code>). A new app can take up to 30 minutes to work. Use the server name shown in Setup:</p><pre><code>claude mcp add --transport http --scope project \
+  --client-id &lt;consumer key&gt; --callback-port &lt;port&gt; \
+  sf-crm-analytics https://api.salesforce.com/platform/mcp/v1/&lt;server name&gt;
+# sandbox or scratch org: .../platform/mcp/v1/sandbox/&lt;server name&gt;</code></pre><p>Then <code>/mcp</code> → authenticate in the browser. Cursor, Codex and GitHub Copilot use the same server URL and consumer key.</p></div></div>
+        <div class="card step"><div><h3>Restart and check</h3><p>Restart Claude Code. <code>/mcp</code> lists every server; a kit server that is not enabled or not turned on in the org shows no tools instead of failing to start.</p></div></div>
+      </div>
+
+      <h3>Secure them</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Control</th><th>What to set</th></tr></thead>
+        <tbody>
+          <tr><td>Who can connect</td><td>In the ECA's OAuth Policies, require a custom permission set for pre-authorization and assign it only to approved users. Profiles can restrict access the same way.</td></tr>
+          <tr><td>Where they connect from</td><td>Restrict the ECA to known IP ranges when your MCP client uses stable addresses. Check with the client vendor first; some use more ranges than the allowlist holds.</td></tr>
+          <tr><td>How long access lasts</td><td>Refresh token validity 30 days or less, with refresh token rotation. Turn on single logout so ending a Salesforce session ends the MCP session.</td></tr>
+          <tr><td>Client secret</td><td>Require it only for web-based clients; desktop and CLI clients use PKCE.</td></tr>
+          <tr><td>What tools can reach</td><td>Field-level security, object permissions and sharing rules apply to every call. Start with read-only servers; add write servers per project. In this kit, Headless 360 <code>dispatch</code> and Data 360 <code>execute</code> always ask first, naming the org.</td></tr>
+          <tr><td>What happened</td><td>Every call is logged and attributed to a named user. Review the logs alongside the kit's local audit log.</td></tr>
+        </tbody>
+      </table></div>
+    </section>

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF-SDLC Framework | Nagarro</title>
+<link rel="icon" type="image/png" href="assets/nagarro-mark.png">
+<meta name="description" content="How the Salesforce SDLC plugin for Claude Code is put together: every folder in the plugin, what it is for, what you configure, and how to use it.">
+<!-- Styles: one file per concern, in cascade order. Add a file here to add styles. -->
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/header.css">
+<link rel="stylesheet" href="styles/layout.css">
+<link rel="stylesheet" href="styles/content.css">
+<link rel="stylesheet" href="styles/explorer.css">
+<link rel="stylesheet" href="styles/diagrams.css">
+<link rel="stylesheet" href="styles/hero.css">
+<link rel="stylesheet" href="styles/agents.css">
+<link rel="stylesheet" href="styles/showcase.css">
+<link rel="stylesheet" href="styles/contribute.css">
+<link rel="stylesheet" href="styles/crew.css">
+<link rel="stylesheet" href="styles/lead.css">
+<link rel="stylesheet" href="styles/footer.css">
+<link rel="stylesheet" href="styles/video-player.css">
+<link rel="stylesheet" href="styles/responsive.css">
+<!-- @config -->
+</head>
+<body>
+
+<!-- @include partials/header.html -->
+
+<div class="layout">
+<!-- @include partials/sidebar.html -->
+
+  <main id="main">
+    <!-- Sections, in page order. To add one: create sections/<id>.html, add a line here and a link in partials/sidebar.html. -->
+
+    <!-- Getting started -->
+<!-- @include sections/overview.html -->
+<!-- @include sections/tutorial.html -->
+<!-- @include sections/agents.html -->
+<!-- @include sections/install.html -->
+<!-- @include sections/quickstart.html -->
+
+    <!-- Plugin structure -->
+<!-- @include sections/structure.html -->
+<!-- @include sections/how-it-fits.html -->
+<!-- @include sections/two-forms.html -->
+
+    <!-- Configuration -->
+<!-- @include sections/configure.html -->
+<!-- @include sections/config-keys.html -->
+<!-- @include sections/hosted-mcp.html -->
+<!-- @include sections/user-options.html -->
+<!-- @include sections/verify.html -->
+
+    <!-- Using the plugin -->
+<!-- @include sections/lifecycle.html -->
+<!-- @include sections/walkthrough.html -->
+<!-- @include sections/personas.html -->
+<!-- @include sections/skills.html -->
+
+    <!-- In action -->
+<!-- @include sections/hooks-live.html -->
+<!-- @include sections/browser-testing.html -->
+<!-- @include sections/tracing.html -->
+
+    <!-- Safety and reference -->
+<!-- @include sections/safety.html -->
+<!-- @include sections/limitations.html -->
+<!-- @include sections/contribute.html -->
+<!-- @include sections/maintain.html -->
+<!-- @include sections/references.html -->
+
+<!-- @include partials/footer.html -->
+  </main>
+</div>
+
+<!-- @include partials/lead.html -->
+
+<!-- Code samples shown in the explorer (src/snippets/*.txt, added automatically) -->
+<!-- @snippets -->
+
+<script src="scripts/explorer-data.js"></script>
+<script src="scripts/explorer.js"></script>
+<script src="scripts/ui.js"></script>
+<script src="scripts/agents.js"></script>
+<script src="scripts/showcase.js"></script>
+<script src="scripts/hook-examples.js"></script>
+<script src="scripts/video-player.js"></script>
+<script src="scripts/analytics.js"></script>
+<script src="scripts/lead.js"></script>
+</body>
+</html>

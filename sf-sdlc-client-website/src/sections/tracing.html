@@ -1,0 +1,138 @@
+    <section id="tracing" data-tab="action">
+      <h2>Session tracing with Langfuse</h2>
+      <p class="lead">SF-SDLC can send every Claude Code session to <a href="https://langfuse.com" target="_blank" rel="noopener">Langfuse</a>, the open-source LLM observability platform. Each turn becomes a trace you can open: what was asked, every model response and tool call on a timeline, how long each step took, the tokens used and what it cost, plus dashboards across the whole team.</p>
+
+      <div class="demo" id="langfuseDemo">
+        <div class="demo-bar">
+          <div class="demo-chips" role="group" aria-label="Langfuse view">
+            <button type="button" class="demo-chip" data-lf="timeline">Trace timeline</button>
+            <button type="button" class="demo-chip" data-lf="graph">Agent graph</button>
+            <button type="button" class="demo-chip" data-lf="dash">Cost dashboard</button>
+          </div>
+          <button type="button" class="demo-play" data-lf-toggle aria-pressed="false">Pause</button>
+        </div>
+        <div class="screen" role="img" aria-label="Animation of Langfuse: a Claude Code turn shown as a timeline of model responses and Bash tool calls with durations and costs, then as a graph from start through Claude responses and tool calls to end, then a cost dashboard with trace counts, total cost and cost by model.">
+          <div class="lf">
+            <div class="lf-side">
+              <div class="lf-logo"><i></i>Langfuse<small>OSS</small></div>
+              <div>Home</div>
+              <div data-lf-nav="dash">Dashboards</div>
+              <h6>Observability</h6>
+              <div data-lf-nav="trace">Tracing</div>
+              <div>Sessions</div>
+              <div>Users</div>
+              <h6>Evaluation</h6>
+              <div>Scores</div>
+              <div>Human annotation</div>
+              <div>Datasets</div>
+            </div>
+            <div class="lf-main">
+              <!-- view 1: timeline -->
+              <div class="lf-view" data-lf-view="timeline">
+                <div class="lf-trace-head"><b><i></i>Claude Code - Turn 3</b><div class="lf-meta"><span>5m 48s</span><span>$0.856</span><span>3.1M tokens</span><span>session ↗</span><span class="tag">claude-code</span></div></div>
+                <div class="lf-split">
+                  <div class="lf-tree"><div class="lf-seg"><span>Tree</span><span class="on">Timeline</span><span>Graph</span></div><div data-lf-rows></div></div>
+                  <div class="lf-detail">
+                    <h5><i></i>Claude Code - Turn 3</h5>
+                    <div class="lf-meta"><span>2026-11-16 14:42:29</span><span>5m 48s</span><span>$0.856</span></div>
+                    <div class="lf-tabs"><span class="on">Preview</span><span>Metadata</span><span>Scores</span><span>Log View</span></div>
+                    <div class="lf-io">
+                      <small>Input</small>
+                      <pre>"/sf-sdlc:deploy uat — validate US-04-02 and deploy it to the UAT sandbox"</pre>
+                      <small>Output</small>
+                      <pre>"Validated on uat: 42 Apex tests passed, coverage 89%.
+Quick-deployed the validated job.
+
+Wrote DEP-005.md with the component list,
+test results and the rollback plan."</pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- view 2: graph -->
+              <div class="lf-view" data-lf-view="graph">
+                <div class="lf-trace-head"><b><i></i>Claude Code - Turn 3</b><div class="lf-meta"><span>5m 48s</span><span>$0.856</span><span>3.1M tokens</span><span class="tag">claude-code</span></div></div>
+                <div class="lf-seg" style="margin-top:1cqw"><span>Tree</span><span>Timeline</span><span class="on">Graph</span></div>
+                <div class="lf-graph">
+                  <svg viewBox="0 0 640 300" preserveAspectRatio="xMidYMid meet">
+                    <path class="edge e1" d="M200 52 V100"/>
+                    <path class="edge e2" d="M200 140 H360 V190"/>
+                    <path class="edge e3" d="M200 140 V240"/>
+                    <path class="edge e4" d="M470 210 H525 V240"/>
+                    <g class="gn g1"><rect x="140" y="12" width="120" height="40" fill="#18a957" stroke="#128a46"/><text x="200" y="38" text-anchor="middle" fill="#fff">_start_</text></g>
+                    <g class="gn g2"><rect x="105" y="100" width="190" height="40" fill="#fff" stroke="#3b5bdb"/><text x="200" y="126" text-anchor="middle" fill="#1f1f1f">↔ Claude Code - Turn 3</text></g>
+                    <g class="gn g3"><rect x="270" y="190" width="200" height="40" fill="#fff" stroke="#c03fb0"/><text x="370" y="216" text-anchor="middle" fill="#1f1f1f">Claude Response (10/10)</text></g>
+                    <g class="gn g4"><rect x="110" y="240" width="170" height="40" fill="#fff" stroke="#e8710a"/><text x="195" y="266" text-anchor="middle" fill="#1f1f1f">Tool: Bash (9/9)</text></g>
+                    <g class="gn g5"><rect x="470" y="240" width="110" height="40" fill="#e03131" stroke="#b02525"/><text x="525" y="266" text-anchor="middle" fill="#fff">_end_</text></g>
+                  </svg>
+                </div>
+              </div>
+              <!-- view 3: dashboard -->
+              <div class="lf-view" data-lf-view="dash">
+                <div class="lf-dash">
+                  <div class="lf-crumb">your-org / Claude tracing / Dashboards</div>
+                  <h5>Langfuse Cost Dashboard <span class="tag">claude-code</span></h5>
+                  <div class="lf-grid">
+                    <div class="lf-tile"><h6>Total Count Traces</h6><p>Count of traces</p><div class="big" data-count="20">0</div></div>
+                    <div class="lf-tile"><h6>Total Observations</h6><p>Count of observations</p><div class="big" data-count="616">0</div></div>
+                    <div class="lf-tile tall"><h6>Cost by Model Name</h6><p>Total cost by model</p>
+                      <div class="lf-bars"><i style="--h:92%"></i><i style="--h:6%"></i><i style="--h:1%"></i></div>
+                      <div class="lf-bars-x"><span>claude-opus</span><span>claude-sonnet</span><span>n/a</span></div></div>
+                    <div class="lf-tile tall"><h6>Cost by Environment</h6><p>Total cost by environment</p>
+                      <svg class="lf-donut" viewBox="0 0 140 140"><circle class="trk" cx="70" cy="70" r="54"/><circle class="val" cx="70" cy="70" r="54"/></svg>
+                      <div class="lf-donut-t"><b data-count="20.07" data-prefix="$">$0</b><small>claude-code</small></div></div>
+                    <div class="lf-tile wide"><h6>Total costs</h6><p>Cost across all use cases, past day</p>
+                      <div class="lf-line"><svg viewBox="0 0 300 80" preserveAspectRatio="none"><path d="M0 76 L180 76 L230 74 L250 70 L268 18 L285 72 L300 74"/></svg></div></div>
+                    <div class="lf-tile wide"><h6>Top Users by Cost</h6><p>Model cost by user, past day</p>
+                      <div class="lf-hbars"><div><span>developer</span><i style="--w:92%"></i><em>$11.42</em></div><div><span>architect</span><i style="--w:43%"></i><em>$5.31</em></div><div><span>qa-lead</span><i style="--w:22%"></i><em>$2.67</em></div><div><span>analyst</span><i style="--w:6%"></i><em>$0.67</em></div></div></div>
+                    <div class="lf-tile wide"><h6>Top Use Cases (Trace) by Cost</h6><p>Model cost by trace name</p>
+                      <div class="lf-bars"><i style="--h:94%"></i><i style="--h:41%"></i><i style="--h:30%"></i><i style="--h:18%"></i><i style="--h:9%"></i></div>
+                      <div class="lf-bars-x"><span>Turn 3</span><span>Turn 1</span><span>Turn 7</span><span>Turn 2</span><span>Turn 5</span></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="demo-cap" data-lf-cap></p>
+      </div>
+
+      <h3>What you see in Langfuse</h3>
+      <div class="trace-facts">
+        <div class="card"><b>One trace per turn</b><span>Named <code>Claude Code - Turn N</code>, with your prompt as input and Claude's answer as output. Turns of one session are grouped under Sessions.</span></div>
+        <div class="card"><b>Every model response</b><span>A generation per response, with the model name and input, output and cache tokens. Langfuse prices them, so cost appears per step and per turn.</span></div>
+        <div class="card"><b>Every tool call</b><span>Bash, file edits, MCP and browser tools as spans with their input and result. Failed calls are marked as errors.</span></div>
+        <div class="card"><b>Team dashboards</b><span>Cost by model, by user and by use case; trace and observation counts over time, filtered by the <code>claude-code</code> environment.</span></div>
+      </div>
+
+      <h3>Set up tracing</h3>
+      <p>Langfuse runs on your own machine or server with Docker, so prompts, code and outputs stay inside your network. You need <a href="https://docs.docker.com/get-started/get-docker/" target="_blank" rel="noopener">Docker</a> with Docker Compose v2 (Docker Desktop includes it) and Git.</p>
+      <div class="steps">
+        <div class="card step"><div><h3>Start Langfuse with Docker</h3><p>Clone Langfuse and start it. The first start pulls the images (web, worker, Postgres, ClickHouse, Redis and MinIO) and takes a few minutes.</p>
+<pre><code>git clone https://github.com/langfuse/langfuse.git
+cd langfuse
+docker compose up -d
+
+docker compose ps        # all services "running" / "healthy"</code></pre>
+          <p>Open <a href="http://localhost:3000" target="_blank" rel="noopener">http://localhost:3000</a>, sign up (the account is local to your server), and create an organisation and a project, for example <em>Claude tracing</em>.</p></div></div>
+        <div class="card step"><div><h3>Create API keys</h3><p>In the project: <strong>Settings → API Keys → Create new API keys</strong>. Copy the public key (<code>pk-lf-…</code>) and the secret key (<code>sk-lf-…</code>). The secret is shown once.</p></div></div>
+        <div class="card step"><div><h3>Add the keys to the project <code>.env</code></h3><p>The <code>.env.sample</code> that setup creates already lists the three names. Fill them in <code>.env</code>, which is git-ignored and which Claude is not allowed to read.</p>
+<pre><code>LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=http://localhost:3000</code></pre></div></div>
+        <div class="card step"><div><h3>Turn tracing on</h3><p>Tracing is off until you switch it on, per person, in <code>.claude/settings.local.json</code> (not committed). Then restart Claude Code.</p>
+<pre><code>{
+  "env": {
+    "TRACE_TO_LANGFUSE": "true"
+  }
+}</code></pre></div></div>
+        <div class="card step"><div><h3>Check it works</h3><p>Ask Claude anything, let it finish, then open <strong>Tracing</strong> in Langfuse: the turn appears within seconds. For cost, open <strong>Dashboards → Langfuse Cost Dashboard</strong> and filter on the <code>claude-code</code> environment. If nothing arrives, add <code>"CC_LANGFUSE_DEBUG": "true"</code> next to <code>TRACE_TO_LANGFUSE</code> and read <code>~/.claude/state/langfuse_hook.log</code>.</p></div></div>
+      </div>
+      <p>Useful Docker commands, run in the <code>langfuse</code> folder:</p>
+<pre><code>docker compose logs -f langfuse-web     # follow the web server log
+docker compose stop                     # stop; data is kept in Docker volumes
+docker compose pull &amp;&amp; docker compose up -d   # update to the latest Langfuse
+docker compose down -v                  # remove Langfuse AND all its data</code></pre>
+      <div class="callout warn"><p><strong>Before you share the server with your team</strong>, change every value marked <code># CHANGEME</code> in Langfuse's <code>docker-compose.yml</code> (database passwords, <code>NEXTAUTH_SECRET</code>, <code>SALT</code>, <code>ENCRYPTION_KEY</code>) and put it behind HTTPS. Langfuse recommends at least 4 CPU cores and 16 GB of memory for a shared server. Then point everyone's <code>LANGFUSE_BASE_URL</code> at it. Prefer the hosted service? Use <code>https://cloud.langfuse.com</code> (or <code>https://us.cloud.langfuse.com</code>) as the base URL instead.</p></div>
+      <div class="callout"><p><strong>What is sent.</strong> Your prompts, Claude's answers and tool inputs and outputs (each clipped at 20,000 characters) go to the Langfuse server you configured, and nowhere else. The keys are read at run time and never printed or logged. Tracing runs after Claude has finished a turn, and a tracing failure never interrupts your session.</p></div>
+    </section>

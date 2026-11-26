@@ -1,0 +1,8 @@
+hooks/
+├── hooks.json   # wires Claude Code events to run.js
+├── run.js       # single dispatcher: session-start | pre-bash | pre-write | pre-mcp |
+│                #   post-write | post-bash | bash-failure | stop
+├── lib.js       # config, command parsing, org classification
+├── ops.js       # Code Analyzer wrapper, inventory, delta
+├── checks.js    # source checks and secret patterns
+└── mcp.js       # Salesforce Hosted MCP routes, sign-in through the sf CLI, probe

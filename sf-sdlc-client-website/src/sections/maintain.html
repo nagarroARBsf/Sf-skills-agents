@@ -1,0 +1,10 @@
+    <section id="maintain" data-tab="ref">
+      <div class="eyebrow">Reference</div>
+      <h2>Maintaining the kit</h2>
+      <p>Edit <code>.claude/</code>, never the generated folders in <code>plugins/sf-sdlc/</code>. Then regenerate and check:</p>
+<pre><code>python3 scripts/build-claude-plugin.py          # regenerate the plugin and the skill catalog
+python3 scripts/build-claude-plugin.py --check  # fail if anything generated is stale
+node --test tests/kit.test.js                   # hook and CLI unit tests
+claude plugin validate plugins/sf-sdlc --strict</code></pre>
+      <p>Bump <code>version</code> in <code>plugins/sf-sdlc/.claude-plugin/plugin.json</code> on every release, or installed copies will not update.</p>
+    </section>

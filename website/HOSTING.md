@@ -3,6 +3,8 @@
 Read this at the start of a session that touches the website, Azure or deployment of the docs site.
 Last verified: 2026-11-13.
 
+The client showcase copy of this site is `sf-sdlc-client-website/` (resource group `rg-salesforce-sdlc-client`); see its own HOSTING.md.
+
 ## What is hosted
 The public site for the Nagarro Salesforce SDLC kit. The source is `website/` (layout and how to change it:
 [README.md](README.md)). The site is generated into `site/`, which is git-ignored. Never edit `site/` by hand.

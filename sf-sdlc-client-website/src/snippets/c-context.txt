@@ -1,0 +1,18 @@
+(generated from .claude/CLAUDE.md and the always-on .claude/rules/)
+
+# Salesforce project — AI delivery kit
+
+Most stages run here, in the main conversation, following their skill. Three run in an
+agent because they read large inputs: BRD, architecture and QA.
+
+## Project settings
+Project-specific values live in `.claude/sf-sdlc.json` ...
+
+## Salesforce engineering rules (always)
+- Security: explicit sharing on every class (`with sharing` by default); an explicit access
+  mode on every query and DML (`WITH USER_MODE`), never `WITH SECURITY_ENFORCED` ...
+- Bulk-safe: no SOQL/DML in loops; one trigger per object with a handler.
+
+## Orgs and deployment
+- Never deploy to, delete from or change data in production unless the user names the
+  org and confirms in this conversation.

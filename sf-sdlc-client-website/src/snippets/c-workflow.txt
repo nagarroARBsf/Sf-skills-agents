@@ -1,0 +1,11 @@
+export const meta = {
+  name: 'sdlc-review-changes',
+  description: 'Review the changes on this branch with parallel Salesforce reviewers, then verify each finding',
+  phases: [{ title: 'Scope' }, { title: 'Review' }, { title: 'Verify' }, { title: 'Report' }],
+}
+
+phase('Scope')
+const scope = await agent(
+  'Run `node .claude/bin/sf-sdlc delta --json` and `git diff --name-only` ...'
+)
+// Review: one reviewer per dimension, in parallel. Verify: each finding re-checked.

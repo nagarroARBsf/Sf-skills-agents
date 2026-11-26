@@ -1,0 +1,7 @@
+{
+  "name": "sf-sdlc-website-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Managed Azure Functions for the SF-SDLC website. No dependencies on purpose.",
+  "main": "lead/index.js"
+}

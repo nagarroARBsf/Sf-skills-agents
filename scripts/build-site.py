@@ -11,7 +11,11 @@
   site/downloads/*.zip       the plugin (plugins/sf-sdlc/) and the copy-in folder (.claude/)
 
 website/api/ (the sign-up function) is not copied: it is deployed with --api-location.
-Standard library only. Usage: python3 scripts/build-site.py [--no-zips]
+
+Two sites are built from this script: the public kit site (website/ -> site/) and the client
+showcase site (--client: sf-sdlc-client-website/ -> site-client/). The client site falls back to
+website/media/ for videos it does not have in its own media/ folder.
+Standard library only. Usage: python3 scripts/build-site.py [--client] [--no-zips]
 """
 import hashlib
 import json
@@ -22,9 +26,11 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-WEB = ROOT / "website"
+CLIENT = "--client" in sys.argv
+WEB = ROOT / ("sf-sdlc-client-website" if CLIENT else "website")
 SRC = WEB / "src"
-SITE = ROOT / "site"
+SITE = ROOT / ("site-client" if CLIENT else "site")
+MEDIA_DIRS = [WEB / "media"] + ([ROOT / "website" / "media"] if CLIENT else [])
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".sf", ".sfdx", ".sf-sdlc"}
 SKIP_FILES = {"sf-sdlc.local.json", "settings.local.json", ".DS_Store", ".env"}
 INCLUDE = re.compile(r"^[ \t]*<!-- @include ([\w./-]+) -->[ \t]*\n?", re.M)
@@ -110,12 +116,12 @@ def main():
         fail(f"unknown marker: {html[html.index('<!-- @'):][:60]}")
     # Only videos the page references are copied; videos hosted elsewhere (Google Drive) stay out of the package.
     for ref in sorted(set(re.findall(r'src="assets/([\w.-]+\.(?:mp4|webm))"', html))):
-        v = WEB / "media" / ref
-        if v.is_file():
+        v = next((d / ref for d in MEDIA_DIRS if (d / ref).is_file()), None)
+        if v:
             shutil.copy(v, SITE / "assets" / ref)
             print(f"video {ref}: {v.stat().st_size / 1e6:.1f} MB")
         else:
-            print(f"WARNING: assets/{ref} is used by the page but not in website/media/; the video will not play")
+            print(f"WARNING: assets/{ref} is used by the page but not in {WEB.name}/media/; the video will not play")
     (SITE / "index.html").write_text(fingerprint(html), encoding="utf-8")
     shutil.copy(WEB / "staticwebapp.config.json", SITE / "staticwebapp.config.json")
 
@@ -124,7 +130,7 @@ def main():
         make_zip(ROOT / "plugins" / "sf-sdlc", SITE / "downloads" / "sf-sdlc-plugin.zip", "sf-sdlc")
         make_zip(ROOT / ".claude", SITE / "downloads" / "claude-folder.zip", ".claude")
     total = sum(p.stat().st_size for p in SITE.rglob("*") if p.is_file())
-    print(f"site/: {total / 1e6:.1f} MB (Azure Static Web Apps Free plan limit: 250 MB)")
+    print(f"{SITE.name}/: {total / 1e6:.1f} MB (Azure Static Web Apps Free plan limit: 250 MB)")
     if total > 240e6:
         print("WARNING: close to the 250 MB limit of the Free plan")
 

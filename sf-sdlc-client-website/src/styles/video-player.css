@@ -1,0 +1,82 @@
+/* Chapter video player (scripts/video-player.js). The stage is always dark, like any video player,
+   so its controls use fixed light colours; the chapter list below follows the site theme. */
+.vp-stage { position: relative; overflow: hidden; }
+.vp-ready .vp-stage video { cursor: pointer; }
+.vp-stage svg { width: 22px; height: 22px; display: block; }
+
+/* Big play button over the poster, until the first play. */
+.vp-big { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 72px; height: 72px; border: 0; border-radius: 50%; background: rgba(14, 14, 13, .72); color: #fff; display: grid; place-items: center; cursor: pointer; transition: background .15s, transform .15s; }
+.vp-big svg { width: 34px; height: 34px; }
+.vp-big .i-pause { display: none; }
+.vp-big:hover, .vp-big:focus-visible { background: #0b74c4; transform: translate(-50%, -50%) scale(1.06); }
+.vp-started .vp-big { display: none; }
+
+/* Control strip */
+.vp-controls { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 12px 6px; background: linear-gradient(transparent, rgba(0, 0, 0, .78)); color: #fff; transition: opacity .25s; }
+.vp-idle .vp-controls { opacity: 0; pointer-events: none; }
+.vp-idle .vp-stage, .vp-idle .vp-stage video { cursor: none; }
+.vp-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.vp-spacer { flex: 1; }
+.vp-btn { flex: none; display: grid; place-items: center; min-width: 38px; height: 38px; padding: 0 6px; border: 0; border-radius: 6px; background: none; color: #fff; font: 600 13.5px var(--sans); cursor: pointer; }
+.vp-btn:hover { background: rgba(255, 255, 255, .14); }
+.vp-btn:focus-visible, .vp-chap:focus-visible, .vp-bar:focus-visible, .vp-big:focus-visible { outline: 2px solid #4bb7f5; outline-offset: 2px; }
+.vp-play .i-pause, .vp-playing .vp-play .i-play { display: none; }
+.vp-playing .vp-play .i-pause { display: block; }
+.vp-mute .i-muted, .vp-muted .vp-mute .i-vol { display: none; }
+.vp-muted .vp-mute .i-muted { display: block; }
+.vp-fs .i-fs-exit, .vp-fullscreen .vp-fs .i-fs { display: none; }
+.vp-fullscreen .vp-fs .i-fs-exit { display: block; }
+.vp-time { flex: none; padding: 0 8px; font: 500 13.5px var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Current chapter, like YouTube's "chapter >" pill */
+.vp-chap { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 46%; height: 32px; padding: 0 12px; border: 0; border-radius: 16px; background: rgba(255, 255, 255, .12); color: #fff; font: 600 13.5px var(--sans); cursor: pointer; }
+.vp-chap:hover { background: rgba(255, 255, 255, .22); }
+.vp-chap-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vp-chap-title:empty + span { display: none; }
+
+/* Progress bar: one segment per chapter, with gaps between them */
+.vp-bar { position: relative; height: 18px; display: flex; align-items: center; cursor: pointer; touch-action: none; }
+.vp-segs { display: flex; gap: 3px; width: 100%; height: 100%; align-items: center; }
+.vp-seg { position: relative; flex-basis: 0; min-width: 1px; height: 4px; background: rgba(255, 255, 255, .28); transition: height .1s; overflow: hidden; }
+.vp-bar:hover .vp-seg, .vp-dragging .vp-seg { height: 5px; }
+.vp-seg.is-hover { height: 8px !important; }
+.vp-fill, .vp-buf { position: absolute; inset: 0; transform-origin: left; transform: scaleX(0); }
+.vp-buf { background: rgba(255, 255, 255, .42); }
+.vp-fill { background: #2b9be8; }
+.vp-thumb { position: absolute; top: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: #2b9be8; transform: scale(0); transition: transform .1s; pointer-events: none; }
+.vp-bar:hover .vp-thumb, .vp-dragging .vp-thumb, .vp-bar:focus-visible .vp-thumb { transform: scale(1); }
+.vp-tip { position: absolute; bottom: 24px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: 360px; padding: 6px 10px; border-radius: 6px; background: rgba(14, 14, 13, .9); color: #fff; font: 600 13px var(--sans); text-align: center; pointer-events: none; white-space: nowrap; }
+.vp-tip[hidden] { display: none; }
+.vp-tip-title { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+.vp-tip-title:empty { display: none; }
+.vp-tip-time { font-weight: 500; font-variant-numeric: tabular-nums; color: #d6d4cc; }
+
+/* Full screen */
+.vp-stage:fullscreen { aspect-ratio: auto; width: 100%; height: 100%; }
+.vp-stage:fullscreen video { height: 100%; }
+
+/* Chapter list under the video */
+.vp-panel { border-top: 1px solid var(--border); }
+.vp-panel-h { margin: 0; padding: 12px 16px 6px; font: 600 14px var(--sans); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.vp-chapters { position: relative; list-style: none; margin: 0; padding: 0 8px 10px; max-height: 320px; overflow-y: auto; overscroll-behavior: contain; }
+.vp-chapters li { padding: 4px 8px; font-size: 14px; }
+.vp-ready .vp-chapters li { padding: 0; }
+.vp-chapters button { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: none; color: var(--text); font: 14px/1.35 var(--sans); text-align: left; cursor: pointer; }
+.vp-chapters button:hover { background: var(--surface-2); }
+.vp-chapters button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.vp-ct { flex: none; min-width: 3.2em; color: var(--accent-text); font: 600 13px var(--mono); font-variant-numeric: tabular-nums; }
+.vp-chapters li.is-current button { background: var(--accent-soft); font-weight: 600; }
+
+@media (max-width: 700px) {
+  .vp-speed { display: none; }
+  .vp-chap { max-width: 40%; padding: 0 10px; }
+  .vp-time { padding: 0 4px; font-size: 12.5px; }
+  .vp-btn { min-width: 34px; }
+}
+@media (max-width: 480px) {
+  .vp-chap { display: none; }
+  .vp-controls { padding: 18px 6px 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vp-controls, .vp-seg, .vp-thumb, .vp-big { transition: none; }
+}

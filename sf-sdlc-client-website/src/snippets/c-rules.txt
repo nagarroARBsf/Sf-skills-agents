@@ -1,0 +1,9 @@
+salesforce-coding-rules/
+├── SKILL.md
+└── references/
+    ├── salesforce-apex.md         # generated from .claude/rules/salesforce-apex.md
+    ├── salesforce-apex-tests.md
+    ├── salesforce-lwc.md
+    ├── salesforce-flow.md
+    ├── salesforce-metadata.md
+    └── sdlc-artifacts.md

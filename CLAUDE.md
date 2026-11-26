@@ -50,6 +50,21 @@ bare checkout and on customer machines with no `npm install`.
 `claude plugin validate` (CI does not have the Claude Code CLI). After `update-official-skills.sh`,
 run `build-claude-plugin.py`.
 
+## Two websites, two Azure resource groups
+
+| Site | Source | Build (output, git-ignored) | Azure resource group | Static Web App / URL |
+|---|---|---|---|---|
+| Public kit site | `website/` | `python3 scripts/build-site.py` (`site/`) | `rg-salesforce-sdlc` | `salesforce-sdlc-docs`, https://nice-plant-00b857600.8.azurestaticapps.net |
+| Client showcase site | `sf-sdlc-client-website/` | `python3 scripts/build-site.py --client` (`site-client/`) | `rg-salesforce-sdlc-client` | `salesforce-sdlc-client`, https://proud-field-0dc380700.8.azurestaticapps.net |
+
+Each group holds its own Static Web App, Application Insights + Log Analytics, and Communication
+Services email for the sign-up form. The client site is a copy of the kit site tailored to what we show
+clients (today: the Salesforce harmonization use case, with Discovery agent → MapShift → Developer → QA
+agent, and the agents section right after the video tutorial). Client-specific changes go **only** in
+`sf-sdlc-client-website/`; never change `website/` for a client. **No client names** on the client site
+or in the repo. MapShift exists only on the client site, not in the kit. Deploy steps: each folder's
+`HOSTING.md`. Both are deployed by hand from this machine; there is no CI deploy.
+
 ## GitHub Copilot and Cursor outputs are frozen
 
 `.github/` (except `workflows/`) and `.cursor/` hold the previous release's generated output for
