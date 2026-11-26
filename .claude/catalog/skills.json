@@ -31,6 +31,12 @@
       "description": "Deployment and release runbook for Salesforce through the sf CLI: promotion order from the project config, classifying the target org first, validate then quick deploy, test levels per environment (never NoTestRun for production), delta versus full deployments, destructive changes with explicit conf"
     },
     {
+      "name": "sdlc-discovery-fit-gap",
+      "location": "skills",
+      "source": "nagarro",
+      "description": "Discovery and design for EXISTING Salesforce orgs: a read-only, dated snapshot of one or more orgs (data model, automation, code, access and sharing, integrations, packages, licences, limits, recent setup changes); every statement in the discovery pack (workshop notes, call transcripts, current-stat"
+    },
+    {
       "name": "sdlc-jira-story-generate",
       "location": "skills",
       "source": "nagarro",
@@ -64,7 +70,7 @@
       "name": "sdlc-workflow",
       "location": "skills",
       "source": "nagarro",
-      "description": "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder layout, the gr"
+      "description": "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> discovery -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder l"
     },
     {
       "name": "sf-sdlc-setup",

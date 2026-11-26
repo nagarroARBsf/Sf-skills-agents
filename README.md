@@ -1,29 +1,48 @@
-# Salesforce SDLC kit for Claude Code — Enterprise Edition (3.0)
+# Salesforce SDLC kit for Claude Code — Enterprise Edition (3.1)
 
 A ready-made Claude Code environment for Salesforce delivery teams: developers, business analysts
 and managers. It takes work from raw meeting transcripts to a production release, with Salesforce
 practice built into every step.
 
-**Ground → BRD → Jira stories → architecture and plan → development → code verification →
+**Ground → discovery of existing orgs → BRD → Jira stories → architecture and plan → development → code verification →
 deployment → QA testing → re-test → release → observe.**
 
 | What you get | |
 |---|---|
 | Spec-driven development | Spec → plan → tasks → tests first → verify, in the main conversation; plan mode follows the same 12-section plan format |
-| 4 agents | BRD analyst, solution architect, code reviewer (Code Analyzer plus the coding rules, read-only and independent of the author), QA (test design, test runs, browser UI tests). Planning and development use your coding agent's own plan mode and editing, in the spec-driven format |
-| 23 commands | One per lifecycle step, each stopping for human review |
-| 11 skills always available | The method behind each stage (`sdlc-*`), plus `sf-sdlc-setup` for the kit itself |
+| 5 agents | Discovery and design (existing orgs: discovery pack checked against the org, org comparison, fit-gap, HLD draft; read-only), BRD analyst, solution architect, code reviewer (Code Analyzer plus the coding rules, read-only and independent of the author), QA (test design, test runs, browser UI tests). Planning and development use your coding agent's own plan mode and editing, in the spec-driven format |
+| 24 commands | One per lifecycle step, each stopping for human review |
+| 12 skills always available | The method behind each stage (`sdlc-*`), plus `sf-sdlc-setup` for the kit itself |
 | 7 coding rule files | Apex, Apex tests, LWC, Flow, metadata, SDLC documents, spec-driven development — from Salesforce docs, Code Analyzer rules and Salesforce's own skills |
 | Your own templates | Jira process (Scrum, Kanban, SAFe or your own), story, BRD, LLD, test and release templates in your project replace the kit's |
 | 177 Salesforce and diagram skills | A library; setup installs only the ones your project needs |
 | Hosted MCP servers | Salesforce's Metadata Grounding and Metadata Experts servers (Headless 360 and Data 360 optional), signed in through your `sf` CLI login: no client ID, secret or token to store |
 | Guard hooks | Production-org guard, secret guard, branch guard, commit gate, write-time source checks, failure triage, audit log |
-| `sf-sdlc` CLI | Tool checks, config, skill installer, official Salesforce Code Analyzer, change delta, validated deploys, test runs |
+| `sf-sdlc` CLI | Tool checks, config, skill installer, read-only org discovery snapshots and org-to-org comparison, official Salesforce Code Analyzer, change delta, validated deploys, test runs |
 | Plugin extras | 3 workflows, 2 monitors, 3 output styles (Business Analyst, Developer, Manager), 2 themes, Atlassian (Jira) connection |
 
 Install and configure: **[SETUP.md](SETUP.md)**. Research and sources: [RESEARCH.md](RESEARCH.md).
 Interactive guide to the plugin structure: the website in **[website/](website/README.md)**
 (build it with `python3 scripts/build-site.py`, then open `site/index.html`).
+
+## What changed in 3.1
+
+One new agent for existing orgs. **`sdlc-discovery-design-agent`** (`/sf-sdlc:discovery`, copy-in
+`/sdlc-discovery`) goes into one or more existing orgs, read-only, and checks the discovery pack
+(workshop notes, call transcripts, current-state documents) against what the orgs really contain.
+Every statement gets a verdict — confirmed, partly holds, contradicted, stale or not verifiable — with
+the evidence. For an org merge or harmonization it compares the orgs and records a keep, bring, merge
+or retire decision per component. It then drafts the current-state assessment, the fit-gap (fit to
+standard first, declarative before code) and the HLD, which the solution architect continues.
+
+- New skill `sdlc-discovery-fit-gap` with claim register, fit-gap, org comparison and current-state
+  templates (template area `discovery`).
+- New CLI command `sf-sdlc discover snapshot | summary | compare`: a fixed set of read-only metadata
+  queries saved as a dated snapshot, so every finding can be traced to a file. No record data, no
+  user names, no session output.
+- New config key `discovery.orgs`; new IDs `CLM-nnn` (claim) and `FG-nnn` (fit-gap item); new stage
+  **D** between Ground and BRD. The BRD and architecture skills read the discovery outputs when present.
+- The other four agents are unchanged.
 
 ## What changed in 3.0 (Enterprise Edition)
 
@@ -80,14 +99,14 @@ plugin (see [What you configure](#what-you-configure)).
 plugins/sf-sdlc/
 ├── .claude-plugin/
 │   └── plugin.json              manifest: name, version, per-user options (hook mode, audit log)
-├── skills/                      10 sdlc-* method skills, sf-sdlc-setup, salesforce-coding-rules   (loaded when relevant)
+├── skills/                      11 sdlc-* method skills, sf-sdlc-setup, salesforce-coding-rules   (loaded when relevant)
 │   └── sdlc-code-review/
 │       ├── SKILL.md             frontmatter (name, when to trigger) + the method
 │       └── references/          templates and checklists, loaded only when needed
 ├── skill-library/               177 skills, never loaded from here; installed per project
-├── commands/                    23 slash commands: /sf-sdlc:brd, /sf-sdlc:plan, /sf-sdlc:deploy …
+├── commands/                    24 slash commands: /sf-sdlc:brd, /sf-sdlc:plan, /sf-sdlc:deploy …
 │   └── deploy.md
-├── agents/                      4 subagents: BRD, solution architect, code reviewer, QA
+├── agents/                      5 subagents: discovery and design, BRD, solution architect, code reviewer, QA
 │   └── sdlc-qa-test-agent.md
 ├── hooks/
 │   ├── hooks.json               wires Claude Code events to run.js
@@ -110,10 +129,10 @@ plugins/sf-sdlc/
 | Piece | What it is for | What you provide | How you use it |
 |---|---|---|---|
 | `.claude-plugin/plugin.json` | Manifest and per-user options | Nothing. Maintainers bump `version` per release | `/plugin configure sf-sdlc@nagarro-sf` to set Hook mode and Audit log for yourself |
-| `skills/` | The method behind each stage: templates, checklists, ID scheme | Optionally your own templates in `docs/sdlc/templates/` | Automatic: Claude loads a skill when its description matches; the four agents preload theirs |
+| `skills/` | The method behind each stage: templates, checklists, ID scheme | Optionally your own templates in `docs/sdlc/templates/` | Automatic: Claude loads a skill when its description matches; the five agents preload theirs |
 | `skill-library/` | Salesforce technical skills (Apex, LWC, Flow, objects, deploy …) | Choose which ones the project gets | `/sf-sdlc:skills` or `sf-sdlc skills recommend` → `install`; copied to your `.claude/skills/` |
-| `commands/` | One command per lifecycle step; most run in the main conversation with a skill, eight route to an agent | Arguments: files, a story ID, an org | `/sf-sdlc:brd notes/`, `/sf-sdlc:specify US-04-02`, `/sf-sdlc:deploy qa` |
-| `agents/` | BRD, architecture and QA (stages that read large inputs) and code review (independent of the author), kept out of the main conversation; each writes a draft and stops | Nothing; they read your project config | Started by commands, or by name ("use the sdlc-qa-test-agent to test my component …") |
+| `commands/` | One command per lifecycle step; most run in the main conversation with a skill, nine route to an agent | Arguments: files, a story ID, an org | `/sf-sdlc:brd notes/`, `/sf-sdlc:specify US-04-02`, `/sf-sdlc:deploy qa` |
+| `agents/` | Discovery, BRD, architecture and QA (stages that read large inputs) and code review (independent of the author), kept out of the main conversation; each writes a draft and stops | Nothing; they read your project config | Started by commands, or by name ("use the sdlc-qa-test-agent to test my component …") |
 | `hooks/` | Guards around every shell command and file write; session facts; audit log | `orgs.production`, `git.protectedBranches`, `hooks.mode` | Nothing to run. Start in `observe`, switch to `enforce` |
 | `monitors/` | Tell Claude when a deploy or async test run changes state | Nothing (experimental; not in headless sessions) | Start `/sf-sdlc:deploy uat` and keep working |
 | `output-styles/` | Tone for the reader: business analyst, developer or manager | Pick one per person | `/output-style` → Salesforce Business Analyst, Salesforce Developer or Salesforce Manager |
@@ -201,6 +220,8 @@ Every key: [SETUP.md](SETUP.md#41-claudesf-sdlcjson--the-main-project-config-com
 ```mermaid
 flowchart LR
     S["0 Setup"] --> G["G Ground"] --> B["1 BRD"] --> J["2 Stories"] --> A["3 Architecture"]
+    G -. "existing orgs" .-> X["D Discovery"] --> B
+    X -. "HLD draft" .-> A
     A --> P["4 Spec and plan"] --> D["5 Build"] --> R["6 Review"]
     R --> V["7 Deploy"] --> Q["8 Test"] --> T["9 Re-test"] --> L["10 Release"] --> O["11 Observe"]
     Q -. "defect" .-> D
@@ -215,6 +236,7 @@ next step starts. Claude never approves its own work.
 |---|---|---|---|---|---|
 | 0 | Set up the project | Tech lead | `/sf-sdlc:setup`, `/sf-sdlc:doctor`, `/sf-sdlc:skills` | main conversation (`sf-sdlc-setup`) | `.claude/sf-sdlc.json`, installed skills, baseline inventory |
 | G | Ground Claude in the business and the org | Tech lead, BA | `/sf-sdlc:setup` (drafts them) | main conversation (`sf-sdlc-setup`) | `docs/sdlc/00-grounding/ontology.yaml` (business terms → objects), `feature-map.md` (components per feature) |
+| D | Discovery of existing orgs (only when orgs exist) | Architect, BA | `/sf-sdlc:discovery <orgs> <pack>` | discovery and design agent, read-only | `docs/sdlc/00-discovery/`: org snapshots, claim register (`CLM-nnn`), org comparison, current state, fit-gap (`FG-nnn`); `03-architecture/HLD.md` draft |
 | 1 | Requirements from transcripts | Business analyst | `/sf-sdlc:brd <files>` | BRD agent | `docs/sdlc/01-brd/BRD.md` |
 | 2 | Epics and stories | Product owner | `/sf-sdlc:stories` | main conversation (Jira skill, your Jira process) | `docs/sdlc/02-backlog/`, Jira issues after you say yes |
 | 3 | Architecture and diagrams | Architect | `/sf-sdlc:architecture`, `/sf-sdlc:diagram` | solution architect agent | HLD, per-story LLD, ADRs; Salesforce-standard draw.io diagrams (PNG, SVG, PDF) marking New / Changed / Unchanged |
@@ -228,7 +250,7 @@ next step starts. Claude never approves its own work.
 | 11 | Observe | QA, developer | `/sf-sdlc:test-run`, `/sf-sdlc:specify` | QA agent, main conversation | `docs/sdlc/06-observe/findings-*.md`: each finding becomes a defect or story **and** a constraint (test, Code Analyzer rule, hook) |
 | — | Status at any time | Anyone | `/sf-sdlc:trace` | — | Where things stand, what is blocked, traceability matrix |
 
-Traceability runs through one ID chain:
+Traceability runs through one ID chain (for existing orgs it starts at `CLM-…` and `FG-…`):
 `BR-04` → `FR-04.2` → `US-04-02` → `LLD-US-04-02` → `TC-US-04-02-007` → `TR-…` → `DEF-012` → `DEP-005` → `REL-1.4.0`.
 
 ### Walk-through
@@ -336,6 +358,11 @@ never overwrites a skill you edited. Starter sets: `--profile developer`, `admin
   were not yet exercised on a customer project. The rules cite Salesforce documentation as of the
   Winter '27 release; check them against your org's API version (API 67.0 changed Apex's default
   data access to user mode).
+- **The discovery snapshot has not been run against a real org.** `sf-sdlc discover` and the
+  discovery agent are covered by unit tests with a simulated `sf` CLI only. Some queries (for example
+  `SetupAuditTrail`, `InstalledSubscriberPackage`, `PermissionSetGroup`) depend on the edition and the
+  signed-in user's permissions; a query that fails is recorded in `manifest.json` and reported, not
+  hidden. Run it first against a sandbox or an org you name, and check `manifest.json`.
 - **The review agent is a second opinion, not a sign-off.** `/sdlc-review` runs in its own context,
   so it does not share the author's assumptions, but it is the same model; a person still accepts the
   verdict in the approval record. A review asked for in the main conversation without the agent says

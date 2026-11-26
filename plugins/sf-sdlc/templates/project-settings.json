@@ -10,6 +10,7 @@
       "Bash(sf-sdlc detect*)",
       "Bash(sf-sdlc inventory*)",
       "Bash(sf-sdlc delta*)",
+      "Bash(sf-sdlc discover*)",
       "Bash(sf-sdlc skills list*)",
       "Bash(sf-sdlc skills recommend*)",
       "Bash(sf-sdlc org classify*)",

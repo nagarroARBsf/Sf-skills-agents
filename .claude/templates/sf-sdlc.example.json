@@ -31,6 +31,7 @@
   },
   "paths": { "docs": "docs/sdlc", "specs": "specs", "templates": "docs/sdlc/templates" },
   "mcp": { "servers": ["metadata-experts", "metadata-grounding", "sobject-reads"], "org": "dev" },
+  "discovery": { "orgs": ["orion-prod", "legacy-prod"] },
   "browser": { "enabled": true, "browser": "chrome", "headless": false },
   "hooks": { "mode": "observe", "auditLog": true, "strictEvidence": false }
 }

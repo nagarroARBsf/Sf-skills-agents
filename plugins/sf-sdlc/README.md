@@ -1,7 +1,7 @@
-# sf-sdlc — Salesforce delivery lifecycle for Claude Code (Enterprise Edition 3.0)
+# sf-sdlc — Salesforce delivery lifecycle for Claude Code (Enterprise Edition 3.1)
 
 Agents, commands, guard hooks and Salesforce skills that take a project from meeting transcripts to
-a production release: BRD → Jira stories → architecture → spec and plan → build → code review →
+a production release: discovery of existing orgs → BRD → Jira stories → architecture → spec and plan → build → code review →
 deployment → testing → re-test → release.
 
 > `agents/`, `commands/`, `skills/`, `skill-library/`, `context/`, `hooks/`, `bin/`, `catalog/`,
@@ -49,9 +49,9 @@ with the `code-analyzer` plugin and Java 11+. Full guide: `SETUP.md` in the repo
 
 | Part | Contents |
 |---|---|
-| `agents/` | Four: BRD, solution architect and QA test (including browser UI tests), where a stage reads large inputs, and the code reviewer (Code Analyzer plus the coding rules, read-only, independent of the author). Planning and development are your coding agent's own plan mode and editing, in the spec-driven format. Every other stage runs in the main conversation under its skill |
-| `commands/` | `setup` `doctor` `skills` · `brd` `stories` `architecture` `diagram` · `constitution` `specify` `clarify` `plan` `tasks` `implement` `verify` · `review` `analyze` · `test-cases` `test-run` `ui-test` `retest` · `deploy` `release` · `trace` |
-| `skills/` | 10 SDLC process skills, `sf-sdlc-setup` (the kit's setup skill) and `salesforce-coding-rules` (Apex, tests, LWC, Flow, metadata, SDLC documents, spec-driven development) |
+| `agents/` | Five: discovery and design (existing orgs, read-only: discovery pack checked against the org, org comparison, fit-gap, HLD draft), BRD, solution architect and QA test (including browser UI tests), where a stage reads large inputs, and the code reviewer (Code Analyzer plus the coding rules, read-only, independent of the author). Planning and development are your coding agent's own plan mode and editing, in the spec-driven format. Every other stage runs in the main conversation under its skill |
+| `commands/` | `setup` `doctor` `skills` · `discovery` `brd` `stories` `architecture` `diagram` · `constitution` `specify` `clarify` `plan` `tasks` `implement` `verify` · `review` `analyze` · `test-cases` `test-run` `ui-test` `retest` · `deploy` `release` · `trace` |
+| `skills/` | 11 SDLC process skills, `sf-sdlc-setup` (the kit's setup skill) and `salesforce-coding-rules` (Apex, tests, LWC, Flow, metadata, SDLC documents, spec-driven development) |
 | `skill-library/` | 177 Salesforce and diagram skills, not loaded; `sf-sdlc skills install` copies the chosen ones into the project |
 | `hooks/` | Session facts; production-org, secret, branch, commit and hosted-MCP guards; source checks on write; failure triage; audit log |
 | `bin/sf-sdlc` | `doctor`, `init`, `env status\|init\|gh-login`, `config`, `detect`, `inventory`, `delta`, `skills`, `templates list\|copy`, `org classify`, `analyze`, `check`, `deploy`, `test`, `diagram`, `audit`, `mcp status` |

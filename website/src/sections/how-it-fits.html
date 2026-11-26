@@ -1,6 +1,6 @@
     <section id="how-it-fits" data-tab="plugin">
       <h2>How the pieces work together</h2>
-      <p>A command either names one of the four agents (BRD, solution architect, code reviewer, QA) or tells Claude to follow a skill in the main conversation. Either way the method skill loads, with the coding rules and any Salesforce skills installed in the project; real work on Salesforce goes through the <code>sf-sdlc</code> CLI and the <code>sf</code> CLI, and org context (what metadata already exists, metadata schemas) comes from Salesforce Hosted MCP Servers. Hooks sit around every tool call.</p>
+      <p>A command either names one of the five agents (discovery &amp; design, BRD, solution architect, code reviewer, QA) or tells Claude to follow a skill in the main conversation. Either way the method skill loads, with the coding rules and any Salesforce skills installed in the project; real work on Salesforce goes through the <code>sf-sdlc</code> CLI and the <code>sf</code> CLI, and org context (what metadata already exists, metadata schemas) comes from Salesforce Hosted MCP Servers. Hooks sit around every tool call.</p>
       <div class="flow">
         <div class="node"><b>Command</b><span>You type <code>/sf-sdlc:review US-04-02</code></span></div>
         <div class="node"><b>Agent</b><span><code>sdlc-code-review-agent</code>: own context, read-only tools (Read, Glob, Grep, Bash)</span></div>

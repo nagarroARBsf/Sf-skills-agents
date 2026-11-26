@@ -15,6 +15,7 @@ const hooks = require(path.join(KIT, 'hooks', 'run.js'));
 const mcp = require(path.join(KIT, 'hooks', 'mcp.js'));
 const browser = require(path.join(KIT, 'hooks', 'browser.js'));
 const envfile = require(path.join(KIT, 'hooks', 'envfile.js'));
+const discover = require(path.join(KIT, 'hooks', 'discover.js'));
 
 const cfg = (over = {}) => lib.merge(lib.DEFAULTS, over);
 const ORGS = [
@@ -206,9 +207,9 @@ test('agents and commands reference things that exist', () => {
   }
 });
 
-test('kit 3.0: four agents (BRD, architect, code review, QA); the other stages are skills run in the main conversation', () => {
+test('kit 3.1: five agents (discovery, BRD, architect, code review, QA); the other stages are skills run in the main conversation', () => {
   const agents = fs.readdirSync(path.join(KIT, 'agents')).map((f) => f.replace(/\.md$/, '')).sort();
-  assert.deepStrictEqual(agents, ['sdlc-brd-agent', 'sdlc-code-review-agent', 'sdlc-qa-test-agent', 'sdlc-solution-architect-agent']);
+  assert.deepStrictEqual(agents, ['sdlc-brd-agent', 'sdlc-code-review-agent', 'sdlc-discovery-design-agent', 'sdlc-qa-test-agent', 'sdlc-solution-architect-agent']);
   const removed = lib.OBSOLETE_KIT_FILES.filter((f) => f.startsWith('agents/')).map((f) => path.basename(f, '.md'));
   assert.ok(removed.length === 6 && !removed.includes('sdlc-code-review-agent'));
   const scan = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (e.name === 'skill-library' ? [] : scan(path.join(dir, e.name))) : /\.(md|js|json)$/.test(e.name) ? [path.join(dir, e.name)] : []));
@@ -792,4 +793,128 @@ test('one architecture skill, and the Salesforce gallery is filed in its five ty
   assert.ok(count >= 25, `${count} reference images`);
   const all = fs.readFileSync(path.join(KIT, 'agents', 'sdlc-solution-architect-agent.md'), 'utf8') + fs.readFileSync(path.join(KIT, 'skills', 'sdlc-workflow', 'SKILL.md'), 'utf8');
   assert.doesNotMatch(all, /sdlc-solution-architecture-generate/);
+});
+
+test('discovery: snapshot queries read metadata only, never records or personal data', () => {
+  for (const q of discover.QUERIES) {
+    assert.match(q.soql, /^SELECT /, `${q.name} is a query`);
+    assert.doesNotMatch(q.soql, /\b(INSERT|UPDATE|DELETE|UPSERT|MERGE)\b/i, `${q.name} changes nothing`);
+    assert.doesNotMatch(q.soql, /\b(Email|Username|Phone|MobilePhone|FirstName|LastName|CreatedBy|LastModifiedBy|Display|Body|Password)\b/, `${q.name} reads no personal data`);
+    if (/\bFROM User\b/.test(q.soql)) assert.match(q.soql, /COUNT\(/, `${q.name}: users are counted, never listed`);
+  }
+  assert.ok(discover.COMMANDS.every((c) => c.args[0] === 'org' && c.args[1] === 'list'), 'extra sf commands are org list reads');
+  const all = JSON.stringify([discover.QUERIES, discover.COMMANDS]);
+  assert.doesNotMatch(all, /org display|frontdoor|accessToken/, 'never a command that prints a session');
+  // No query or command is something the org guard would treat as a change.
+  for (const c of discover.COMMANDS) assert.strictEqual(hooks.guardedLabel(c.args.join(' ')), null);
+  assert.strictEqual(hooks.guardedLabel('data query'), null);
+});
+
+function fakeOrg(over = {}) {
+  const data = {
+    organization: [{ attributes: { type: 'Organization' }, Id: '00D000000000001', Name: 'Acme', DefaultAccountAccess: 'Read', DefaultCaseAccess: 'None' }],
+    objects: [{ DurableId: '01I000000000001', QualifiedApiName: 'Complaint__c', InternalSharingModel: 'ReadWrite' }, { DurableId: 'Case', QualifiedApiName: 'Case', InternalSharingModel: 'Private' }],
+    customFields: [{ DeveloperName: 'Market', TableEnumOrId: 'Case' }, { DeveloperName: 'Severity', TableEnumOrId: '01I000000000001' }],
+    apexTriggers: [
+      { Name: 'CaseTrigger', TableEnumOrId: 'Case', Status: 'Active', UsageIsBulk: true },
+      { Name: 'CaseTrigger2', TableEnumOrId: 'Case', Status: 'Active', UsageIsBulk: false },
+    ],
+    flows: [{ ApiName: 'Case_Routing', ProcessType: 'Workflow', IsActive: true, TriggerType: null }],
+    profiles: [{ Name: 'Agent', UserType: 'Standard' }],
+    limits: [{ name: 'DataStorageMB', max: 100, remaining: 5 }],
+    ...over,
+  };
+  const calls = [];
+  const run = (args) => {
+    calls.push(args);
+    if (args[0] === 'org') {
+      const name = args.includes('limits') ? 'limits' : 'recordCounts';
+      return { status: 0, json: { status: 0, result: data[name] || [] } };
+    }
+    const q = discover.QUERIES.find((x) => x.soql === args[args.indexOf('--query') + 1]);
+    if (q.name === 'setupAuditTrail') return { status: 1, json: { status: 1, name: 'INVALID_TYPE', message: 'sObject type SetupAuditTrail is not supported' } };
+    return { status: 0, json: { status: 0, result: { totalSize: (data[q.name] || []).length, records: data[q.name] || [] } } };
+  };
+  return { run, calls };
+}
+
+test('discovery: snapshot writes one file per query and a manifest; a failing query is recorded, not fatal', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-disc-'));
+  const { run, calls } = fakeOrg();
+  const r = discover.snapshot(root, cfg(), 'uat', { run, lookup, date: '20261126' });
+  assert.strictEqual(r.dir, path.join('docs', 'sdlc', '00-discovery', 'snapshots', 'uat-20261126'));
+  const dir = path.join(root, r.dir);
+  const m = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+  assert.strictEqual(m.orgId, '00D000000000001');
+  assert.strictEqual(m.orgKind, 'sandbox');
+  assert.strictEqual(m.readOnly, true);
+  assert.strictEqual(m.queries.find((q) => q.name === 'setupAuditTrail').ok, false);
+  assert.match(m.queries.find((q) => q.name === 'setupAuditTrail').error, /not supported/);
+  assert.ok(fs.existsSync(path.join(dir, 'apexTriggers.json')) && !fs.existsSync(path.join(dir, 'setupAuditTrail.json')));
+  assert.doesNotMatch(fs.readFileSync(path.join(dir, 'organization.json'), 'utf8'), /attributes/, 'API attributes are stripped');
+  assert.ok(calls.every((a) => a.includes('-o') && a[a.indexOf('-o') + 1] === 'uat'), 'every call targets the named org');
+  assert.ok(calls.filter((a) => a.includes('--use-tooling-api')).length > 5);
+  const s = discover.summarize(dir);
+  assert.strictEqual(s.dataModel.customObjects, 1);
+  const text = s.findings.map((f) => f.text).join('\n');
+  assert.match(text, /2 active triggers on Case/);
+  assert.match(text, /not marked bulk-safe: CaseTrigger2/);
+  assert.match(text, /Process Builder/);
+  assert.match(text, /Public Read\/Write internal sharing: Complaint__c/);
+  assert.match(text, /DataStorageMB: 95 of 100/);
+  assert.match(text, /setupAuditTrail" could not run/);
+  assert.throws(() => discover.snapshot(root, cfg(), '', { run }), /no org given/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('discovery: org comparison reports only-in-A, only-in-B, same and different', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sfsdlc-cmp-'));
+  const a = discover.snapshot(root, cfg(), 'prod', { run: fakeOrg().run, lookup, date: '20261126' });
+  const b = discover.snapshot(root, cfg(), 'uat', {
+    run: fakeOrg({
+      organization: [{ Id: '00D000000000002', Name: 'Acme EU', DefaultAccountAccess: 'Read', DefaultCaseAccess: 'Read' }],
+      objects: [{ DurableId: '01I000000000009', QualifiedApiName: 'Complaint__c', InternalSharingModel: 'Private' }, { DurableId: 'Case', QualifiedApiName: 'Case', InternalSharingModel: 'Private' }, { DurableId: '01I000000000010', QualifiedApiName: 'Feedback__c', InternalSharingModel: 'Private' }],
+      customFields: [{ DeveloperName: 'Severity', TableEnumOrId: '01I000000000009' }],
+      apexTriggers: [{ Name: 'CaseTrigger', TableEnumOrId: 'Case', Status: 'Inactive', UsageIsBulk: true }],
+    }).run, lookup, date: '20261126',
+  });
+  const c = discover.compare(path.join(root, a.dir), path.join(root, b.dir));
+  assert.strictEqual(c.a.orgKind, 'production');
+  assert.deepStrictEqual(c.types.objects.onlyB, ['Feedback__c']);
+  assert.deepStrictEqual(c.types.objects.differs.map((d) => d.key), ['Complaint__c']);
+  assert.strictEqual(c.types.objects.same, 1);
+  // Custom fields are keyed by object API name, not by the org-specific object Id.
+  assert.deepStrictEqual(c.types.customFields.onlyA, ['Case.Market__c']);
+  assert.strictEqual(c.types.customFields.same, 1);
+  assert.deepStrictEqual(c.types.apexTriggers.onlyA, ['CaseTrigger2']);
+  assert.deepStrictEqual(c.types.apexTriggers.differs[0].fields.Status, ['Active', 'Inactive']);
+  assert.deepStrictEqual(c.orgWideDefaults, { DefaultCaseAccess: ['None', 'Read'] });
+  assert.throws(() => discover.compare(root, root), /snapshot folders/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('discovery: config key, command, skill templates and lifecycle wiring', () => {
+  assert.deepStrictEqual(lib.DEFAULTS.discovery, { orgs: [] });
+  assert.ok(lib.validateConfig(cfg({ discovery: { orgs: ['uat', 'legacy-prod'] } })).ok);
+  assert.ok(lib.validateConfig(cfg({ discovery: { orgs: 'uat' } })).errors.some((e) => /discovery\.orgs/.test(e)));
+  assert.ok(lib.validateConfig(cfg({ discovery: { orgs: [''] } })).errors.some((e) => /discovery\.orgs/.test(e)));
+  const example = JSON.parse(fs.readFileSync(path.join(KIT, 'templates', 'sf-sdlc.example.json'), 'utf8'));
+  assert.ok(Array.isArray(example.discovery.orgs));
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'SETUP.md'), 'utf8'), /`discovery\.orgs`/);
+  const cmd = fs.readFileSync(path.join(KIT, 'commands', 'sdlc-discovery.md'), 'utf8');
+  assert.match(cmd, /Use the \*\*sdlc-discovery-design-agent\*\* subagent to /);
+  assert.doesNotMatch(cmd, /disable-model-invocation/, 'discovery is read-only');
+  const agent = fs.readFileSync(path.join(KIT, 'agents', 'sdlc-discovery-design-agent.md'), 'utf8');
+  assert.match(agent, /^skills: sdlc-discovery-fit-gap, sdlc-architecture-diagram, sdlc-workflow$/m);
+  assert.doesNotMatch(agent, /^tools:/m, 'the agent needs the read-only MCP tools');
+  assert.match(agent, /Never `dispatch`/);
+  const refs = path.join(KIT, 'skills', 'sdlc-discovery-fit-gap', 'references');
+  for (const t of ['claim-register-template.md', 'fit-gap-template.md', 'org-comparison-template.md', 'current-state-template.md']) assert.ok(fs.existsSync(path.join(refs, t)), t);
+  const r = spawnSync(process.execPath, [path.join(KIT, 'bin', 'sf-sdlc'), 'templates', 'list', '--json'], { encoding: 'utf8' });
+  assert.ok(JSON.parse(r.stdout).templates.some((t) => t.id === 'discovery/fit-gap-template.md'), 'discovery is a template area');
+  const wf = fs.readFileSync(path.join(KIT, 'skills', 'sdlc-workflow', 'SKILL.md'), 'utf8');
+  assert.match(wf, /^\| D \| Discovery .*`sdlc-discovery-design-agent`/m);
+  assert.match(wf, /`CLM-nnn`/);
+  assert.match(wf, /`FG-nnn`/);
+  assert.match(fs.readFileSync(path.join(KIT, 'settings.json'), 'utf8'), /"Bash\(node \.claude\/bin\/sf-sdlc discover\*\)"/);
 });

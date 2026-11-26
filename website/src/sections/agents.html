@@ -1,7 +1,7 @@
     <section id="agents" data-tab="action">
       <div class="eyebrow">In action</div>
-      <h2>Six agents: four from the kit, two built in</h2>
-      <p class="lead">SF-SDLC works with six agents. Four come with the kit: the <strong>BRD agent</strong> (meeting transcripts), the <strong>solution architect</strong> (the whole codebase and diagrams), the <strong>code reviewer</strong> (Code Analyzer and the Salesforce coding rules, independent of whoever wrote the code) and <strong>QA</strong> (test runs and browser sessions). Two are <strong>built into your coding agent</strong>: the <strong>planner</strong> (plan mode) and the <strong>developer</strong> (the agent that edits your code) already come with Claude Code, Cursor and the others, and the kit makes them follow the spec-driven format and the project rules automatically. Each stage still writes a <strong>draft</strong> and stops; a person approves it before the next stage starts.</p>
+      <h2>Seven agents: five from the kit, two built in</h2>
+      <p class="lead">SF-SDLC works with seven agents. Five come with the kit: the <strong>discovery &amp; design agent</strong> (existing orgs checked against the discovery pack, then the fit-gap and HLD), the <strong>BRD agent</strong> (meeting transcripts), the <strong>solution architect</strong> (the whole codebase and diagrams), the <strong>code reviewer</strong> (Code Analyzer and the Salesforce coding rules, independent of whoever wrote the code) and <strong>QA</strong> (test runs and browser sessions). Two are <strong>built into your coding agent</strong>: the <strong>planner</strong> (plan mode) and the <strong>developer</strong> (the agent that edits your code) already come with Claude Code, Cursor and the others, and the kit makes them follow the spec-driven format and the project rules automatically. Each stage still writes a <strong>draft</strong> and stops; a person approves it before the next stage starts.</p>
       <p>No duplicate agents to learn: you plan and build with your coding agent directly, and the kit adds only the agents it does not already have. Stages never call each other. They hand off through files in your repository, linked by one ID chain, so you can stop, review, edit or re-run any stage on its own and still trace a release back to the meeting it came from.</p>
 
       <h3>How a stage runs</h3>
@@ -86,6 +86,7 @@
         </div>
         <div class="relay-track">
           <div class="relay-step main" data-agent="setup"><span class="rs-dot">0</span><span class="rs-id">baseline</span><span class="rs-who">Setup skill</span></div>
+          <div class="relay-step agent" data-agent="discovery"><span class="rs-dot">D</span><span class="rs-id">FG-007</span><span class="rs-who">Discovery agent</span></div>
           <div class="relay-step agent" data-agent="brd"><span class="rs-dot">1</span><span class="rs-id">BR-04</span><span class="rs-who">BRD agent</span></div>
           <div class="relay-step main" data-agent="stories"><span class="rs-dot">2</span><span class="rs-id">US-04-02</span><span class="rs-who">Stories skill</span></div>
           <div class="relay-step agent" data-agent="architect"><span class="rs-dot">3</span><span class="rs-id">LLD-US-04-02</span><span class="rs-who">Architect agent</span></div>
@@ -100,11 +101,18 @@
         <div class="relay-gate"><span class="gate-pill" data-relay-pill>Draft written</span><span data-relay-text>Setup reads the code, git history and org in the main conversation, and records what already exists.</span></div>
       </div>
 
-      <h3>The six agents</h3>
-      <p class="muted">Four ship with the kit and run in their own context. Two are built into Claude Code, Cursor and other coding agents; the kit gives them its format and rules. Pick one to see what it does.</p>
+      <h3>The seven agents</h3>
+      <p class="muted">Five ship with the kit and run in their own context. Two are built into Claude Code, Cursor and other coding agents; the kit gives them its format and rules. Pick one to see what it does.</p>
       <div class="agent-rail-wrap">
-        <div class="agent-rail crew-rail" id="crewRail" role="list" aria-label="The six agents">
-          <article class="agent-card crew-card is-selected" data-agent="brd" tabindex="0" role="listitem" aria-label="BRD agent">
+        <div class="agent-rail crew-rail" id="crewRail" role="list" aria-label="The seven agents">
+          <article class="agent-card crew-card is-selected" data-agent="discovery" tabindex="0" role="listitem" aria-label="Discovery and design agent">
+            <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><ellipse class="cl-s cl-pop cl-d1" cx="15" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d1" d="M7 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><ellipse class="cl-s cl-pop cl-d2" cx="33" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d2" d="M25 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><path class="cl-s cl-dim" d="M10 38h12"/><path class="cl-s cl-w cl-d3 cl-ok" pathLength="1" d="m27 37 3.5 3.5L38 33"/></svg></span><span class="badge kit">Kit agent</span></div>
+            <h3>Discovery &amp; design</h3>
+            <p class="agent-vendor">Stage D · Existing orgs</p>
+            <p class="agent-desc">Checks the discovery pack against the real org(s), read-only, then drafts the fit-gap and the HLD.</p>
+            <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:discovery</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
+          </article>
+          <article class="agent-card crew-card" data-agent="brd" tabindex="0" role="listitem" aria-label="BRD agent">
             <div class="agent-top"><span class="crew-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s" d="M14 7h14l8 8v25a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><path class="cl-s" d="M28 7v8h8"/><path class="cl-s cl-w cl-d1" pathLength="1" d="M17 23h14"/><path class="cl-s cl-w cl-d2" pathLength="1" d="M17 29h14"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M17 35h8"/></svg></span><span class="badge kit">Kit agent</span></div>
             <h3>BRD agent</h3>
             <p class="agent-vendor">Stage 1 · Business analyst</p>
@@ -150,7 +158,17 @@
         <button type="button" class="rail-btn prev" data-rail="-1" aria-label="Scroll agents left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <button type="button" class="rail-btn next" data-rail="1" aria-label="Scroll agents right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="agent-panel crew-panel" id="crewPanel-brd">
+      <div class="agent-panel crew-panel" id="crewPanel-discovery">
+        <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><ellipse class="cl-s cl-pop cl-d1" cx="15" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d1" d="M7 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><ellipse class="cl-s cl-pop cl-d2" cx="33" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d2" d="M25 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><path class="cl-s cl-dim" d="M10 38h12"/><path class="cl-s cl-w cl-d3 cl-ok" pathLength="1" d="m27 37 3.5 3.5L38 33"/></svg></span><div><h3>Discovery &amp; design agent <span class="badge kit">Kit agent</span></h3><p class="muted">Stage D · Existing orgs: discovery validation, fit-gap, HLD</p></div></div>
+        <div class="crew-grid">
+          <div><h4>What it does</h4><ul><li>Takes a dated, read-only snapshot of each org with <code>sf-sdlc discover</code>: data model, automation, code, profiles and permission sets, sharing, integrations, packages, licences, limits, recent setup changes</li><li>Reads the discovery pack in its own context and checks every statement against the org: confirmed, partly holds, contradicted, stale or not verifiable, each with its evidence</li><li>For a merge or harmonization, compares the orgs and records keep, bring, merge or retire per component, with the conflicts a merge always hits</li><li>Drafts the current-state assessment, the fit-gap (fit to standard first, declarative before code) and the HLD the solution architect continues</li></ul></div>
+          <dl class="crew-facts"><dt>Reads</dt><dd>Workshop notes, call transcripts, current-state documents; one or more existing orgs, production included, read-only</dd><dt>Writes</dt><dd><code>docs/sdlc/00-discovery/</code>: snapshots, claim register (<code>CLM</code>), org comparison, current state, fit-gap (<code>FG</code>); <code>03-architecture/HLD.md</code> draft</dd><dt>Tools</dt><dd><span class="ag-tag ro">read-only</span>Metadata queries and counts through the <code>sf</code> CLI, read-only MCP tools. No record data, no user names, never a change to an org.</dd></dl>
+        </div>
+        <h4>Try it</h4>
+<pre><code>/sf-sdlc:discovery target-prod source-prod docs/sdlc/00-inputs/discovery/</code></pre>
+        <p class="crew-next">Stops with drafts. After a person reviews them: <code>/sf-sdlc:brd</code> with the discovery outputs as inputs, or <code>/sf-sdlc:architecture</code> to continue the HLD.</p>
+      </div>
+      <div class="agent-panel crew-panel" id="crewPanel-brd" hidden>
         <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="cl-s" d="M14 7h14l8 8v25a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><path class="cl-s" d="M28 7v8h8"/><path class="cl-s cl-w cl-d1" pathLength="1" d="M17 23h14"/><path class="cl-s cl-w cl-d2" pathLength="1" d="M17 29h14"/><path class="cl-s cl-w cl-d3" pathLength="1" d="M17 35h8"/></svg></span><div><h3>BRD agent <span class="badge kit">Kit agent</span></h3><p class="muted">Stage 1 · Business analyst</p></div></div>
         <div class="crew-grid">
           <div><h4>What it does</h4><ul><li>Reads every input in its own context, so long transcripts never fill yours</li><li>Extracts business requirements, functional requirements, rules and NFRs, with MoSCoW priority</li><li>Cites the source line for each requirement; lists decisions, actions, open questions and contradictions</li><li>Adds an indicative Salesforce outline: data model, automation, UI, integrations, security, limits</li></ul></div>
@@ -218,5 +236,5 @@
         <p class="crew-next">When every task is ticked: <code>/sf-sdlc:review</code> by the independent reviewer.</p>
       </div>
 
-      <div class="callout"><p><strong>Why these six?</strong> The kit adds an agent only where your coding agent does not already have one and a separate context helps: long inputs (transcripts, a whole codebase, test runs and browser sessions) and an independent review, by a reviewer that never saw the build. Planning and building already come with Claude Code, Cursor and the others, so the kit does not duplicate them; it makes them follow the spec-driven format, the coding rules and the Salesforce skills installed in your project. Setup, stories, deployment and release run in your conversation, where you can see and steer them. Every stage writes a draft and stops.</p></div>
+      <div class="callout"><p><strong>Why these seven?</strong> The kit adds an agent only where your coding agent does not already have one and a separate context helps: long inputs (a discovery pack and org snapshots, transcripts, a whole codebase, test runs and browser sessions) and an independent review, by a reviewer that never saw the build. Planning and building already come with Claude Code, Cursor and the others, so the kit does not duplicate them; it makes them follow the spec-driven format, the coding rules and the Salesforce skills installed in your project. Setup, stories, deployment and release run in your conversation, where you can see and steer them. Every stage writes a draft and stops.</p></div>
     </section>

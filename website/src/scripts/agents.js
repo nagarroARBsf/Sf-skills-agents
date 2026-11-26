@@ -1,4 +1,4 @@
-// Card rails: the coding-agent rail in Install and the six-agent rail in Agents.
+// Card rails: the coding-agent rail in Install and the seven-agent rail in Agents.
 // Clicking a card selects it and shows its panel below the rail. The arrow buttons scroll a rail
 // one screen of cards at a time.
 (function () {

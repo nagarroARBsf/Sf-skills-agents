@@ -13,7 +13,7 @@
     {
       "name": "sf-sdlc",
       "source": "./plugins/sf-sdlc",
-      "description": "Salesforce delivery lifecycle, enterprise edition: spec-driven development from requirements to release, built on skills with four agents (requirements, architecture, code review, QA), guard hooks, the official Code Analyzer, validated deployments, browser UI testing and a per-project skill installer.",
+      "description": "Salesforce delivery lifecycle, enterprise edition: spec-driven development from requirements to release, built on skills with five agents (discovery of existing orgs with fit-gap and HLD, requirements, architecture, code review, QA), guard hooks, the official Code Analyzer, validated deployments, browser UI testing and a per-project skill installer.",
       "category": "development"
     }
   ]

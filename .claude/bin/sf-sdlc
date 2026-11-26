@@ -13,6 +13,7 @@ const checks = require('../hooks/checks');
 const mcp = require('../hooks/mcp');
 const diagramLib = require('../hooks/diagram');
 const browserLib = require('../hooks/browser');
+const discoverLib = require('../hooks/discover');
 
 const argv = process.argv.slice(2);
 const JSON_OUT = argv.includes('--json');
@@ -1113,6 +1114,7 @@ const TEMPLATE_AREAS = {
   brd: 'sdlc-brd-generate',
   jira: 'sdlc-jira-story-generate',
   architecture: 'sdlc-architecture-diagram',
+  discovery: 'sdlc-discovery-fit-gap',
   spec: 'sdlc-spec-driven-development',
   qa: 'sdlc-qa-test-case-generate',
   testing: 'sdlc-test-execution',
@@ -1169,6 +1171,48 @@ function templatesCmd() {
   fail('usage: sf-sdlc templates list | templates copy <id | area | all>');
 }
 
+function discoverCmd() {
+  const sub = pos[1];
+  const at = (p) => path.resolve(root, p);
+  try {
+    if (sub === 'snapshot') {
+      const wanted = flags['--org'] ? [flags['--org']] : (cfg.discovery.orgs.length ? cfg.discovery.orgs : [lib.defaultOrg(root)].filter(Boolean));
+      if (!wanted.length) fail('no org: pass --org <role|alias>, list orgs in discovery.orgs, or set a default org');
+      if (flags['--output'] && wanted.length > 1) fail('--output works with one org; pass --org as well');
+      const taken = wanted.map((w) => discoverLib.snapshot(root, cfg, lib.resolveOrg(w, cfg), { output: flags['--output'] }));
+      return out({ ok: true, snapshots: taken }, () => taken.map(({ dir, manifest: m }) => {
+        const bad = m.queries.filter((q) => !q.ok);
+        return `${m.alias} (${m.orgKind}${m.orgName ? `, ${m.orgName}` : ''}, org ${m.orgId || 'unknown'}) -> ${dir}\n` +
+          `  ${m.queries.length - bad.length}/${m.queries.length} queries ok (read-only)` +
+          (bad.length ? `\n  not available: ${bad.map((q) => `${q.name} (${q.error.slice(0, 90)})`).join('\n                 ')}` : '');
+      }).join('\n\n') + '\n\nNext: sf-sdlc discover summary <snapshot>, or compare two snapshots.');
+    }
+    if (sub === 'summary') {
+      if (!pos[2]) fail('usage: sf-sdlc discover summary <snapshot folder>');
+      const s = discoverLib.summarize(at(pos[2]));
+      return out(s, () => [
+        `${s.alias} (${s.orgKind}, org ${s.orgId || 'unknown'}) taken ${s.takenAt}; ${s.queries.ok} queries ok, ${s.queries.failed} not available`,
+        `data model   ${JSON.stringify(s.dataModel)}`, `automation   ${JSON.stringify(s.automation)}`, `code         ${JSON.stringify(s.code)}`,
+        `security     ${JSON.stringify(s.security)}`, `integration  ${JSON.stringify(s.integration)}`,
+        `packages     ${s.packages.join(', ') || 'none'}`, `adoption     ${JSON.stringify(s.adoption)}`,
+        '', `findings (${s.findings.length}):`, ...s.findings.map((f) => `  [${f.severity}] ${f.domain}: ${f.text}  <- ${f.evidence}`),
+      ].join('\n'));
+    }
+    if (sub === 'compare') {
+      if (!pos[2] || !pos[3]) fail('usage: sf-sdlc discover compare <snapshotA> <snapshotB>');
+      const c = discoverLib.compare(at(pos[2]), at(pos[3]));
+      return out(c, () => [
+        `A = ${c.a.alias} (${c.a.orgKind}, ${c.a.takenAt})   B = ${c.b.alias} (${c.b.orgKind}, ${c.b.takenAt})`,
+        `type                  only A  only B    same  differ`,
+        ...Object.entries(c.types).map(([t, v]) => `${t.padEnd(20)} ${String(v.onlyA.length).padStart(7)} ${String(v.onlyB.length).padStart(7)} ${String(v.same).padStart(7)} ${String(v.differs.length).padStart(7)}`),
+        Object.keys(c.orgWideDefaults).length ? `\norg-wide defaults that differ: ${Object.entries(c.orgWideDefaults).map(([k, [a, b]]) => `${k} ${a} vs ${b}`).join('; ')}` : '\norg-wide defaults: same',
+        '\nFull lists: add --json.',
+      ].join('\n'));
+    }
+  } catch (e) { return fail(String(e && e.message || e)); }
+  fail('usage: sf-sdlc discover snapshot [--org <role|alias>] | discover summary <snapshot> | discover compare <snapshotA> <snapshotB>');
+}
+
 const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
 
   setup [--org <alias>] [--profile developer|admin|ba] [--install-tools] [--no-jira] [--no-git] [--offline]
@@ -1202,6 +1246,13 @@ const HELP = `sf-sdlc — Salesforce SDLC toolkit (add --json to any command)
                                Salesforce-style draw.io diagram from a diagram spec or the component model
   diagram export <file.drawio> [--format png|svg|pdf] [--output f]   image through draw.io desktop
   diagram check <file.drawio>  structure, Salesforce icon names, header and key
+  discover snapshot [--org <role|alias>] [--output dir]
+                               read-only snapshot of an existing org's metadata (objects, automation, code,
+                               access, integrations, packages, licences, limits) into 00-discovery/snapshots/;
+                               without --org, every org in discovery.orgs (else the default org)
+  discover summary <snapshot>  counts per domain and findings to look at, from a snapshot
+  discover compare <snapshotA> <snapshotB>
+                               org-to-org comparison for a merge: only in A, only in B, same, different
   audit [--tail N]             local log of org-affecting commands
   mcp status|list [server...]  Salesforce hosted MCP servers: probe through the sf CLI login, or list
   mcp enable|disable <server>  add or remove a hosted server in mcp.servers
@@ -1251,6 +1302,7 @@ function main() {
     case 'test': return testCmd();
     case 'jobs': return pos[1] === 'watch' ? watchJobs() : out(readJobs());
     case 'diagram': return diagram();
+    case 'discover': return discoverCmd();
     case 'audit': return audit();
     case 'mcp': return mcpCmd().catch((e) => fail(String(e && e.message || e)));
     case 'env': return envCmd();

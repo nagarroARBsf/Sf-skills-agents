@@ -1,7 +1,7 @@
 # Salesforce project — AI delivery kit
 
 This project uses the Nagarro Salesforce SDLC kit: spec-driven development, skills for each delivery
-stage, four agents, guard hooks, coding rules and Salesforce skills. Follow them over generic habits.
+stage, five agents, guard hooks, coding rules and Salesforce skills. Follow them over generic habits.
 
 ## Project settings
 Project-specific values live in `.claude/sf-sdlc.json` (org aliases and which are production, branch
@@ -12,8 +12,8 @@ incomplete, offer `/sdlc-setup`.
 ## How work flows here
 1. **Set up** (once): `/sdlc-setup` checks tooling, writes the config, records what already exists and
    installs the skills this project needs. `/sdlc-doctor` re-checks at any time.
-2. **Requirements → design** (documents under `docs/sdlc/`):
-   `/sdlc-brd` → `/sdlc-stories` → `/sdlc-architecture` (and `/sdlc-diagram`) → `/sdlc-test-cases`.
+2. **Requirements → design** (documents under `docs/sdlc/`): for existing orgs, start with
+   `/sdlc-discovery` (discovery pack checked against the org, fit-gap, HLD draft); then `/sdlc-brd` → `/sdlc-stories` → `/sdlc-architecture` (and `/sdlc-diagram`) → `/sdlc-test-cases`.
 3. **Build** (spec-driven, files under `specs/`):
    `/sdd-constitution` (once) → `/sdd-specify <story>` → `/sdd-clarify` → `/sdd-plan` → `/sdd-tasks`
    → `/sdd-implement` → `/sdd-verify`.
@@ -24,7 +24,8 @@ incomplete, offer `/sdlc-setup`.
    traceability at any time.
 
 Most stages run here, in the main conversation, following their skill; planning and building use
-your own plan mode and editing. Four run in an agent: `sdlc-brd-agent` (BRD),
+your own plan mode and editing. Five run in an agent: `sdlc-discovery-design-agent` (`/sdlc-discovery`:
+existing orgs checked against the discovery pack, fit-gap, HLD draft, read-only), `sdlc-brd-agent` (BRD),
 `sdlc-solution-architect-agent` (architecture and diagrams) and `sdlc-qa-test-agent` (test design,
 test runs, browser UI tests), because they read large inputs; and `sdlc-code-review-agent`
 (`/sdlc-review`: Code Analyzer plus the coding rules, read-only), so the review is independent of

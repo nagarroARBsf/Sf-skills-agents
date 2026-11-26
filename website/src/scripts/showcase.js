@@ -26,6 +26,7 @@
   if (relay) {
     var STEPS = [
       ['setup', 'Setup, in the main conversation with the sf-sdlc-setup skill, reads the code, git history and org and records what already exists.'],
+      ['discovery', 'The org already exists, so the discovery agent snapshots it read-only and checks the discovery pack against it: 3 statements contradicted, fit-gap item FG-007 "case routing is configuration, not code".'],
       ['brd', 'The BRD agent reads the workshop transcripts in its own context and writes BR-04, "Sales sees account revenue at a glance".'],
       ['stories', 'In the main conversation, the story skill splits it into US-04-02 with Gherkin criteria, in the team\'s own Jira process.'],
       ['architect', 'The solution architect agent reads the codebase and designs LLD-US-04-02: an LWC on the Account page, an Apex controller, a permission set.'],
@@ -216,7 +217,7 @@
   var ad = document.getElementById('agentDemo');
   if (ad) replay(ad, [
     { cls: '', prompt: '/sf-sdlc:brd docs/sdlc/00-inputs/', ms: 3000, cap: 'The workshop transcript and emails are in <code>docs/sdlc/00-inputs/</code>. You start the BRD stage with one command.' },
-    { cls: '', ms: 2600, cap: '<b>1.</b> Claude hands the work to the <b>sdlc-brd-agent</b>: one of the kit\'s four agents, with its own context for the long transcripts, only file tools, and the BRD method skill.' },
+    { cls: '', ms: 2600, cap: '<b>1.</b> Claude hands the work to the <b>sdlc-brd-agent</b>: one of the kit\'s five agents, with its own context for the long transcripts, only file tools, and the BRD method skill.' },
     { cls: '', ms: 2200, cap: '<b>2.</b> It reads every input: transcripts, notes, emails.' },
     { cls: 's-brd s-pane2', ms: 3000, cap: '<b>3.</b> It writes a draft BRD with traceable IDs (<code>BR-04</code> → <code>FR-04.2</code>), citing the transcript line behind each requirement, and lists open questions.' },
     { cls: 's-brd s-pane2', ms: 3000, cap: '<b>4.</b> Then it stops. Nothing moves on until a person has reviewed the draft.' },

@@ -188,6 +188,7 @@ Validate with `sf-sdlc config validate`.
 | `paths.templates` | The team's own document and Jira templates (Jira process, story, BRD, LLD, test case, release notes…). A file here replaces the kit's copy; `sf-sdlc templates copy <id>` starts one | `"docs/sdlc/templates"` |
 | `mcp.servers` | Salesforce Hosted MCP Servers the agents may use: `metadata-grounding`, `metadata-experts`, `sobject-reads`, `sobject-all`, `headless-360`, `data360` | `["metadata-experts", "metadata-grounding", "sobject-reads"]` |
 | `mcp.org` | Org role or alias the hosted servers sign in to; empty means the default target org | `"dev"` |
+| `discovery.orgs` | Existing orgs `/sdlc-discovery` snapshots and validates the discovery pack against (read-only); two or more for an org merge or harmonization. Roles (`uat`) or aliases | `[]` |
 | `browser.enabled` | Start the Playwright browser server (`sf-browser`) for UI tests | `true` |
 | `browser.browser` | `chrome`, `msedge`, `chromium` (Chrome for Testing), `firefox` or `webkit`. On Linux without Google Chrome, `chrome` falls back to `chromium` | `"chrome"` |
 | `browser.headless` | Run without a visible window. The first sign-in needs a visible one | `false` |

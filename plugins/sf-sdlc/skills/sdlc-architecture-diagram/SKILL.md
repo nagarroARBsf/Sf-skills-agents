@@ -70,6 +70,10 @@ All documents are drafts for review; only a person fills in an approval record.
    `sf package installed list --target-org <alias>`. Without an org, list "org-only components not
    verified" as a gap. Never query production unless the person names it.
 5. Refresh the inventory when it is older than the latest commit on `git.integrationBranch`.
+6. Existing orgs with discovery done (`docs/sdlc/00-discovery/`, from `/sf-sdlc:discovery`): read
+   `current-state.md`, `fit-gap.md` and, for a merge, `org-comparison.md` before designing, and use
+   the org snapshots in `00-discovery/snapshots/` as baseline evidence. When the discovery stage drafted
+   `HLD.md`, continue that draft rather than starting again; its `FG-nnn` items are design drivers.
 
 ### 2. Understand
 Index BRs, NFRs, constraints, integrations, personas and volumes from the BRD; stories, acceptance

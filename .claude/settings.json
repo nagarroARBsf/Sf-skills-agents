@@ -10,6 +10,7 @@
       "Bash(node .claude/bin/sf-sdlc detect*)",
       "Bash(node .claude/bin/sf-sdlc inventory*)",
       "Bash(node .claude/bin/sf-sdlc delta*)",
+      "Bash(node .claude/bin/sf-sdlc discover*)",
       "Bash(node .claude/bin/sf-sdlc skills list*)",
       "Bash(node .claude/bin/sf-sdlc skills recommend*)",
       "Bash(node .claude/bin/sf-sdlc org classify*)",

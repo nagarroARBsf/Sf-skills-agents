@@ -58,6 +58,7 @@ const DEFAULTS = {
   },
   paths: { docs: 'docs/sdlc', specs: 'specs', templates: 'docs/sdlc/templates' },
   mcp: { servers: ['metadata-experts', 'metadata-grounding', 'sobject-reads'], org: '' },
+  discovery: { orgs: [] },
   browser: { enabled: true, browser: 'chrome', headless: false },
   hooks: { mode: 'observe', auditLog: true, strictEvidence: false },
 };
@@ -134,6 +135,10 @@ function validateConfig(cfg) {
   if (!Array.isArray(cfg.mcp.servers)) errors.push('mcp.servers must be an array of hosted MCP server names');
   else for (const n of cfg.mcp.servers) if (!known.includes(n)) errors.push(`mcp.servers: unknown server "${n}" (known: ${known.join(', ')})`);
   if (typeof cfg.mcp.org !== 'string') errors.push('mcp.org must be an org role or alias (a string)');
+  const disc = (cfg.discovery || {}).orgs;
+  if (!Array.isArray(disc) || disc.some((o) => typeof o !== 'string' || !o.trim())) {
+    errors.push('discovery.orgs must be an array of org roles or aliases (non-empty strings)');
+  }
   const br = cfg.browser || {};
   if (typeof br.enabled !== 'boolean') errors.push('browser.enabled must be true or false');
   if (!BROWSERS.includes(br.browser)) errors.push(`browser.browser must be one of ${BROWSERS.join(', ')}`);

@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 This is **not a Salesforce project** — it is the *kit that gets installed into* Salesforce projects,
-for Claude Code. Release 3.0 ("Enterprise Edition") ships 4 agents, 23 commands, 11 always-available
-skills (10 `sdlc-*` plus the kit's own `sf-sdlc-setup`), a 177-skill on-demand library, 7 rule files,
+for Claude Code. Release 3.1 ("Enterprise Edition") ships 5 agents, 24 commands, 12 always-available
+skills (11 `sdlc-*` plus the kit's own `sf-sdlc-setup`), a 177-skill on-demand library, 7 rule files,
 guard hooks, the `sf-sdlc` CLI, 3 output styles and workflows, in two forms:
 
 - `.claude/` — the copy-in folder, and the **single source of truth**.
@@ -94,7 +94,7 @@ They are `rmtree`d on every build. Two files inside `.claude/` are also generate
 - **Commands** that route to an agent open with exactly `Use the **<agent-name>** subagent to <verb>…`.
   Use `$ARGUMENTS`. Commands that change an org, Jira or GitHub carry
   `disable-model-invocation: true` so only a person can start them.
-- **Agents are kept to a minimum** (BRD, solution architect, code review, QA): a stage gets an agent
+- **Agents are kept to a minimum** (discovery and design, BRD, solution architect, code review, QA): a stage gets an agent
   only when it reads large inputs or produces long tool output, or (code review) when it must be
   independent of the session that wrote the code. Planning and development are the coding agent's own
   plan mode and editing, not kit agents. Everything else is a skill run in the main conversation. Do not add an agent where a skill and a command will do; a test pins the agent list.

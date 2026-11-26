@@ -1,8 +1,8 @@
 ---
 name: sdlc-workflow
-description: "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder layout, the grounding files (ontology, feature map), the traceability ID scheme (BR/FR/EPIC/US/LLD/TC/TR/DEF/DEP/REL), the approval record every artifact carries, which stages run in an agent and which in the main conversation, project templates, the requirements traceability matrix and the Salesforce feasibility checklist. TRIGGER when: user asks where to start, what comes next, what is blocked, how artifacts link together, wants to run the lifecycle end to end, asks for a traceability matrix or status across requirements, design, tests and releases, or another sdlc-* skill needs the shared conventions. DO NOT TRIGGER when: the user asks for one specific artifact or action (use the matching sdlc-* skill directly)."
+description: "Map of the full AI-assisted Salesforce delivery lifecycle: setup -> ground -> discovery -> BRD -> Jira epics/stories -> solution architecture -> spec-driven plan and build -> code review -> deployment -> test execution -> defect and re-test -> release -> observe. Defines the shared artifact folder layout, the grounding files (ontology, feature map), the traceability ID scheme (CLM/FG/BR/FR/EPIC/US/LLD/TC/TR/DEF/DEP/REL), the approval record every artifact carries, which stages run in an agent and which in the main conversation, project templates, the requirements traceability matrix and the feasibility checklist. TRIGGER when: user asks where to start, what comes next, what is blocked, how artifacts link together, wants to run the lifecycle end to end, asks for a traceability matrix or status across requirements, design, tests and releases, or another sdlc-* skill needs the shared conventions. DO NOT TRIGGER when: the user asks for one specific artifact or action (use the matching sdlc-* skill directly)."
 metadata:
-  version: "3.0"
+  version: "3.1"
   author: "Nagarro Salesforce CoE"
 ---
 
@@ -12,9 +12,10 @@ One lifecycle, mostly skills. Each stage reads the previous stage's artifact fro
 run in separate sessions, by different people, without shared memory.
 
 **Keep agents to a minimum.** Most stages run in the main conversation, with the coding agent's own
-planning, editing and tools, guided by a skill and the project rules. Four stages run in a subagent:
-requirements (transcripts), architecture (the whole codebase and diagrams) and QA (test runs and
-browser sessions), because they read large inputs or produce long tool output that would crowd the
+planning, editing and tools, guided by a skill and the project rules. Five stages run in a subagent:
+discovery (the discovery pack and one or more org snapshots), requirements (transcripts),
+architecture (the whole codebase and diagrams) and QA (test runs and browser sessions), because they
+read large inputs or produce long tool output that would crowd the
 conversation; and code review, because a reviewer that never saw the build is independent of its
 author. Planning and building use the coding agent's own plan mode and editing, in this format.
 
@@ -23,8 +24,12 @@ flowchart LR
     IN["Transcripts, notes, emails"] --> BRD
     SETUP["0 Setup<br/>sf-sdlc-setup"] --> GR["G Ground<br/>ontology, feature map"]
     GR --> BRD["1 BRD<br/>agent: sdlc-brd-agent"]
+    PACK["Discovery pack, existing org(s)"] --> DISC
+    GR -->|"existing orgs"| DISC["D Discovery, fit-gap, HLD draft<br/>agent: sdlc-discovery-design-agent"]
+    DISC -->|"current state, fit-gap"| BRD
     BRD -->|"sponsor sign-off"| JIRA["2 Epics and stories<br/>skill: jira-story-generate"]
     JIRA -->|"PO approval"| ARCH["3 HLD, LLD, diagrams<br/>agent: sdlc-solution-architect-agent"]
+    DISC -->|"HLD draft"| ARCH
     ARCH -->|"tech-lead review"| PLAN["4 Spec, plan, tasks<br/>skill: spec-driven-development"]
     PLAN -->|"plan approved"| DEV["5 Build<br/>skill: spec-driven-development"]
     DEV --> REV["6 Code review<br/>agent: sdlc-code-review-agent"]
@@ -44,6 +49,7 @@ flowchart LR
 |---|---|---|---|---|---|---|---|
 | 0 | Setup | main conversation | `/sf-sdlc:setup`, `/sf-sdlc:doctor`, `/sf-sdlc:skills` | `sf-sdlc-setup` | repository, org metadata | `.claude/sf-sdlc.json`, installed skills, `03-architecture/baseline/inventory.md` | Lead confirms config and skill set |
 | G | Ground | main conversation (drafts); every stage reads | `/sf-sdlc:setup` | `sf-sdlc-setup`, this skill | baseline, source, org metadata (grounding MCP when connected) | `00-grounding/ontology.yaml`, `00-grounding/feature-map.md` | Lead confirms the terms |
+| D | Discovery (existing orgs only) | `sdlc-discovery-design-agent` | `/sf-sdlc:discovery` | `sdlc-discovery-fit-gap` | discovery pack (`00-inputs/discovery/`), org snapshots (read-only), BRD and backlog when present | `00-discovery/claim-register.md`, `org-comparison.md`, `current-state.md`, `fit-gap.md`, `03-architecture/HLD.md` (draft) | Lead and business owner confirm claims, merge decisions and fit-gap |
 | 1 | Requirements | `sdlc-brd-agent` | `/sf-sdlc:brd` | `sdlc-brd-generate` | `00-inputs/*` | `01-brd/BRD.md` | Sponsor sign-off |
 | 2 | Backlog | main conversation | `/sf-sdlc:stories` | `sdlc-jira-story-generate` (team's Jira process and templates first) | BRD | `02-backlog/backlog.md`, `jira-import.csv`, Jira issues | PO approval; explicit yes before Jira writes |
 | 3 | Design | `sdlc-solution-architect-agent` | `/sf-sdlc:architecture`, `/sf-sdlc:diagram` | `sdlc-architecture-diagram` | BRD, backlog, baseline | `03-architecture/HLD.md`, `LLD/`, `ADR/`, `components.json` | Tech-lead review |
@@ -81,6 +87,13 @@ Roots come from `paths.docs` and `paths.specs`; the defaults are shown.
 ```text
 docs/sdlc/
 ├── 00-inputs/                 raw transcripts, notes, emails (as supplied, never edited)
+│   └── discovery/             discovery pack for existing orgs: workshop notes, call transcripts, current-state documents
+├── 00-discovery/              existing orgs only (stage D)
+│   ├── snapshots/<alias>-<YYYYMMDD>/   read-only org snapshot (sf-sdlc discover) + manifest.json
+│   ├── claim-register.md      every statement in the pack checked against the org (CLM-nnn)
+│   ├── org-comparison.md      two or more orgs: differences and keep/merge/retire decisions
+│   ├── current-state.md       assessment by domain, findings, what needs a person
+│   └── fit-gap.md             FG-nnn: fit as is / configuration / customisation / process change / out of scope
 ├── 00-grounding/
 │   ├── ontology.yaml          business terms -> Salesforce objects; read before naming anything
 │   └── feature-map.md         per feature: Apex, LWC, flows, permission sets, tests
@@ -120,7 +133,7 @@ If the project already uses different folders, follow the project and say so in 
 ## Project templates
 Every document template a stage uses can be replaced by the team's own. Before using a template from
 a skill's `references/`, look for the project's copy at `<paths.templates>/<area>/<file>` (default
-`docs/sdlc/templates/`; areas: `brd`, `jira`, `architecture`, `spec`, `qa`, `testing`, `review`,
+`docs/sdlc/templates/`; areas: `brd`, `jira`, `discovery`, `architecture`, `spec`, `qa`, `testing`, `review`,
 `release`, `workflow`). If it exists, use it and say so; the project's format wins. Keep the kit's
 trace IDs and the approval record unless the project template explicitly replaces them, because later
 stages parse them. `sf-sdlc templates list` shows which templates the project
@@ -161,7 +174,9 @@ Use these IDs exactly. They are the glue between artifacts; downstream agents pa
 
 | ID | Meaning | Defined in | Example |
 |---|---|---|---|
-| `SRC-nn` | Source document (transcript, notes, email) | BRD Appendix B | `SRC-02` |
+| `SRC-nn` | Source document (transcript, notes, email) | BRD Appendix B (discovery: claim register section 2) | `SRC-02` |
+| `CLM-nnn` | Checkable statement from the discovery pack, with its verdict against the org | `00-discovery/claim-register.md` | `CLM-014` |
+| `FG-nnn` | Fit-gap item: one requirement or capability and its classification | `00-discovery/fit-gap.md` | `FG-007` |
 | `OBJ-nn` | Business objective | BRD section 3 | `OBJ-03` |
 | `BR-nn` | Business requirement (capability) | BRD section 7 | `BR-04` |
 | `FR-nn.m` | Functional requirement under `BR-nn` | BRD section 8 | `FR-04.2` |
@@ -264,6 +279,6 @@ No new ID: a finding is a `DEF` or a story, and its constraint is recorded in th
 "Constraint added" field (`sdlc-test-execution`). The same question applies to every defect found
 in verification or review: each repeated mistake should leave a deterministic check behind.
 
-Keep each session to one stage or one story so its context stays small; the three agent stages keep
+Keep each session to one stage or one story so its context stays small; the agent stages keep
 their large inputs out of the conversation on their own. Pass file paths, not file contents, between
 stages.

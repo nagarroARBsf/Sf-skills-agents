@@ -26,6 +26,10 @@ decision.
   `node .claude/bin/sf-sdlc config show --json`. Ask only if the config has no value.
 - Optional: an existing BRD to update, a client BRD template that overrides this one, the document
   version.
+- Existing orgs: when `docs/sdlc/00-discovery/` holds a reviewed `current-state.md`, `claim-register.md`
+  or `fit-gap.md` (from `/sdlc-discovery`), read them as sources. Describe the current state from
+  Confirmed claims only; a Contradicted or Not verifiable claim is never written as fact, it becomes
+  an open question. Cite `CLM-nnn` and `FG-nnn` next to the `SRC-nn` they came from.
 
 If no input is given, ask for it. Never generate a BRD from imagination. Never edit a source file.
 
