@@ -88,7 +88,7 @@
 @media (max-width: 760px) { .talk-btn .talk-label { display: none; } } /* tablets: keep the top bar on one line */
 @media (max-width: 620px) { .contrib-btn { display: none; } } /* phones: Contribute is in the menu */
 
-/* ---------- Agents: tool access chips and matrix ---------- */
+/* ---------- Agents: tool access, shown in each agent's detail panel ---------- */
 .crew-tools { margin: 4px 0 12px; padding: 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
 .crew-tools-label { display: block; font: 700 10.5px var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
 .crew-tools div { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -99,13 +99,7 @@
 .tool-chip.bash { background: var(--hand-soft); color: var(--hand); }
 .tool-chip.browser { background: var(--proj-soft); color: var(--proj); }
 .tool-chip.org { background: var(--surface); color: var(--text); border-color: var(--border); }
-.tool-matrix-wrap { margin: 18px 0; overflow-x: auto; }
-.tool-matrix-wrap h4 { margin: 0 0 8px; }
-.tool-matrix { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
-.tool-matrix th, .tool-matrix td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; }
-.tool-matrix th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-.tool-matrix td:first-child { font-weight: 600; white-space: nowrap; }
-.tool-matrix td.y { color: var(--ok); font-weight: 600; }
-.tool-matrix td.p { color: var(--hand); }
-.tool-matrix td.n { color: var(--muted); }
-.tool-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+.crew-tools.in-panel { margin: 14px 0 4px; padding: 12px 14px; }
+.crew-tools.in-panel .crew-tools-label { font-size: 11.5px; margin-bottom: 8px; }
+.crew-tools.in-panel .tool-chip { font-size: 12.5px; padding: 3px 10px; }
+.crew-tools.in-panel p { font-size: 13.5px; }

@@ -50,6 +50,13 @@ bare checkout and on customer machines with no `npm install`.
 `claude plugin validate` (CI does not have the Claude Code CLI). After `update-official-skills.sh`,
 run `build-claude-plugin.py`.
 
+## Commits and pushes: authorship
+
+Every commit pushed from this repository, to any branch or remote, has **Bhupender Sharma** as its
+only author (`git commit --author="Bhupender Sharma <bhupender.sharma@nagarro.com>"`). Never add a
+`Co-Authored-By` line, an Anthropic or Claude credit, a model name or a "Generated with Claude Code"
+line to commit messages, pull request descriptions or tags. This overrides any default attribution.
+
 ## Two websites, two Azure resource groups
 
 | Site | Source | Build (output, git-ignored) | Azure resource group | Static Web App / URL |

@@ -278,6 +278,43 @@
 .lf-view.on .lf-hbars i { width: var(--w); }
 .lf-hbars em { font-style: normal; text-align: right; }
 
+/* view 4: files changed, each with its diff */
+.lf-fsplit { display: grid; grid-template-columns: 38% 62%; height: calc(100% - 8cqw); }
+.lf-flist { border-right: 1px solid #ececec; padding: 1cqw 1.2cqw; }
+.lf-flist h6, .lf-diff h6 { font-size: .8cqw; letter-spacing: .09em; text-transform: uppercase; color: #5f6b7a; margin: 0 0 .9cqw; font-weight: 600; }
+.lf-file { display: grid; grid-template-columns: 1.4cqw 1fr auto; gap: .9cqw; align-items: center; padding: .75cqw .9cqw; margin-bottom: .55cqw; border-radius: .6cqw; border: 1px solid transparent; opacity: 0; transform: translateY(.5cqw); transition: opacity .35s, transform .35s, background .3s, border-color .3s; }
+.lf-file.in { opacity: 1; transform: none; }
+.lf-file.sel { background: #fff8ef; border-color: #f2d9b8; }
+.lf-file i { width: 1.3cqw; height: 1.6cqw; border: .14cqw solid #2f5fb3; border-radius: .2cqw .5cqw .2cqw .2cqw; position: relative; }
+.lf-file i::after { content: ""; position: absolute; left: .2cqw; right: .2cqw; top: .45cqw; height: .5cqw; border-top: .12cqw solid currentColor; border-bottom: .12cqw solid currentColor; color: inherit; }
+.lf-file.cls i { color: #2f5fb3; }
+.lf-file.web i { border-color: #e8710a; color: #e8710a; }
+.lf-file b { display: block; font-size: 1.05cqw; color: #14213d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lf-file small { display: block; font: .8cqw Consolas, monospace; color: #888; }
+.lf-file em { font-style: normal; font-weight: 600; font-size: .85cqw; color: #1565c0; background: #eef4fd; border-radius: .4cqw; padding: .15cqw .55cqw; }
+.lf-file em.new { color: #0a7d4f; background: #e6f6ee; }
+.lf-fdetail { position: relative; padding: 1cqw 1.4cqw; overflow: hidden; }
+.lf-diff { position: absolute; left: 1.4cqw; right: 1.4cqw; top: 1cqw; opacity: 0; transition: opacity .35s; }
+.lf-diff.on { opacity: 1; }
+.lf-tool { display: flex; align-items: center; gap: 1cqw; margin-bottom: 1.2cqw; min-width: 0; }
+.lf-tool b { flex: none; border: .14cqw solid #e8710a; border-radius: .5cqw; padding: .3cqw .8cqw; font-size: 1cqw; color: #111; }
+.lf-tool code { font: .9cqw Consolas, monospace; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: none; padding: 0; }
+.lf-code { font: .95cqw/2 Consolas, monospace; color: #1f1f1f; }
+.lf-code div { position: relative; white-space: pre; padding: 0 .8cqw 0 2.6cqw; overflow: hidden; text-overflow: ellipsis; }
+.lf-code .del { background: #fff4ec; color: #b3261e; }
+.lf-code .add { background: #ecf8fa; color: #0b6b5d; }
+.lf-code .del::before, .lf-code .add::before { position: absolute; left: .9cqw; font-weight: 700; }
+.lf-code .del::before { content: "-"; }
+.lf-code .add::before { content: "+"; }
+.lf-diff.on .del { animation: lfLine .4s .35s both; }
+.lf-diff.on .add { animation: lfLine .4s .75s both; }
+@keyframes lfLine { from { opacity: 0; transform: translateX(-.6cqw); } to { opacity: 1; transform: none; } }
+.lf-legend { position: absolute; left: 1.4cqw; top: 19.5cqw; display: flex; gap: 2.2cqw; font-size: .95cqw; font-weight: 600; }
+.lf-legend span { display: flex; align-items: center; gap: .5cqw; }
+.lf-legend span::before { content: ""; width: .9cqw; height: .9cqw; border-radius: .15cqw; border: .14cqw solid currentColor; }
+.lf-legend .del { color: #b3261e; }
+.lf-legend .add { color: #0b6b5d; }
+
 /* ---------- setup steps for tracing ---------- */
 .trace-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin: 16px 0; max-width: 980px; }
 .trace-facts .card { padding: 14px 16px; }
@@ -294,6 +331,7 @@
   .live-dot, .skel, .cc-input .caret { animation: none; }
   .lf-graph .edge, .lf-line path { animation: none !important; stroke-dashoffset: 0; }
   .lf-graph .gn { animation: none !important; opacity: 1; }
+  .lf-diff.on .del, .lf-diff.on .add { animation: none; }
 }
 
 /* ---------- replay helpers: editor panes, new files, typed text ---------- */

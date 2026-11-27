@@ -8,10 +8,11 @@
             <button type="button" class="demo-chip" data-lf="timeline">Trace timeline</button>
             <button type="button" class="demo-chip" data-lf="graph">Agent graph</button>
             <button type="button" class="demo-chip" data-lf="dash">Cost dashboard</button>
+            <button type="button" class="demo-chip" data-lf="files">Files changed</button>
           </div>
           <button type="button" class="demo-play" data-lf-toggle aria-pressed="false">Pause</button>
         </div>
-        <div class="screen" role="img" aria-label="Animation of Langfuse: a Claude Code turn shown as a timeline of model responses and Bash tool calls with durations and costs, then as a graph from start through Claude responses and tool calls to end, then a cost dashboard with trace counts, total cost and cost by model.">
+        <div class="screen" role="img" aria-label="Animation of Langfuse: a Claude Code turn shown as a timeline of model responses and Bash tool calls with durations and costs, then as a graph from start through Claude responses and tool calls to end, then a cost dashboard with trace counts, total cost and cost by model, then the files Claude changed in the session, each with the lines it removed and added.">
           <div class="lf">
             <div class="lf-side">
               <div class="lf-logo"><i></i>Langfuse<small>OSS</small></div>
@@ -91,6 +92,43 @@ test results and the rollback plan."</pre>
                   </div>
                 </div>
               </div>
+              <!-- view 4: files changed -->
+              <div class="lf-view" data-lf-view="files">
+                <div class="lf-trace-head"><b><i></i>Claude Code - Turn 5</b><div class="lf-meta"><span>7m 18s</span><span>$2.531</span><span>6M tokens</span><span class="tag">claude-code</span></div></div>
+                <div class="lf-seg" style="margin-top:1cqw"><span class="on">Tree</span><span>Timeline</span><span>Graph</span></div>
+                <div class="lf-fsplit">
+                  <div class="lf-flist">
+                    <h6>Files Claude changed in this session</h6>
+                    <div class="lf-file cls" data-lf-file="0"><i></i><span><b>OpportunityHealthService.cls</b><small>classes/</small></span><em>Edited</em></div>
+                    <div class="lf-file cls" data-lf-file="1"><i></i><span><b>OpportunityHealthServiceTest.cls</b><small>classes/</small></span><em class="new">Created</em></div>
+                    <div class="lf-file web" data-lf-file="2"><i></i><span><b>healthPanel.html</b><small>lwc/healthPanel/</small></span><em>Edited</em></div>
+                    <div class="lf-file web" data-lf-file="3"><i></i><span><b>healthPanel.css</b><small>lwc/healthPanel/</small></span><em>Edited</em></div>
+                  </div>
+                  <div class="lf-fdetail">
+                    <div class="lf-diff" data-lf-diff="0">
+                      <div class="lf-tool"><b>Tool: Edit</b><code>force-app/main/default/classes/OpportunityHealthService.cls</code></div>
+                      <h6>Input · the change itself</h6>
+                      <div class="lf-code"><div class="ctx">public with sharing class OpportunityHealthService {</div><div class="ctx">    public static String label(Integer score) {</div><div class="del">        return score &gt; 70 ? 'Good' : 'Poor';</div><div class="add">        if (score &gt;= 70) { return Label.Health_Good; }</div><div class="add">        return score &gt;= 40 ? Label.Health_At_Risk : Label.Health_Poor;</div><div class="ctx">    }</div></div>
+                    </div>
+                    <div class="lf-diff" data-lf-diff="1">
+                      <div class="lf-tool"><b>Tool: Write</b><code>force-app/main/default/classes/OpportunityHealthServiceTest.cls</code></div>
+                      <h6>Input · the change itself</h6>
+                      <div class="lf-code"><div class="add">@IsTest</div><div class="add">private class OpportunityHealthServiceTest {</div><div class="add">    @IsTest static void scoreOf55IsAtRisk() {</div><div class="add">        Assert.areEqual(Label.Health_At_Risk,</div><div class="add">            OpportunityHealthService.label(55), 'A score of 55 is at risk');</div><div class="add">    }</div></div>
+                    </div>
+                    <div class="lf-diff" data-lf-diff="2">
+                      <div class="lf-tool"><b>Tool: Edit</b><code>force-app/main/default/lwc/healthPanel/healthPanel.html</code></div>
+                      <h6>Input · the change itself</h6>
+                      <div class="lf-code"><div class="ctx">&lt;template&gt;</div><div class="ctx">  &lt;lightning-card title="Deal Health"&gt;</div><div class="del">    &lt;p class="value"&gt;{health}&lt;/p&gt;</div><div class="add">    &lt;p class="value"&gt;{healthLabel}&lt;/p&gt;</div><div class="ctx">  &lt;/lightning-card&gt;</div><div class="ctx">&lt;/template&gt;</div></div>
+                    </div>
+                    <div class="lf-diff" data-lf-diff="3">
+                      <div class="lf-tool"><b>Tool: Edit</b><code>force-app/main/default/lwc/healthPanel/healthPanel.css</code></div>
+                      <h6>Input · the change itself</h6>
+                      <div class="lf-code"><div class="ctx">.value {</div><div class="del">  color: #3e3e3c;</div><div class="add">  color: var(--slds-g-color-on-surface-2);</div><div class="ctx">  font-weight: 600;</div><div class="ctx">}</div></div>
+                    </div>
+                    <div class="lf-legend"><span class="del">Lines removed</span><span class="add">Lines added</span></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -101,7 +139,7 @@ test results and the rollback plan."</pre>
       <div class="trace-facts">
         <div class="card"><b>One trace per turn</b><span>Named <code>Claude Code - Turn N</code>, with your prompt as input and Claude's answer as output. Turns of one session are grouped under Sessions.</span></div>
         <div class="card"><b>Every model response</b><span>A generation per response, with the model name and input, output and cache tokens. Langfuse prices them, so cost appears per step and per turn.</span></div>
-        <div class="card"><b>Every tool call</b><span>Bash, file edits, MCP and browser tools as spans with their input and result. Failed calls are marked as errors.</span></div>
+        <div class="card"><b>Every tool call</b><span>Bash, file edits, MCP and browser tools as spans with their input and result. A file edit carries the change itself: the lines removed and the lines added. Failed calls are marked as errors.</span></div>
         <div class="card"><b>Team dashboards</b><span>Cost by model, by user and by use case; trace and observation counts over time, filtered by the <code>claude-code</code> environment.</span></div>
       </div>
 

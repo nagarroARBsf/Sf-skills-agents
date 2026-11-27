@@ -282,8 +282,15 @@
     var CAPS = {
       timeline: 'Each turn is a trace. The timeline shows every model response (pink) and tool call (orange) with its duration and cost, here a validate-and-deploy to UAT.',
       graph: 'The graph view shows how the turn moved between Claude and its tools: ten responses, nine Bash calls.',
-      dash: 'Dashboards add it up across sessions and people: traces, observations, total cost, cost by model and by environment.'
+      dash: 'Dashboards add it up across sessions and people: traces, observations, total cost, cost by model and by environment.',
+      files: 'Every file Claude created or edited is in the trace: each Edit and Write call carries the change itself, the lines removed and the lines added, here an Apex class, its test and a Lightning component.'
     };
+    var files = lf.querySelectorAll('[data-lf-file]');
+    var diffs = lf.querySelectorAll('[data-lf-diff]');
+    function file(k) {
+      files.forEach(function (f, j) { f.classList.toggle('sel', j === k); });
+      diffs.forEach(function (d, j) { d.classList.toggle('on', j === k); });
+    }
     var rowTimers = [];
     function count(el) {
       var to = parseFloat(el.dataset.count), pre = el.dataset.prefix || '', dec = String(el.dataset.count).indexOf('.') > -1 ? 2 : 0, t0 = performance.now();
@@ -302,13 +309,23 @@
           rowTimers.push(setTimeout(function () { r.classList.add('in'); }, 150 + k * 260));
         });
       }
+      if (name === 'files') {
+        // the list fills in, then each file is selected in turn and its diff shown
+        files.forEach(function (f, k) {
+          if (reduced) { f.classList.add('in'); return; }
+          f.classList.remove('in');
+          rowTimers.push(setTimeout(function () { f.classList.add('in'); }, 150 + k * 220));
+        });
+        file(reduced ? 2 : -1);
+        if (!reduced) [0, 1, 2, 3].forEach(function (k) { rowTimers.push(setTimeout(function () { file(k); }, 1100 + k * 2300)); });
+      }
       if (name === 'dash') lf.querySelectorAll('[data-count]').forEach(function (el) {
         if (reduced) el.textContent = (el.dataset.prefix || '') + el.dataset.count; else count(el);
       });
     }
-    var NAMES = ['timeline', 'graph', 'dash'];
-    var DUR = [7600, 4600, 5600];
-    var lp = player(lf, 3, function (n) { view(NAMES[n]); return DUR[n]; }, '[data-lf-toggle]');
+    var NAMES = ['timeline', 'graph', 'dash', 'files'];
+    var DUR = [7600, 4600, 5600, 10600];
+    var lp = player(lf, 4, function (n) { view(NAMES[n]); return DUR[n]; }, '[data-lf-toggle]');
     lchips.forEach(function (c) { c.addEventListener('click', function () { if (lp.paused) view(c.dataset.lf); else lp.jump(NAMES.indexOf(c.dataset.lf)); }); });
     view('timeline');
   }

@@ -101,7 +101,7 @@
       </div>
 
       <h3>The eight agents</h3>
-      <p class="muted">Six ship with the kit and run in their own context. Two are built into Claude Code, Cursor and other coding agents; the kit gives them its format and rules. What sets them apart is their <strong>tool access</strong>: shown on every card and in the table below. Pick one to see what it does.</p>
+      <p class="muted">Six ship with the kit and run in their own context. Two are built into Claude Code, Cursor and other coding agents; the kit gives them its format and rules. What sets them apart is their <strong>tool access</strong>. Pick one to see what it does and which tools it can use.</p>
       <div class="agent-rail-wrap">
         <div class="agent-rail crew-rail" id="crewRail" role="list" aria-label="The eight agents">
           <article class="agent-card crew-card is-selected" data-agent="discovery" tabindex="0" role="listitem" aria-label="Discovery and design agent">
@@ -109,7 +109,6 @@
             <h3>Discovery &amp; design</h3>
             <p class="agent-vendor">Stage D · Existing orgs</p>
             <p class="agent-desc">Checks the discovery pack against the real org(s), read-only, then drafts the fit-gap and the HLD.</p>
-            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write drafts</span><span class="tool-chip bash">Bash: read-only sf</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Read-only on every org, production included. Never changes an org.</p></div>
             <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:discovery</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
           </article>
           <article class="agent-card crew-card" data-agent="mapshift" tabindex="0" role="listitem" aria-label="MapShift agent">
@@ -117,7 +116,6 @@
             <h3>MapShift</h3>
             <p class="agent-vendor">Stage M · Map &amp; migrate</p>
             <p class="agent-desc">Maps one org's subjects, case rules, letters and forms onto the target org's model, from both orgs' metadata.</p>
-            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write drafts</span><span class="tool-chip bash">Bash: read-only sf</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Reads both orgs' metadata; no record data, never a change to an org.</p></div>
             <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:mapshift</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
           </article>
           <article class="agent-card crew-card" data-agent="brd" tabindex="0" role="listitem" aria-label="BRD agent">
@@ -125,7 +123,6 @@
             <h3>BRD agent</h3>
             <p class="agent-vendor">Stage 1 · Business analyst</p>
             <p class="agent-desc">Turns meeting transcripts, notes and emails into a solution-neutral BRD with a Salesforce outline.</p>
-            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span></div><p>Files only: no shell, no org, no browser.</p></div>
             <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:brd</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
           </article>
           <article class="agent-card crew-card" data-agent="architect" tabindex="0" role="listitem" aria-label="Solution architect">
@@ -133,7 +130,6 @@
             <h3>Solution architect</h3>
             <p class="agent-vendor">Stage 3 · Architecture</p>
             <p class="agent-desc">Designs the HLD, one LLD per story and ADRs, with draw.io diagrams to Salesforce's standard.</p>
-            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash: read-only</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Reads the codebase and a non-production org; writes designs and diagrams.</p></div>
             <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:architecture</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
           </article>
           <article class="agent-card crew-card" data-agent="review" tabindex="0" role="listitem" aria-label="Code reviewer">
@@ -141,7 +137,6 @@
             <h3>Code reviewer</h3>
             <p class="agent-vendor">Stage 6 · Code review</p>
             <p class="agent-desc">Reviews the change against its spec and the Salesforce coding rules. Every finding cites a file and line.</p>
-            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Writes review.md only</span><span class="tool-chip bash">Bash: Code Analyzer</span></div><p>Read-only: never edits code or touches an org.</p></div>
             <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:review</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
           </article>
           <article class="agent-card crew-card" data-agent="qa" tabindex="0" role="listitem" aria-label="QA agent">
@@ -149,7 +144,6 @@
             <h3>QA agent</h3>
             <p class="agent-vendor">Stages 7 · 9 · Test design, runs, UI, re-test</p>
             <p class="agent-desc">Designs test cases, runs Apex and Jest, tests any page in a real browser in a sandbox, logs defects.</p>
-            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash: sf tests, Jest</span><span class="tool-chip browser">Browser</span><span class="tool-chip org">Sandbox org</span></div><p>Runs tests and the browser in non-production orgs only.</p></div>
             <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:test-run</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
           </article>
           <article class="agent-card crew-card builtin" data-agent="plan" tabindex="0" role="listitem" aria-label="Planner">
@@ -157,7 +151,6 @@
             <h3>Planner</h3>
             <p class="agent-vendor">Stage 4 · Spec &amp; plan · plan mode</p>
             <p class="agent-desc">Your coding agent's own plan mode, following the kit's spec-driven format.</p>
-            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Writes spec, plan, tasks</span><span class="tool-chip bash">Bash: read-only</span></div><p>Plan mode: explores and plans, no code changes until approved.</p></div>
             <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:specify</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
           </article>
           <article class="agent-card crew-card builtin" data-agent="dev" tabindex="0" role="listitem" aria-label="Developer">
@@ -165,29 +158,11 @@
             <h3>Developer</h3>
             <p class="agent-vendor">Stage 5 · Build</p>
             <p class="agent-desc">The coding agent you already use, building each task tests first under the project rules.</p>
-            <div class="crew-tools"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash</span><span class="tool-chip org">Salesforce org</span></div><p>Every tool, behind the guard hooks: no production deploys, secrets or protected-branch pushes.</p></div>
             <div class="agent-actions"><span class="crew-cmd"><code>/sf-sdlc:implement</code></span><button type="button" class="agent-dl" data-crew-more>More details</button></div>
           </article>
         </div>
         <button type="button" class="rail-btn prev" data-rail="-1" aria-label="Scroll agents left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <button type="button" class="rail-btn next" data-rail="1" aria-label="Scroll agents right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      </div>
-      <div class="tool-matrix-wrap">
-        <h4>What each agent can touch</h4>
-        <table class="tool-matrix">
-          <thead><tr><th>Agent</th><th>Read files</th><th>Write / edit files</th><th>Bash</th><th>Browser</th><th>Salesforce org</th></tr></thead>
-          <tbody>
-            <tr><td>Discovery &amp; design</td><td class="y">✓</td><td class="p">Drafts only</td><td class="p">Read-only <code>sf</code></td><td class="n">–</td><td class="p">Read-only</td></tr>
-            <tr><td>MapShift</td><td class="y">✓</td><td class="p">Drafts only</td><td class="p">Read-only <code>sf</code></td><td class="n">–</td><td class="p">Read-only, both orgs</td></tr>
-            <tr><td>BRD agent</td><td class="y">✓</td><td class="y">✓</td><td class="n">–</td><td class="n">–</td><td class="n">–</td></tr>
-            <tr><td>Solution architect</td><td class="y">✓</td><td class="y">✓</td><td class="p">Read-only inspection</td><td class="n">–</td><td class="p">Read-only, non-production</td></tr>
-            <tr><td>Code reviewer</td><td class="y">✓</td><td class="p"><code>review.md</code> only</td><td class="p">Code Analyzer, checks</td><td class="n">–</td><td class="n">–</td></tr>
-            <tr><td>QA agent</td><td class="y">✓</td><td class="y">✓</td><td class="y">Tests (<code>sf</code>, Jest)</td><td class="y">✓ Playwright</td><td class="p">Sandboxes only</td></tr>
-            <tr><td>Planner <span class="ag-tag builtin">Built in</span></td><td class="y">✓</td><td class="p">Spec, plan, tasks</td><td class="p">Read-only</td><td class="n">–</td><td class="p">Read-only</td></tr>
-            <tr><td>Developer <span class="ag-tag builtin">Built in</span></td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="p">Guarded: production asks first</td></tr>
-          </tbody>
-        </table>
-        <p class="tool-legend"><span class="tool-chip read">Read</span><span class="tool-chip write">Write</span><span class="tool-chip bash">Bash</span><span class="tool-chip browser">Browser</span><span class="tool-chip org">Org</span> Guard hooks sit around every tool call, for every agent.</p>
       </div>
       <div class="agent-panel crew-panel" id="crewPanel-discovery">
         <div class="crew-head"><span class="crew-logo lg"><svg viewBox="0 0 48 48" aria-hidden="true"><ellipse class="cl-s cl-pop cl-d1" cx="15" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d1" d="M7 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><ellipse class="cl-s cl-pop cl-d2" cx="33" cy="11" rx="8" ry="3"/><path class="cl-s cl-pop cl-d2" d="M25 11v16c0 1.7 3.6 3 8 3s8-1.3 8-3V11"/><path class="cl-s cl-dim" d="M10 38h12"/><path class="cl-s cl-w cl-d3 cl-ok" pathLength="1" d="m27 37 3.5 3.5L38 33"/></svg></span><div><h3>Discovery &amp; design agent <span class="badge kit">Kit agent</span></h3><p class="muted">Stage D · Existing orgs: discovery validation, fit-gap, HLD</p></div></div>
@@ -195,6 +170,7 @@
           <div><h4>What it does</h4><ul><li>Takes a dated, read-only snapshot of each org with <code>sf-sdlc discover</code>: data model, automation, code, profiles and permission sets, sharing, integrations, packages, licences, limits, recent setup changes</li><li>Reads the discovery pack in its own context and checks every statement against the org: confirmed, partly holds, contradicted, stale or not verifiable, each with its evidence</li><li>For a merge or harmonization, compares the orgs and records keep, bring, merge or retire per component, with the conflicts a merge always hits</li><li>Drafts the current-state assessment, the fit-gap (fit to standard first, declarative before code) and the HLD the solution architect continues</li></ul></div>
           <dl class="crew-facts"><dt>Reads</dt><dd>Workshop notes, call transcripts, current-state documents; one or more existing orgs, production included, read-only</dd><dt>Writes</dt><dd><code>docs/sdlc/00-discovery/</code>: snapshots, claim register (<code>CLM</code>), org comparison, current state, fit-gap (<code>FG</code>); <code>03-architecture/HLD.md</code> draft</dd><dt>Tools</dt><dd><span class="ag-tag ro">read-only</span>Metadata queries and counts through the <code>sf</code> CLI, read-only MCP tools. No record data, no user names, never a change to an org.</dd></dl>
         </div>
+        <div class="crew-tools in-panel"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write drafts</span><span class="tool-chip bash">Bash: read-only sf</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Read-only on every org, production included. Never changes an org.</p></div>
         <h4>Try it</h4>
 <pre><code>/sf-sdlc:discovery target-prod source-prod docs/sdlc/00-inputs/discovery/</code></pre>
         <p class="crew-next">Stops with drafts. After a person reviews them: <code>/sf-sdlc:brd</code> with the discovery outputs as inputs, or <code>/sf-sdlc:architecture</code> to continue the HLD.</p>
@@ -205,6 +181,7 @@
           <div><h4>What it does</h4><ul><li>Reads both orgs' metadata read-only: case subjects and reasons, record types, picklists, assignment and escalation rules, email templates, web-to-case forms and document templates</li><li>Builds the mapping from the source org onto the target org's case model: subject to Case Reason, rule to rule, field to field, each marked keep, map, merge or retire</li><li>Flags every mapping the business has to decide, instead of guessing it</li><li>Lists every letter and form that must be rebuilt in the target org, with the fields each one uses, ready for the build and the data migration</li></ul></div>
           <dl class="crew-facts"><dt>Reads</dt><dd>The approved fit-gap and HLD from the discovery agent; both orgs' metadata, read-only</dd><dt>Writes</dt><dd><code>docs/sdlc/00-discovery/mapping/</code>: mapping register (<code>MAP</code>), decisions for the business, rebuild list for letters and forms, migration field map</dd><dt>Tools</dt><dd><span class="ag-tag ro">read-only</span>Metadata queries through the <code>sf</code> CLI and Metadata Grounding. No record data, never a change to an org.</dd></dl>
         </div>
+        <div class="crew-tools in-panel"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write drafts</span><span class="tool-chip bash">Bash: read-only sf</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Reads both orgs' metadata; no record data, never a change to an org.</p></div>
         <h4>Try it</h4>
 <pre><code>/sf-sdlc:mapshift target-prod source-prod cases</code></pre>
         <p class="crew-next">Stops with drafts. After the business signs off the mapping: <code>/sf-sdlc:stories</code> for the rebuild work, then <code>/sf-sdlc:architecture</code>.</p>
@@ -215,6 +192,7 @@
           <div><h4>What it does</h4><ul><li>Reads every input in its own context, so long transcripts never fill yours</li><li>Extracts business requirements, functional requirements, rules and NFRs, with MoSCoW priority</li><li>Cites the source line for each requirement; lists decisions, actions, open questions and contradictions</li><li>Adds an indicative Salesforce outline: data model, automation, UI, integrations, security, limits</li></ul></div>
           <dl class="crew-facts"><dt>Reads</dt><dd>Transcripts, meeting notes, emails, workshop outputs</dd><dt>Writes</dt><dd><code>docs/sdlc/01-brd/BRD.md</code> with <code>BR</code> / <code>FR</code> / <code>RULE</code> / <code>NFR</code> IDs</dd><dt>Tools</dt><dd><span class="ag-tag ro">files only</span>Read, Write, Edit, Glob, Grep. No shell, no org.</dd></dl>
         </div>
+        <div class="crew-tools in-panel"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span></div><p>Files only: no shell, no org, no browser.</p></div>
         <h4>Try it</h4>
 <pre><code>/sf-sdlc:brd docs/inputs/discovery-workshop.txt docs/inputs/follow-up-email.md</code></pre>
         <p class="crew-next">Stops with a draft. After a person approves it: <code>/sf-sdlc:stories</code>.</p>
@@ -225,6 +203,7 @@
           <div><h4>What it does</h4><ul><li>Starts from a baseline of what already exists in the code and the org</li><li>Writes the HLD, a low-level design per story or Jira ticket, and ADRs for each decision</li><li>Marks every component New, Changed, Unchanged or Removed in <code>components.json</code></li><li>Draws editable draw.io diagrams to Salesforce's own standard, exported to PNG, SVG or PDF</li></ul></div>
           <dl class="crew-facts"><dt>Reads</dt><dd>Approved BRD and stories, the codebase, the baseline inventory, a non-production org</dd><dt>Writes</dt><dd><code>HLD.md</code>, <code>LLD-US-*.md</code>, ADRs, <code>components.json</code>, <code>.drawio</code></dd><dt>Tools</dt><dd>All tools; the shell only for read-only inspection. Uses Metadata Grounding and SObject Reads when connected.</dd></dl>
         </div>
+        <div class="crew-tools in-panel"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash: read-only</span><span class="tool-chip org">Org metadata (MCP)</span></div><p>Reads the codebase and a non-production org; writes designs and diagrams.</p></div>
         <h4>Try it</h4>
 <pre><code>/sf-sdlc:architecture US-04-02
 /sf-sdlc:diagram solution architecture for the revenue chart</code></pre>
@@ -236,6 +215,7 @@
           <div><h4>What it does</h4><ul><li>Never saw the build, so it does not share the author's assumptions</li><li>Runs the official Salesforce Code Analyzer and the kit's source checks on the changed files</li><li>Reads every changed file in full: sharing, user mode, SOQL injection, secrets, bulk safety, tests</li><li>Gives a verdict: Approve, Approve with conditions, or Changes required</li></ul></div>
           <dl class="crew-facts"><dt>Reads</dt><dd>The change delta, the spec and acceptance criteria, the coding rules</dd><dt>Writes</dt><dd><code>review.md</code> with a verdict, nothing else</dd><dt>Tools</dt><dd><span class="ag-tag ro">read-only</span>Read, Glob, Grep, Bash. No file edits, no org changes.</dd></dl>
         </div>
+        <div class="crew-tools in-panel"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Writes review.md only</span><span class="tool-chip bash">Bash: Code Analyzer</span></div><p>Read-only: never edits code or touches an org.</p></div>
         <h4>Try it</h4>
 <pre><code>/sf-sdlc:review
 /sf-sdlc:review feature/US-04-02-revenue-chart</code></pre>
@@ -247,6 +227,7 @@
           <div><h4>What it does</h4><ul><li>Designs positive, negative, boundary, permission, bulk and UI cases from acceptance criteria</li><li>Runs Apex and Jest tests through the Salesforce CLI and checks coverage against the target</li><li>Tests an LWC or any page in a real browser (Playwright) in a sandbox, with a screenshot per result</li><li>Logs defects with steps and evidence, and re-tests fixes with the regression set</li></ul></div>
           <dl class="crew-facts"><dt>Reads</dt><dd>Stories, acceptance criteria, LLDs, a non-production org</dd><dt>Writes</dt><dd><code>TC-*</code>, CSV for Xray, Zephyr or TestRail, <code>TR-*</code> with screenshots, <code>DEF-nnn</code></dd><dt>Tools</dt><dd>All tools. The browser never opens a production org; Jira bugs only after a preview and a yes.</dd></dl>
         </div>
+        <div class="crew-tools in-panel"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash: sf tests, Jest</span><span class="tool-chip browser">Browser</span><span class="tool-chip org">Sandbox org</span></div><p>Runs tests and the browser in non-production orgs only.</p></div>
         <h4>Try it</h4>
 <pre><code>/sf-sdlc:test-cases US-04-02
 /sf-sdlc:ui-test revenueChart on the Account page in acme-uat</code></pre>
@@ -258,6 +239,7 @@
           <div><h4>What it does</h4><ul><li>Spec first: what and why, with measurable success criteria</li><li>Then the 12-section plan, written after reading the code it touches</li><li>Then ordered, test-first tasks that map to every acceptance criterion</li><li>An approved plan is saved to <code>specs/&lt;feature&gt;/plan.md</code> as a draft for review</li></ul></div>
           <dl class="crew-facts"><dt>Reads</dt><dd>The story, its LLD, the constitution and the code</dd><dt>Writes</dt><dd><code>spec.md</code>, <code>plan.md</code>, <code>tasks.md</code></dd><dt>Tools</dt><dd>Built into Claude Code, Cursor and the others. The kit adds the format and the rules.</dd></dl>
         </div>
+        <div class="crew-tools in-panel"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Writes spec, plan, tasks</span><span class="tool-chip bash">Bash: read-only</span></div><p>Plan mode: explores and plans, no code changes until approved.</p></div>
         <h4>Try it</h4>
 <pre><code>/sf-sdlc:specify US-04-02
 /sf-sdlc:clarify
@@ -271,6 +253,7 @@
           <div><h4>What it does</h4><ul><li>Works one approved task at a time, tests first</li><li>Follows the Apex, LWC, Flow and metadata rules and the Salesforce skills installed for the project</li><li>The hooks check every file it writes and feed findings straight back</li><li>Ticks a task only with evidence: the command and its result</li></ul></div>
           <dl class="crew-facts"><dt>Reads</dt><dd>The approved spec, plan and tasks</dd><dt>Writes</dt><dd>Source and tests, with evidence per task in <code>tasks.md</code></dd><dt>Tools</dt><dd>Built in. Guard hooks block production deploys, secrets and pushes to protected branches.</dd></dl>
         </div>
+        <div class="crew-tools in-panel"><span class="crew-tools-label">Tool access</span><div><span class="tool-chip read">Read files</span><span class="tool-chip write">Write / edit files</span><span class="tool-chip bash">Bash</span><span class="tool-chip org">Salesforce org</span></div><p>Every tool, behind the guard hooks: no production deploys, secrets or protected-branch pushes.</p></div>
         <h4>Try it</h4>
 <pre><code>/sf-sdlc:implement
 /sf-sdlc:verify</code></pre>
